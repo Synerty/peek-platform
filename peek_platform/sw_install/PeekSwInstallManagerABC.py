@@ -22,6 +22,7 @@ from abc import ABCMeta
 from pytmpdir.Directory import Directory
 from subprocess import PIPE
 from twisted.internet import defer
+from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks
 from txhttputil.downloader.HttpFileDownloader import HttpFileDownloader
 from txhttputil.util.DeferUtil import deferToThreadWrap
@@ -117,13 +118,25 @@ class PeekSwInstallManagerABC(metaclass=ABCMeta):
 
         url += urllib.parse.urlencode(args)
 
-        file = yield HttpFileDownloader(url).run()
-        if file.size == 0:
+        try:
+            file = yield HttpFileDownloader(url).run()
+
+        except Exception as e:
+            logger.exception(e)
+            raise
+
+        if os.path.getsize(file.name) == 0:
             logger.warning("Peek server doesn't have any updates for %s, version %s",
                            PeekPlatformConfig.componentName, targetVersion)
             return
 
-        yield self._blockingInstallUpdate(targetVersion, file.name)
+
+        try:
+            yield self._blockingInstallUpdate(targetVersion, file.name)
+
+        except Exception as e:
+            logger.exception(e)
+            raise
 
         defer.returnValue(targetVersion)
 
@@ -171,7 +184,7 @@ class PeekSwInstallManagerABC(metaclass=ABCMeta):
         PeekPlatformConfig.config.platformVersion = targetVersion
 
         # Call later, allow the server time to respond to the UI
-        # reactor.callLater(2.0, self.restartProcess)
+        reactor.callLater(2.0, self.restartProcess)
 
         return targetVersion
 
@@ -185,8 +198,6 @@ class PeekSwInstallManagerABC(metaclass=ABCMeta):
 
         """
 
-        from peek_platform import PeekPlatformConfig
-        bashExec = PeekPlatformConfig.config.bashLocation
         pipExec = os.path.join(os.path.dirname(sys.executable), "pip")
 
         pipArgs = [sys.executable, pipExec] + self.makePipArgs(directory)
