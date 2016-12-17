@@ -27,22 +27,13 @@ from txhttputil.downloader.HttpFileDownloader import HttpFileDownloader
 from txhttputil.util.DeferUtil import deferToThreadWrap
 from typing import Optional, Generator
 
+from peek_platform.util.PtyUtil import SpawnOsCommandException, spawnPty, \
+    logSpawnException
+
 logger = logging.getLogger(__name__)
 
 PEEK_PLATFORM_STAMP_FILE = 'stamp'
 """Peek Platform Stamp File, The file within the release that conatins the version"""
-
-
-class PlatformInstallException(Exception):
-    """ Platform Test Exception
-
-    This is thrown with stdout and stderr when the real install fails
-    """
-
-    def __init__(self, message, stdout, stderr):
-        self.message = message
-        self.stdout = stdout
-        self.stderr = stderr
 
 
 class PeekSwInstallManagerABC(metaclass=ABCMeta):
@@ -74,16 +65,14 @@ class PeekSwInstallManagerABC(metaclass=ABCMeta):
             'peek-release-%s.tar.gz' % version)
 
     @classmethod
-    def makePipArgs(cls, directory: Directory): # No typing for return type yet
+    def makePipArgs(cls, directory: Directory) -> [str]:
         """ Make PIP Args
 
         This method creates the install arg list for pip, it's used both when testing
         when a new platform release is uploaded and the install on each service.
 
         :param directory: The directory where the peek-release is extracted to
-        :return: A generator, each iterator returns The list of arguments to pass to pip
-        One iteration for each package
-        :rtype Generator of [str] for each yield
+        :return: The list of arguments to pass to pip
         """
         # Create an array of the package paths
 
@@ -91,16 +80,15 @@ class PeekSwInstallManagerABC(metaclass=ABCMeta):
                         for f in directory.files
                         if f.name.endswith(".tar.gz") or f.name.endswith(".whl")]
 
-        for absFilePath in absFilePaths:
-            # Create and return the pip args
-            yield ['install',  # Install the packages
-                   '--force-reinstall',  # Reinstall if they already exist
-                   '--no-cache-dir',  # Don't use the local pip cache
-                   '--no-index',  # Work offline, don't use pypi
-                   '--find-links', directory.path,
-                   # Look in the directory for dependencies
-                   absFilePath
-                   ]
+
+        # Create and return the pip args
+        return ['install',  # Install the packages
+               '--force-reinstall',  # Reinstall if they already exist
+               '--no-cache-dir',  # Don't use the local pip cache
+               '--no-index',  # Work offline, don't use pypi
+               '--find-links', directory.path,
+               # Look in the directory for dependencies
+               ] + absFilePaths
 
     def notifyOfPlatformVersionUpdate(self, newVersion):
         self.installAndRestart(newVersion)
@@ -201,30 +189,19 @@ class PeekSwInstallManagerABC(metaclass=ABCMeta):
         bashExec = PeekPlatformConfig.config.bashLocation
         pipExec = os.path.join(os.path.dirname(sys.executable), "pip")
 
-        logger.debug("Using interpreter : %s", bashExec)
+        pipArgs = [sys.executable, pipExec] + self.makePipArgs(directory)
+        pipArgs = ' '.join(pipArgs)
 
-        ### DEBUG ###
-        self._autoDelete = False
+        try:
+            spawnPty(pipArgs)
+            logger.info("Peek package update complete.")
 
+        except Exception as e:
+            logSpawnException(e)
 
-        for pipArgs in self.makePipArgs(directory):
-            pipArgs = [pipExec] + pipArgs
-
-            print(' '.join(pipArgs))  # DEBUG
-
-            logger.debug("Executing command : %s", pipArgs)
-
-            commandComplete = subprocess.run(' '.join(pipArgs),
-                                             executable=bashExec,
-                                             stdout=PIPE, stderr=PIPE, shell=True)
-
-            if commandComplete.returncode:
-                raise PlatformInstallException(
-                    "Failed to install platform package updates",
-                    stdout=commandComplete.stdout.decode(),
-                    stderr=commandComplete.stderr.decode())
-
-        pass
+            # Update the detail of the exception and raise it
+            e.message = "Failed to install packages from the new release."
+            raise
 
     # @abstractmethod
     # def _stopCode(self) -> None:

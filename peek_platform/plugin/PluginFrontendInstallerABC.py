@@ -4,72 +4,21 @@ import subprocess
 from collections import namedtuple
 from subprocess import PIPE
 
-
 from jsoncfg.value_mappers import require_string
 
-from peek_platform.WindowsPatch import isWindows
-from peek_plugin_base.PluginPackageFileConfig import PluginPackageFileConfig
 from peek_platform import PeekPlatformConfig
+from peek_platform.WindowsPatch import isWindows
 from peek_platform.file_config.PeekFileConfigFrontendDirMixin import \
     PeekFileConfigFrontendDirMixin
 from peek_platform.file_config.PeekFileConfigOsMixin import PeekFileConfigOsMixin
+from peek_platform.util.PtyUtil import PtyOutParser, spawnPty, logSpawnException
+from peek_plugin_base.PluginPackageFileConfig import PluginPackageFileConfig
 
 logger = logging.getLogger(__name__)
 
 PluginDetail = namedtuple("PluginDetail",
-                        ["pluginRootDir", "pluginName", "angularFrontendDir",
-                         "angularMainModule"])
-
-
-class _PtyOutParser:
-    """ PTY Out Parser
-
-    The node tools require a tty, so we run it with
-
-        parser = _PtyOutParser()
-        import pty
-        pty.spawn(*args, parser.read)
-
-    The only problem being that the output is sent to stdout, to solve this we intercept
-    the output, return a . for every read, which it sends to stdout, and then only log
-    the summary at the end of the webpack build.
-
-    """
-
-    def __init__(self):
-        self.data = ''
-        self.startLogging = False  # Ignore all the stuff before the final summary
-        self.allData = ''
-
-    def read(self, fd):
-        data = os.read(fd, 1024)
-        self.data += data.decode()
-        self.allData += data.decode()
-        self.splitData()
-
-        # Silence all the output
-        if len(data):
-            return b'.'
-
-        # If there is no output, return the EOF data
-        return data
-
-    def splitData(self):
-        lines = self.data.splitlines(True)
-        lines.reverse()
-        while lines:
-            line = lines.pop()
-            if not line.endswith(os.linesep):
-                self.data = line
-                break
-            self.logData(line.strip(os.linesep))
-
-    def logData(self, line):
-        self.startLogging = self.startLogging or line.startswith("Hash: ")
-        if not (line and self.startLogging):
-            return
-
-        logger.debug(line)
+                          ["pluginRootDir", "pluginName", "angularFrontendDir",
+                           "angularMainModule"])
 
 
 class PluginFrontendInstallerABC(object):
@@ -143,14 +92,15 @@ class PluginFrontendInstallerABC(object):
 
             pluginDetails.append(
                 PluginDetail(pluginRootDir=plugin.rootDir,
-                           pluginName=plugin.name,
-                           angularFrontendDir=angularFrontendDir,
-                           angularMainModule=angularMainModule)
+                             pluginName=plugin.name,
+                             angularFrontendDir=angularFrontendDir,
+                             angularMainModule=angularMainModule)
             )
 
         return pluginDetails
 
-    def _writePluginRouteLazyLoads(self, feSrcDir: str, pluginDetails: [PluginDetail]) -> None:
+    def _writePluginRouteLazyLoads(self, feSrcDir: str,
+                                   pluginDetails: [PluginDetail]) -> None:
         """
         export const pluginRoutes = [
             {
@@ -257,7 +207,6 @@ class PluginFrontendInstallerABC(object):
 
         return changes
 
-
     def _compileFrontend(self, feSrcDir: str) -> None:
         """ Compile the frontend
 
@@ -273,37 +222,15 @@ class PluginFrontendInstallerABC(object):
 
         logger.info("Rebuilding frontend distribution")
 
-        if isWindows:
-            self._compileFrontendWin(feSrcDir)
-        else:
-            self._compileFrontendPosix(feSrcDir)
-
-    def _compileFrontendWin(self, feSrcDir: str) -> None:
-        commandComplete = subprocess.run("(cd %s && ng build)" % feSrcDir,
-                                         executable=PeekPlatformConfig.config.bashLocation,
-                                         stdout=PIPE, stderr=PIPE, shell=True)
-
-        if commandComplete.returncode:
-            for line in commandComplete.stdout.splitlines():
-                logger.error(line)
-            for line in commandComplete.stderr.splitlines():
-                logger.error(line)
-            raise Exception("The angular frontend failed to build.")
-
-        logger.info("Frontend distribution rebuild complete.")
-
-    def _compileFrontendPosix(self, feSrcDir: str) -> None:
-
-        import pty
-
-        parser = _PtyOutParser()
-
-        returnCode = pty.spawn(["bash", "-l", "-c", "cd %s && ng build" % feSrcDir],
-                               parser.read)
-
-        if returnCode:
-            os.remove(self._hashFileName)
-            [logger.error(l) for l in parser.allData.splitlines()]
-            raise Exception("The angular frontend failed to build.")
-        else:
+        try:
+            parser = PtyOutParser(loggingStartMarker="Hash: ")
+            spawnPty("cd %s && ng build" % feSrcDir, parser)
             logger.info("Frontend distribution rebuild complete.")
+
+        except Exception as e:
+            logSpawnException(e)
+            os.remove(self._hashFileName)
+
+            # Update the detail of the exception and raise it
+            e.message = "The angular frontend failed to build."
+            raise
