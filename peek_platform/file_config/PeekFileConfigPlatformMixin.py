@@ -16,7 +16,7 @@ class PeekFileConfigPlatformMixin(metaclass=ABCMeta):
     @property
     def loggingLevel(self):
         with self._cfg as c:
-            lvl = c.logging.level.installed("INFO", require_string)
+            lvl = c.logging.level("INFO", require_string)
             if lvl in logging._nameToLevel:
                 return lvl
 
