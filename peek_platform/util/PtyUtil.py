@@ -139,7 +139,7 @@ def __reallySpawnSubprocess(cmdAndArgs: str,
         raise SpawnOsCommandException(
             exitCode,
             cmdAndArgs,
-            output="",
+            stdout="",
             stderr=parser.allData)
 
 
@@ -177,7 +177,7 @@ def spawnSubprocess(cmdAndArgs: str,
         raise SpawnOsCommandException(
             commandComplete.returncode,
             cmdAndArgs,
-            output=commandComplete.stdout.decode(),
+            stdout=commandComplete.stdout.decode(),
             stderr=commandComplete.stderr.decode())
 
     return commandComplete
