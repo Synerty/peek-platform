@@ -201,6 +201,12 @@ class PeekSwInstallManagerABC(metaclass=ABCMeta):
         pipExec = os.path.join(os.path.dirname(sys.executable), "pip")
 
         pipArgs = [sys.executable, pipExec] + self.makePipArgs(directory)
+
+        # The platform update is tested for dependencies when it's first uploaded
+        # PIP has a bug, when you have updated packages for several dependent files
+        #   and try to install them all at once, some of the packages don't update.
+        pipArgs += ['--no-deps']
+
         pipArgs = ' '.join(pipArgs)
 
         try:
