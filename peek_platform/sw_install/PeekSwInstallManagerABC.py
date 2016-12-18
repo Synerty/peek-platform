@@ -9,26 +9,24 @@
  *  Synerty Pty Ltd
  *
 """
-import sys
-
 import logging
 import os
-import subprocess
+import sys
 import tarfile
 import urllib.error
 import urllib.parse
 import urllib.request
 from abc import ABCMeta
+from typing import Optional
+
 from pytmpdir.Directory import Directory
-from subprocess import PIPE
 from twisted.internet import defer
 from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks
 from txhttputil.downloader.HttpFileDownloader import HttpFileDownloader
 from txhttputil.util.DeferUtil import deferToThreadWrap
-from typing import Optional, Generator
 
-from peek_platform.util.PtyUtil import SpawnOsCommandException, spawnPty, \
+from peek_platform.util.PtyUtil import spawnPty, \
     logSpawnException
 
 logger = logging.getLogger(__name__)
@@ -81,15 +79,14 @@ class PeekSwInstallManagerABC(metaclass=ABCMeta):
                         for f in directory.files
                         if f.name.endswith(".tar.gz") or f.name.endswith(".whl")]
 
-
         # Create and return the pip args
         return ['install',  # Install the packages
-               '--force-reinstall',  # Reinstall if they already exist
-               '--no-cache-dir',  # Don't use the local pip cache
-               '--no-index',  # Work offline, don't use pypi
-               '--find-links', directory.path,
-               # Look in the directory for dependencies
-               ] + absFilePaths
+                '--force-reinstall',  # Reinstall if they already exist
+                '--no-cache-dir',  # Don't use the local pip cache
+                '--no-index',  # Work offline, don't use pypi
+                '--find-links', directory.path,
+                # Look in the directory for dependencies
+                ] + absFilePaths
 
     def notifyOfPlatformVersionUpdate(self, newVersion):
         self.installAndRestart(newVersion)
@@ -121,18 +118,12 @@ class PeekSwInstallManagerABC(metaclass=ABCMeta):
         try:
             file = yield HttpFileDownloader(url).run()
 
-        except Exception as e:
-            logger.exception(e)
-            raise
+            if os.path.getsize(file.name) == 0:
+                logger.warning("Peek server doesn't have any updates for %s, version %s",
+                               PeekPlatformConfig.componentName, targetVersion)
+                return
 
-        if os.path.getsize(file.name) == 0:
-            logger.warning("Peek server doesn't have any updates for %s, version %s",
-                           PeekPlatformConfig.componentName, targetVersion)
-            return
-
-
-        try:
-            yield self._blockingInstallUpdate(targetVersion, file.name)
+            yield self._installUpdate(targetVersion, file.name)
 
         except Exception as e:
             logger.exception(e)
@@ -144,10 +135,10 @@ class PeekSwInstallManagerABC(metaclass=ABCMeta):
     def installAndRestart(self, targetVersion: str) -> None:
         newSoftwareTar = self.makeReleaseFileName(targetVersion)
 
-        yield self._blockingInstallUpdate(targetVersion, newSoftwareTar)
+        yield self._installUpdate(targetVersion, newSoftwareTar)
 
     @deferToThreadWrap
-    def _blockingInstallUpdate(self, targetVersion: str, fullTarPath: str) -> str:
+    def _installUpdate(self, targetVersion: str, fullTarPath: str) -> str:
         """ Install Update (Blocking)
 
         This method installs the packages in the latest peek-release.
@@ -253,10 +244,15 @@ class PeekSwInstallManagerABC(metaclass=ABCMeta):
     #         pass
     #     os.symlink(newPath, symLink)
 
-    def restartProcess(self):
-        """Restarts the current program.
-        Note: this function does not return. Any cleanup action (like
-        saving data) must be done before calling this function."""
+    def restartProcess(self) -> None:
+        """Restart Process
+
+        Restarts the current program.
+
+        Note: this function does not return.
+        Any cleanup action (like saving data) must be done before calling this function.
+
+        """
         python = sys.executable
         argv = list(sys.argv)
         argv.insert(0, "-u")

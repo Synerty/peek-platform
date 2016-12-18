@@ -53,7 +53,7 @@ requirements = [
 
     # Synerty packages
     "pytmpdir >= 0.1.0",  # A temporary directoy, usefull for extracting archives to
-    "txhttputil >= 0.1.6",  # Utility class for http requests
+    "txhttputil >= 0.1.7",  # Utility class for http requests
     "vortexpy >= 0.1.4",  # Data serialisation and transport layer, observable based
     "json-cfg-rw",
     "kwonly-args",  # Required for json-cfg
