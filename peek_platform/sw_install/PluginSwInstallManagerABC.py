@@ -64,6 +64,43 @@ class PluginSwInstallManagerABC(metaclass=ABCMeta):
                 fileName
                 ]
 
+    @classmethod
+    def getPackageInfo(cls, directory: Directory) -> (str, str):
+        """ Get Package Info
+
+        Find the PKG-INFO file in the directory and returns the package name and version
+
+        :param directory: The directory where the PyPI style package is extracted to.
+        :return: A tuple of the form (pkgName, pkgVersion)
+        """
+
+        # CHECK 1
+        files = [f for f in directory.files if f.name == "PKG-INFO"]
+
+        if not files:
+            raise Exception("Unable to find PKG-INFO")
+
+        pkgInfoFile = files[0]
+
+        # CHECK 2
+        pkgName = None
+        pkgVersion = None
+        with pkgInfoFile.open() as f:
+            for line in f:
+                if line.startswith("Name: "):
+                    pkgName = line.split(':')[1].strip()
+
+                if line.startswith("Version: "):
+                    pkgVersion = line.split(':')[1].strip()
+
+        if not pkgName:
+            raise Exception("Unable to determine package name")
+
+        if not pkgVersion:
+            raise Exception("Unable to determine package version")
+
+        return pkgName, pkgVersion
+
     @inlineCallbacks
     def update(self, pluginName: str, targetVersion: str) -> Optional[str]:
         """ Update
@@ -122,17 +159,7 @@ class PluginSwInstallManagerABC(metaclass=ABCMeta):
         directory.scan()
 
         # CHECK 1
-        pkgInfoFile = self._getFileForFileName("PKG-INFO", directory)
-
-        # CHECK 2
-        pkgVersion = None
-        with pkgInfoFile.open() as f:
-            for line in f:
-                if line.startswith("Version: "):
-                    pkgVersion = line.split(':')[1].strip()
-
-        if not pkgVersion:
-            raise Exception("Unable to determine package version")
+        pgkName, pkgVersion = self.getPackageInfo(directory)
 
         if pkgVersion != targetVersion:
             raise Exception("Plugin %s trget version is %s actual version is %s"
