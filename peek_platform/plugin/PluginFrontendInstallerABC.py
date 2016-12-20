@@ -144,7 +144,7 @@ class PluginFrontendInstallerABC(object):
 
         for item in os.listdir(feSrcDir):
             path = os.path.join(feSrcDir, item)
-            if item.startswith("plugin_") and os.path.islink(path):
+            if item.startswith("peek_plugin_") and os.path.islink(path):
                 os.remove(path)
 
         for pluginDetail in pluginDetails:
