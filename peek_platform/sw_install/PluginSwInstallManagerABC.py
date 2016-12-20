@@ -11,18 +11,21 @@
 """
 import logging
 import os
+import shutil
 import sys
 import tarfile
 import urllib.error
 import urllib.parse
 import urllib.request
 from abc import ABCMeta, abstractmethod
+from tempfile import NamedTemporaryFile
 from typing import Optional
 
 from pytmpdir.Directory import Directory
 from twisted.internet import reactor, defer
 from twisted.internet.defer import inlineCallbacks
 from txhttputil.downloader.HttpFileDownloader import HttpFileDownloader
+from txhttputil.site.SpooledNamedTemporaryFile import SpooledNamedTemporaryFile
 from vortex.Payload import deferToThreadWrap
 
 from peek_platform import PeekPlatformConfig
@@ -129,15 +132,29 @@ class PluginSwInstallManagerABC(metaclass=ABCMeta):
 
         try:
 
-            file = yield HttpFileDownloader(url).run()
+            spooledNamedTempFile = yield HttpFileDownloader(url).run()
+            assert isinstance(spooledNamedTempFile, SpooledNamedTemporaryFile)
 
-            if os.path.getsize(file.name) == 0:
+            if os.path.getsize(spooledNamedTempFile.name) == 0:
                 logger.warning(
                     "Peek server doesn't have any updates for plugin %s, version %s",
                     pluginName, targetVersion)
                 return
 
-            yield self.installAndReload(pluginName, targetVersion, file.name)
+            # We need the file to end in .tar.gz
+            # PIP doesn't like it otherwise
+            namedTempTarGzFile = NamedTemporaryFile(
+                dir=PeekPlatformConfig.config.tmpPath, suffix=".tar.gz")
+            shutil.copy(spooledNamedTempFile.name, namedTempTarGzFile.name)
+            del spooledNamedTempFile
+
+            # We need the file to end in .tar.gz
+            # PIP doesn't like it otherwise
+            if not namedTempTarGzFile.name.endswith(".tar.gz"):
+                shutil.move(namedTempTarGzFile.name, namedTempTarGzFile.name + ".tar.gz")
+                namedTempTarGzFile.name += ".tar.gz"
+
+            yield self.installAndReload(pluginName, targetVersion, namedTempTarGzFile.name)
 
         except Exception as e:
             logger.exception(e)
