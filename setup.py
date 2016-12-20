@@ -58,6 +58,7 @@ requirements = [
     "json-cfg-rw",
     "kwonly-args",  # Required for json-cfg
     "txsuds-py3",
+    "txcelery-py3 >= 1.1.2",
 
     # Peek platform dependencies, all must match
     "peek-plugin-base",  ##==%s" % package_version,
