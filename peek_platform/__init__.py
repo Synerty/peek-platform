@@ -20,7 +20,7 @@ class PeekPlatformConfig:
     # The config accessor class
     config = None
 
-    # The inherited class of PluginSwInstallManagerBase
+    # The inherited class of PluginSwInstallManagerABC
     pluginSwInstallManager = None
 
     # The inherited class of PeekSwInstallManagerABC

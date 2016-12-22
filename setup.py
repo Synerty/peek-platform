@@ -53,11 +53,12 @@ requirements = [
 
     # Synerty packages
     "pytmpdir >= 0.1.0",  # A temporary directoy, usefull for extracting archives to
-    "txhttputil >= 0.1.6",  # Utility class for http requests
+    "txhttputil >= 0.1.7",  # Utility class for http requests
     "vortexpy >= 0.1.4",  # Data serialisation and transport layer, observable based
     "json-cfg-rw",
     "kwonly-args",  # Required for json-cfg
     "txsuds-py3",
+    "txcelery-py3 >= 1.1.2",
 
     # Peek platform dependencies, all must match
     "peek-plugin-base",  ##==%s" % package_version,

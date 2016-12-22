@@ -9,40 +9,30 @@
  *  Synerty Pty Ltd
  *
 """
-import sys
-
 import logging
 import os
-import subprocess
+import sys
 import tarfile
 import urllib.error
 import urllib.parse
 import urllib.request
 from abc import ABCMeta
+from typing import Optional
+
 from pytmpdir.Directory import Directory
-from subprocess import PIPE
 from twisted.internet import defer
+from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks
 from txhttputil.downloader.HttpFileDownloader import HttpFileDownloader
 from txhttputil.util.DeferUtil import deferToThreadWrap
-from typing import Optional, Generator
+
+from peek_platform.util.PtyUtil import spawnPty, \
+    logSpawnException
 
 logger = logging.getLogger(__name__)
 
 PEEK_PLATFORM_STAMP_FILE = 'stamp'
 """Peek Platform Stamp File, The file within the release that conatins the version"""
-
-
-class PlatformInstallException(Exception):
-    """ Platform Test Exception
-
-    This is thrown with stdout and stderr when the real install fails
-    """
-
-    def __init__(self, message, stdout, stderr):
-        self.message = message
-        self.stdout = stdout
-        self.stderr = stderr
 
 
 class PeekSwInstallManagerABC(metaclass=ABCMeta):
@@ -74,16 +64,14 @@ class PeekSwInstallManagerABC(metaclass=ABCMeta):
             'peek-release-%s.tar.gz' % version)
 
     @classmethod
-    def makePipArgs(cls, directory: Directory): # No typing for return type yet
+    def makePipArgs(cls, directory: Directory) -> [str]:
         """ Make PIP Args
 
         This method creates the install arg list for pip, it's used both when testing
         when a new platform release is uploaded and the install on each service.
 
         :param directory: The directory where the peek-release is extracted to
-        :return: A generator, each iterator returns The list of arguments to pass to pip
-        One iteration for each package
-        :rtype Generator of [str] for each yield
+        :return: The list of arguments to pass to pip
         """
         # Create an array of the package paths
 
@@ -91,16 +79,14 @@ class PeekSwInstallManagerABC(metaclass=ABCMeta):
                         for f in directory.files
                         if f.name.endswith(".tar.gz") or f.name.endswith(".whl")]
 
-        for absFilePath in absFilePaths:
-            # Create and return the pip args
-            yield ['install',  # Install the packages
-                   '--force-reinstall',  # Reinstall if they already exist
-                   '--no-cache-dir',  # Don't use the local pip cache
-                   '--no-index',  # Work offline, don't use pypi
-                   '--find-links', directory.path,
-                   # Look in the directory for dependencies
-                   absFilePath
-                   ]
+        # Create and return the pip args
+        return ['install',  # Install the packages
+                '--force-reinstall',  # Reinstall if they already exist
+                '--no-cache-dir',  # Don't use the local pip cache
+                '--no-index',  # Work offline, don't use pypi
+                '--find-links', directory.path,
+                # Look in the directory for dependencies
+                ] + absFilePaths
 
     def notifyOfPlatformVersionUpdate(self, newVersion):
         self.installAndRestart(newVersion)
@@ -129,13 +115,19 @@ class PeekSwInstallManagerABC(metaclass=ABCMeta):
 
         url += urllib.parse.urlencode(args)
 
-        file = yield HttpFileDownloader(url).run()
-        if file.size == 0:
-            logger.warning("Peek server doesn't have any updates for %s, version %s",
-                           PeekPlatformConfig.componentName, targetVersion)
-            return
+        try:
+            file = yield HttpFileDownloader(url).run()
 
-        yield self._blockingInstallUpdate(targetVersion, file.name)
+            if os.path.getsize(file.name) == 0:
+                logger.warning("Peek server doesn't have any updates for %s, version %s",
+                               PeekPlatformConfig.componentName, targetVersion)
+                return
+
+            yield self._installUpdate(targetVersion, file.name)
+
+        except Exception as e:
+            logger.exception(e)
+            raise
 
         defer.returnValue(targetVersion)
 
@@ -143,10 +135,10 @@ class PeekSwInstallManagerABC(metaclass=ABCMeta):
     def installAndRestart(self, targetVersion: str) -> None:
         newSoftwareTar = self.makeReleaseFileName(targetVersion)
 
-        yield self._blockingInstallUpdate(targetVersion, newSoftwareTar)
+        yield self._installUpdate(targetVersion, newSoftwareTar)
 
     @deferToThreadWrap
-    def _blockingInstallUpdate(self, targetVersion: str, fullTarPath: str) -> str:
+    def _installUpdate(self, targetVersion: str, fullTarPath: str) -> str:
         """ Install Update (Blocking)
 
         This method installs the packages in the latest peek-release.
@@ -183,7 +175,7 @@ class PeekSwInstallManagerABC(metaclass=ABCMeta):
         PeekPlatformConfig.config.platformVersion = targetVersion
 
         # Call later, allow the server time to respond to the UI
-        # reactor.callLater(2.0, self.restartProcess)
+        reactor.callLater(2.0, self.restartProcess)
 
         return targetVersion
 
@@ -197,34 +189,27 @@ class PeekSwInstallManagerABC(metaclass=ABCMeta):
 
         """
 
-        from peek_platform import PeekPlatformConfig
-        bashExec = PeekPlatformConfig.config.bashLocation
         pipExec = os.path.join(os.path.dirname(sys.executable), "pip")
 
-        logger.debug("Using interpreter : %s", bashExec)
+        pipArgs = [sys.executable, pipExec] + self.makePipArgs(directory)
 
-        ### DEBUG ###
-        self._autoDelete = False
+        # The platform update is tested for dependencies when it's first uploaded
+        # PIP has a bug, when you have updated packages for several dependent files
+        #   and try to install them all at once, some of the packages don't update.
+        pipArgs += ['--no-deps']
 
+        pipArgs = ' '.join(pipArgs)
 
-        for pipArgs in self.makePipArgs(directory):
-            pipArgs = [pipExec] + pipArgs
+        try:
+            spawnPty(pipArgs)
+            logger.info("Peek package update complete.")
 
-            print(' '.join(pipArgs))  # DEBUG
+        except Exception as e:
+            logSpawnException(e)
 
-            logger.debug("Executing command : %s", pipArgs)
-
-            commandComplete = subprocess.run(' '.join(pipArgs),
-                                             executable=bashExec,
-                                             stdout=PIPE, stderr=PIPE, shell=True)
-
-            if commandComplete.returncode:
-                raise PlatformInstallException(
-                    "Failed to install platform package updates",
-                    stdout=commandComplete.stdout.decode(),
-                    stderr=commandComplete.stderr.decode())
-
-        pass
+            # Update the detail of the exception and raise it
+            e.message = "Failed to install packages from the new release."
+            raise
 
     # @abstractmethod
     # def _stopCode(self) -> None:
@@ -259,10 +244,15 @@ class PeekSwInstallManagerABC(metaclass=ABCMeta):
     #         pass
     #     os.symlink(newPath, symLink)
 
-    def restartProcess(self):
-        """Restarts the current program.
-        Note: this function does not return. Any cleanup action (like
-        saving data) must be done before calling this function."""
+    def restartProcess(self) -> None:
+        """Restart Process
+
+        Restarts the current program.
+
+        Note: this function does not return.
+        Any cleanup action (like saving data) must be done before calling this function.
+
+        """
         python = sys.executable
         argv = list(sys.argv)
         argv.insert(0, "-u")

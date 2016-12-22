@@ -7,12 +7,13 @@ from importlib.util import find_spec
 from typing import Type
 
 from jsoncfg.value_mappers import require_string, require_array
-from peek_plugin_base.PluginCommonEntryHookABC import PluginCommonEntryHookABC
-from peek_plugin_base.PluginPackageFileConfig import PluginPackageFileConfig
-from peek_platform import PeekPlatformConfig
 from vortex.PayloadIO import PayloadIO
 from vortex.Tuple import removeTuplesForTupleNames, registeredTupleNames, \
     tupleForTupleName
+
+from peek_platform import PeekPlatformConfig
+from peek_plugin_base.PluginCommonEntryHookABC import PluginCommonEntryHookABC
+from peek_plugin_base.PluginPackageFileConfig import PluginPackageFileConfig
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +66,7 @@ class PluginLoaderABC(metaclass=ABCMeta):
 
             modSpec = find_spec(pluginName)
             if not modSpec:
-                raise Exception("Can not load Peek App package %s", pluginName)
+                raise Exception("Can not load Peek App package %s" % pluginName)
 
             PluginPackage = modSpec.loader.load_module()
             pluginRootDir = os.path.dirname(PluginPackage.__file__)
@@ -73,7 +74,8 @@ class PluginLoaderABC(metaclass=ABCMeta):
             # Load up the plugin package info
             pluginPackageJson = PluginPackageFileConfig(pluginRootDir)
             pluginVersion = pluginPackageJson.config.plugin.version(require_string)
-            pluginRequiresService = pluginPackageJson.config.requiresServices(require_array)
+            pluginRequiresService = pluginPackageJson.config.requiresServices(
+                require_array)
 
             # Make sure the service is required
             # Storage and Server are loaded at the same time, hence the intersection
@@ -116,8 +118,9 @@ class PluginLoaderABC(metaclass=ABCMeta):
             logger.exception(e)
 
     @abstractmethod
-    def _loadPluginThrows(self, pluginName: str, EntryHookClass: Type[PluginCommonEntryHookABC],
-                        pluginRootDir: str) -> None:
+    def _loadPluginThrows(self, pluginName: str,
+                          EntryHookClass: Type[PluginCommonEntryHookABC],
+                          pluginRootDir: str) -> None:
         """ Load Plugin (May throw Exception)
 
         This method is called to perform the load of the module.
