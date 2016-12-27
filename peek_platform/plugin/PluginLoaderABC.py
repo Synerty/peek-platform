@@ -4,7 +4,7 @@ import sys
 from abc import ABCMeta, abstractmethod, abstractproperty
 from collections import defaultdict
 from importlib.util import find_spec
-from typing import Type
+from typing import Type, Tuple
 
 from jsoncfg.value_mappers import require_string, require_array
 from vortex.PayloadIO import PayloadIO
@@ -99,7 +99,8 @@ class PluginLoaderABC(metaclass=ABCMeta):
                                 % (pluginName, self._entryHookClassType, EntryHookClass))
 
             ### Perform the loading of the plugin
-            self._loadPluginThrows(pluginName, EntryHookClass, pluginRootDir)
+            self._loadPluginThrows(pluginName, EntryHookClass,
+                                   pluginRootDir, tuple(pluginRequiresService))
 
             # Make sure the version we have recorded is correct
             PeekPlatformConfig.config.setPluginVersion(pluginName, pluginVersion)
@@ -120,7 +121,8 @@ class PluginLoaderABC(metaclass=ABCMeta):
     @abstractmethod
     def _loadPluginThrows(self, pluginName: str,
                           EntryHookClass: Type[PluginCommonEntryHookABC],
-                          pluginRootDir: str) -> None:
+                          pluginRootDir: str,
+                          requiresService: Tuple[str, ...]) -> None:
         """ Load Plugin (May throw Exception)
 
         This method is called to perform the load of the module.

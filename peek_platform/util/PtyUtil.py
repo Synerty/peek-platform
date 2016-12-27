@@ -33,7 +33,7 @@ class SpawnOsCommandException(subprocess.CalledProcessError):
 
     def __str__(self):
         return ("%s\nCommand '%s' returned non-zero exit status %d"
-                % (self.cmd, self.returncode, self.message))
+                % (self.message, self.cmd, self.returncode))
 
 
 class PtyOutParser:
