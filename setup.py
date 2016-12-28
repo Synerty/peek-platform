@@ -25,7 +25,7 @@ requirements = [
     "pyasn1-modules >= 0.0.8",
 
     # SOAPpy, used in Twisted, twisted.web.soap is only valid for py2
-    "SOAPpy-py3 >= 0.52.23",
+    "SOAPpy-py3 >= 0.52.23", # See http://soappy.ooz.ie for tutorials
     "wstools-py3 >= 0.54.0",
 
     # Database
@@ -39,6 +39,7 @@ requirements = [
     # Utilities
     "python-dateutil >= 2.6.0",
     "Pygments >= 2.0.1",  # Generate HTML for code that is syntax styled
+    "rx >= 1.5.7", # RxPY by Microsoft. Potentially used in plugins to create Observables.
 
     # Licensing
     "pycrypto",
