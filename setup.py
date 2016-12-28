@@ -19,10 +19,14 @@ requirements = [
 
     # networking and async framework. Peek is based on Twisted.
     "Cython >= 0.21.1",
-    "Twisted[tls,conch,soap] >= 16.0.0",
+    "Twisted[tls,conch] >= 16.0.0",
     "pyOpenSSL >= 16.2.0",
     "pyasn1 >= 0.1.9",
     "pyasn1-modules >= 0.0.8",
+
+    # SOAPpy, used in Twisted, twisted.web.soap is only valid for py2
+    "SOAPpy-py3 >= 0.52.23",
+    "wstools-py3 >= 0.54.0",
 
     # Database
     "psycopg2 >= 2.6.2",  # PostGreSQL for Linux
