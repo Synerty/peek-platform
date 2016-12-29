@@ -53,7 +53,6 @@ requirements = [
     # Potitially useful packages
     "GitPython >= 2.0.8",
     "jira",
-    "lxml >= 3.6.4",
     "dxfgrabber >= 0.7.4",
 
     # Synerty packages

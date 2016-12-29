@@ -43,7 +43,7 @@ class PtyOutParser:
 
         parser = _PtyOutParser()
         import pty
-        pty.spawn(*args, parser.read)
+        pty.spawn(\*args, parser.read)
 
     The only problem being that the output is sent to stdout, to solve this we intercept
     the output, return a . (dot) for every read, which it sends to stdout, and then only log

@@ -6,6 +6,7 @@ logger = logging.getLogger(__name__)
 
 isWindows = platform.system() is "Windows"
 
+
 def createHardLink(src, dst):
     import ctypes
     flags = 1 if src is not None and os.path.isdir(src) else 0
@@ -20,7 +21,7 @@ def createSymbolicLink(src, dst):
         raise OSError
 
 
-if platform.system() == 'Windows':
+if isWindows:
     logger.info("Replacing os.link/os.symlink functions.")
     os.link = createHardLink
     os.symlink = createSymbolicLink

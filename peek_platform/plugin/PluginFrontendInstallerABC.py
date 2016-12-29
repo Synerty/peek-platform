@@ -27,11 +27,11 @@ class PluginFrontendInstallerABC(object):
     This class is used for the client and server.
 
     This class contains the logic for:
-     * Linking in the frontend angular components to the frontend project
-     * Compiling the frontend project
+        * Linking in the frontend angular components to the frontend project
+        * Compiling the frontend project
 
     :TODO: Use find/sort to generate a string of the files when this was last run.
-    Only run it again if anything has changed.
+        Only run it again if anything has changed.
 
     """
 
