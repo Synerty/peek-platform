@@ -234,6 +234,6 @@ class PluginSwInstallManagerABC(metaclass=ABCMeta):
         service (implementer).
 
         :param pluginName: The name of the plugin being updated
-        :param targetVersion" The version being updated to
+        :param targetVersion: The version being updated to
         """
         pass
