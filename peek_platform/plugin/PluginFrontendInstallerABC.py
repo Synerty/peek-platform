@@ -7,7 +7,6 @@ from subprocess import PIPE
 from jsoncfg.value_mappers import require_string
 
 from peek_platform import PeekPlatformConfig
-from peek_platform.WindowsPatch import isWindows
 from peek_platform.file_config.PeekFileConfigFrontendDirMixin import \
     PeekFileConfigFrontendDirMixin
 from peek_platform.file_config.PeekFileConfigOsMixin import PeekFileConfigOsMixin
@@ -97,6 +96,7 @@ class PluginFrontendInstallerABC(object):
                              angularMainModule=angularMainModule)
             )
 
+        pluginDetails.sort(key=lambda x: x.pluginName)
         return pluginDetails
 
     def _writePluginRouteLazyLoads(self, feSrcDir: str,

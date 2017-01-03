@@ -1,11 +1,8 @@
 import logging
-
 import os
-from abc import ABCMeta, abstractproperty
-from typing import Optional
+from abc import ABCMeta
 
-from jsoncfg.value_mappers import require_string, RequireType, require_list
-from peek_platform.file_config.PeekFileConfigABC import PeekFileConfigABC
+from jsoncfg.value_mappers import require_string, RequireType, require_list, require_bool
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +19,11 @@ class PeekFileConfigPlatformMixin(metaclass=ABCMeta):
 
             logger.warning("Logging level %s is not valid, defauling to INFO", lvl)
             return "INFO"
+
+    @property
+    def autoPackageUpdate(self):
+        with self._cfg as c:
+            return c.platform.autoPackageUpdate(True, require_bool)
 
     # --- Platform Tmp Path
     @property

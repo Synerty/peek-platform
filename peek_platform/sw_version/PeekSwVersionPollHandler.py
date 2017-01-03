@@ -4,7 +4,7 @@ Created on 09/07/2014
 @author: synerty
 '''
 
-from twisted.internet.defer import Deferred, DeferredList
+from twisted.internet.defer import Deferred, DeferredList, succeed
 
 from vortex.Payload import Payload
 from vortex.PayloadEndpoint import PayloadEndpoint
@@ -31,6 +31,10 @@ class PeekSwVersionPollHandler(object):
         self._ep = None
 
     def start(self):
+        from peek_platform import PeekPlatformConfig
+        if not PeekPlatformConfig.config.autoPackageUpdate:
+            return succeed(True)
+
         self._ep = PayloadEndpoint(peekPlatformVersionFilt, self._process)
 
         from peek_platform.PeekVortexClient import peekVortexClient
@@ -39,6 +43,7 @@ class PeekSwVersionPollHandler(object):
         return self._startupDeferred
 
     def _process(self, payload, vortexUuid, **kwargs):
+        logger.info(payload.result)
         assert not payload.result  # result is None means success
 
         from peek_platform import PeekPlatformConfig
