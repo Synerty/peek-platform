@@ -24,10 +24,6 @@ requirements = [
     "pyasn1 >= 0.1.9",
     "pyasn1-modules >= 0.0.8",
 
-    # SOAPpy, used in Twisted, twisted.web.soap is only valid for py2
-    "SOAPpy-py3 >= 0.52.23", # See http://soappy.ooz.ie for tutorials
-    "wstools-py3 >= 0.54.0",
-
     # Database
     "psycopg2 >= 2.6.2",  # PostGreSQL for Linux
     "GeoAlchemy2",  # Geospatial addons to SQLAlchemy
@@ -56,9 +52,13 @@ requirements = [
     "dxfgrabber >= 0.7.4",
 
     # Synerty packages
+    # SOAPpy, used in Twisted, twisted.web.soap is only valid for py2
+    "SOAPpy-py3 >= 0.52.24", # See http://soappy.ooz.ie for tutorials
+    "wstools-py3 >= 0.54.2",
+
     "pytmpdir >= 0.1.0",  # A temporary directory, useful for extracting archives to
     "txhttputil >= 0.1.7",  # Utility class for http requests
-    "vortexpy >= 0.1.6",  # Data serialisation and transport layer, observable based
+    "vortexpy >= 0.2.0",  # Data serialisation and transport layer, observable based
     "json-cfg-rw",
     "txsuds-py3",
     "txcelery-py3 >= 1.1.2",
