@@ -130,10 +130,11 @@ class PluginFrontendInstallerABC(object):
 
         # Since writing the file again changes the date/time,
         # this messes with the self._recompileRequiredCheck
-        with open(pluginRoutesTs, 'r') as f:
-            if routeData == f.read():
-                logger.debug("PluginRoutes.ts is up to date")
-                return
+        if os.path.isfile(pluginRoutesTs):
+            with open(pluginRoutesTs, 'r') as f:
+                if routeData == f.read():
+                    logger.debug("PluginRoutes.ts is up to date")
+                    return
 
         logger.debug("Writing new PluginRoutes.ts")
         with open(pluginRoutesTs, 'w') as f:
