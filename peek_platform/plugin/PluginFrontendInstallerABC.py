@@ -66,14 +66,15 @@ class PluginFrontendInstallerABC(object):
                             " PeekFileConfigOsMixin")
 
         from peek_platform import PeekPlatformConfig
-        feSrcDir = os.path.join(PeekPlatformConfig.config.feSrcDir, 'app')
+        feSrcDir = PeekPlatformConfig.config.feSrcDir
+        feAppDir = os.path.join(feSrcDir, 'app')
 
         self._hashFileName = os.path.join(os.path.dirname(feSrcDir), ".lastHash")
 
         pluginDetails = self._loadPluginConfigs()
 
-        self._writePluginRouteLazyLoads(feSrcDir, pluginDetails)
-        self._relinkPluginDirs(feSrcDir, pluginDetails)
+        self._writePluginRouteLazyLoads(feAppDir, pluginDetails)
+        self._relinkPluginDirs(feAppDir, pluginDetails)
         self._compileFrontend(feSrcDir)
 
     def _loadPluginConfigs(self) -> [PluginDetail]:
@@ -99,7 +100,7 @@ class PluginFrontendInstallerABC(object):
         pluginDetails.sort(key=lambda x: x.pluginName)
         return pluginDetails
 
-    def _writePluginRouteLazyLoads(self, feSrcDir: str,
+    def _writePluginRouteLazyLoads(self, feAppDir: str,
                                    pluginDetails: [PluginDetail]) -> None:
         """
         export const pluginRoutes = [
@@ -121,7 +122,7 @@ class PluginFrontendInstallerABC(object):
                        pluginDetail.pluginName,
                        pluginDetail.angularMainModule))
 
-        pluginRoutesTs = os.path.join(feSrcDir, 'PluginRoutes.ts')
+        pluginRoutesTs = os.path.join(feAppDir, 'plugin-routes.ts')
 
         routeData = "// This file is auto generated, the git version is blank and .gitignored\n"
         routeData += "export const pluginRoutes = [\n"
@@ -133,25 +134,25 @@ class PluginFrontendInstallerABC(object):
         if os.path.isfile(pluginRoutesTs):
             with open(pluginRoutesTs, 'r') as f:
                 if routeData == f.read():
-                    logger.debug("PluginRoutes.ts is up to date")
+                    logger.debug("plugin-routes.ts is up to date")
                     return
 
-        logger.debug("Writing new PluginRoutes.ts")
+        logger.debug("Writing new plugin-routes.ts")
         with open(pluginRoutesTs, 'w') as f:
             f.write(routeData)
 
-    def _relinkPluginDirs(self, feSrcDir: str, pluginDetails: [PluginDetail]) -> None:
+    def _relinkPluginDirs(self, feAppDir: str, pluginDetails: [PluginDetail]) -> None:
         # Remove all the old symlinks
 
-        for item in os.listdir(feSrcDir):
-            path = os.path.join(feSrcDir, item)
+        for item in os.listdir(feAppDir):
+            path = os.path.join(feAppDir, item)
             if item.startswith("peek_plugin_") and os.path.islink(path):
                 os.remove(path)
 
         for pluginDetail in pluginDetails:
             srcDir = os.path.join(pluginDetail.pluginRootDir,
                                   pluginDetail.angularFrontendDir)
-            linkPath = os.path.join(feSrcDir, pluginDetail.pluginName)
+            linkPath = os.path.join(feAppDir, pluginDetail.pluginName)
             os.symlink(srcDir, linkPath, target_is_directory=True)
 
     def _recompileRequiredCheck(self, feSrcDir: str) -> bool:
