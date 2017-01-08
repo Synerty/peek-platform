@@ -66,7 +66,7 @@ class PluginFrontendInstallerABC(object):
                             " PeekFileConfigOsMixin")
 
         from peek_platform import PeekPlatformConfig
-        feSrcDir = PeekPlatformConfig.config.feSrcDir
+        feSrcDir = os.path.join(PeekPlatformConfig.config.feSrcDir, 'app')
 
         self._hashFileName = os.path.join(os.path.dirname(feSrcDir), ".lastHash")
 
