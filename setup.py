@@ -31,6 +31,8 @@ requirements = [
     "SQLAlchemy >= 1.0.14",  # Database abstraction layer
     "SQLAlchemy-Utils >= 0.32.9",
     "alembic >= 0.8.7",  # Database migration utility
+    "pymssql >= 2.1.3",  # DB-API interface to Microsoft SQL Server, requires FreeTDS
+    # installed and configured first
 
     # Utilities
     "python-dateutil >= 2.6.0",
@@ -58,7 +60,7 @@ requirements = [
 
     "pytmpdir >= 0.1.0",  # A temporary directory, useful for extracting archives to
     "txhttputil >= 0.1.7",  # Utility class for http requests
-    "vortexpy >= 0.3.1",  # Data serialisation and transport layer, observable based
+    "vortexpy >= 0.3.0",  # Data serialisation and transport layer, observable based
     "json-cfg-rw",
     "txsuds-py3",
     "txcelery-py3 >= 1.1.2",
@@ -80,6 +82,7 @@ dev_requirements = [
     "mock >= 2.0.0",
     "selenium >= 2.53.6",
     "Sphinx >= 1.4.8",
+    "Sphinx_rtd_theme >= 0.1.10a0",
 ]
 
 setup(
