@@ -4,7 +4,7 @@ import sys
 from abc import ABCMeta, abstractmethod, abstractproperty
 from collections import defaultdict
 from importlib.util import find_spec
-from typing import Type, Tuple
+from typing import Type, Tuple, Optional
 
 from jsoncfg.value_mappers import require_string, require_array
 from vortex.PayloadIO import PayloadIO
@@ -55,6 +55,19 @@ class PluginLoaderABC(metaclass=ABCMeta):
         :return: one or more of "server", "worker", "agent", "client", "storage"
 
         """
+
+    def pluginEntryHook(self, pluginName ) -> Optional[PluginCommonEntryHookABC]:
+        """ Plugin Entry Hook
+
+        Returns the loaded plugin entry hook for the plugin name.
+
+        :param pluginName: The name of the plugin to load
+
+        :return: An instance of the plugin entry hook
+
+        """
+        return self._loadedPlugins.get(pluginName)
+
 
     def loadPlugin(self, pluginName):
         try:
@@ -128,8 +141,7 @@ class PluginLoaderABC(metaclass=ABCMeta):
         This method is called to perform the load of the module.
 
         :param pluginName: The name of the Peek App, eg "plugin_noop"
-        :param PluginPackage: A reference to the main plugin package, eg "import plugin_noop"
-        this parameter would be plugin_noop.
+        :param EntryHookClass: The plugin entry hook class to construct.
         :param pluginRootDir: The directory of the plugin package,
          EG dirname(plugin_noop.__file__)
 

@@ -6,8 +6,10 @@ Created on 09/07/2014
 
 from twisted.internet.defer import Deferred, DeferredList, succeed
 
+from peek_plugin_base.PeekVortexUtil import peekServerName
 from vortex.Payload import Payload
 from vortex.PayloadEndpoint import PayloadEndpoint
+from vortex.VortexFactory import VortexFactory
 
 __author__ = 'peek'
 import logging
@@ -37,12 +39,13 @@ class PeekSwVersionPollHandler(object):
 
         self._ep = PayloadEndpoint(peekPlatformVersionFilt, self._process)
 
-        from peek_platform.PeekVortexClient import peekVortexClient
-        peekVortexClient.sendPayload(Payload(filt=peekPlatformVersionFilt))
+        VortexFactory.sendVortexMsg(
+            vortexMsgs=Payload(filt=peekPlatformVersionFilt).toVortexMsg(),
+            destVortexName=peekServerName)
 
         return self._startupDeferred
 
-    def _process(self, payload, vortexUuid, **kwargs):
+    def _process(self, payload, **kwargs):
         logger.info(payload.result)
         assert not payload.result  # result is None means success
 
@@ -57,7 +60,8 @@ class PeekSwVersionPollHandler(object):
                     logger.info("Recieved platform update new version is %s, we're %s",
                                 swVersionInfo.version,
                                 PeekPlatformConfig.config.platformVersion)
-                    d = PeekPlatformConfig.peekSwInstallManager.update(swVersionInfo.version)
+                    d = PeekPlatformConfig.peekSwInstallManager.update(
+                        swVersionInfo.version)
                     deferredList.append(d)
 
                     # Don't process any more, we'll update them when we restart.
