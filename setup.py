@@ -4,6 +4,8 @@ from distutils.core import setup
 
 from setuptools import find_packages
 
+from peek_platform.WindowsPatch import isWindows
+
 package_name = "peek-platform"
 package_version = '0.0.7'
 
@@ -69,6 +71,15 @@ requirements = [
     "peek-plugin-base",  ##==%s" % package_version,
 ]
 
+win_dependencies = [
+    "pycparser >= 2.17",
+    "cffi >= 1.9.1",
+    "cryptography >= 1.7.1",
+    "pytest >= 3.0.5",
+    "pypiwin32",
+]
+if isWindows:
+    requirements.extend(win_dependencies)
 # Packages that are presently installed from a git repo
 # See http://stackoverflow.com/questions/17366784/setuptools-unable-to-use-link-from-dependency-links/17442663#17442663
 dependency_links = [
