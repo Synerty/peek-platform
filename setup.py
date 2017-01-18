@@ -68,7 +68,7 @@ requirements = [
 
     "pytmpdir >= 0.1.0",  # A temporary directory, useful for extracting archives to
     "txhttputil >= 0.1.7",  # Utility class for http requests
-    "vortexpy >= 0.4.1",  # Data serialisation and transport layer, observable based
+    "vortexpy >= 0.4.3",  # Data serialisation and transport layer, observable based
     "json-cfg-rw",
     "txsuds-py3",
     "txcelery-py3 >= 1.1.2",

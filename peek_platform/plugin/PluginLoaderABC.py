@@ -14,9 +14,12 @@ from vortex.Tuple import removeTuplesForTupleNames, registeredTupleNames, \
 from peek_platform import PeekPlatformConfig
 from peek_plugin_base.PluginCommonEntryHookABC import PluginCommonEntryHookABC
 from peek_plugin_base.PluginPackageFileConfig import PluginPackageFileConfig
+from vortex.TupleSelector import TupleSelector
 
 logger = logging.getLogger(__name__)
 
+# This doesn't do anything, but it makes sure it's imported before any plugins import it.
+TupleSelector()
 
 class PluginLoaderABC(metaclass=ABCMeta):
     _instance = None
