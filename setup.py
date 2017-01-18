@@ -54,6 +54,12 @@ requirements = [
     "GitPython >= 2.0.8",
     "jira",
     "dxfgrabber >= 0.7.4",
+    "pycparser >= 2.17",
+    "cffi >= 1.9.1",
+    "cryptography >= 1.7.1",
+    "pytest >= 3.0.5",
+    "pypiwin32",
+
 
     # Synerty packages
     # SOAPpy, used in Twisted, twisted.web.soap is only valid for py2
