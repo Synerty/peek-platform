@@ -54,11 +54,6 @@ requirements = [
     "GitPython >= 2.0.8",
     "jira",
     "dxfgrabber >= 0.7.4",
-    "pycparser >= 2.17",
-    "cffi >= 1.9.1",
-    "cryptography >= 1.7.1",
-    "pytest >= 3.0.5",
-    "pypiwin32",
 
 
     # Synerty packages
@@ -84,8 +79,10 @@ win_dependencies = [
     "pytest >= 3.0.5",
     "pypiwin32",
 ]
+
 if isWindows:
     requirements.extend(win_dependencies)
+
 # Packages that are presently installed from a git repo
 # See http://stackoverflow.com/questions/17366784/setuptools-unable-to-use-link-from-dependency-links/17442663#17442663
 dependency_links = [
