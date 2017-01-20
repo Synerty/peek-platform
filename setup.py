@@ -78,8 +78,6 @@ win_dependencies = [
     "cryptography >= 1.7.1",
     "pytest >= 3.0.5",
     "pypiwin32",
-    "celery >= 4.0.2",
-    "twisted >= 16.6.0",
 ]
 
 if isWindows:
