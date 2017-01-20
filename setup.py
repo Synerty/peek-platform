@@ -66,7 +66,7 @@ requirements = [
     "vortexpy >= 0.4.3",  # Data serialisation and transport layer, observable based
     "json-cfg-rw",
     "txsuds-py3",
-    "txcelery-py3 >= 1.1.2",
+    "txcelery-py3 >= 1.1.3",
 
     # Peek platform dependencies, all must match
     "peek-plugin-base",  ##==%s" % package_version,
