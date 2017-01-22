@@ -62,7 +62,7 @@ requirements = [
     "wstools-py3 >= 0.54.2",
 
     "pytmpdir >= 0.2.3",  # A temporary directory, useful for extracting archives to
-    "txhttputil >= 0.1.7",  # Utility class for http requests
+    "txhttputil >= 0.1.8",  # Utility class for http requests
     "vortexpy >= 0.5.4",  # Data serialisation and transport layer, observable based
     "json-cfg-rw",
     "txsuds-py3 >= 0.5.5",
