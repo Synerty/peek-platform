@@ -66,6 +66,11 @@ class PluginFrontendInstallerABC(object):
                             " PeekFileConfigOsMixin")
 
         from peek_platform import PeekPlatformConfig
+
+        if not PeekPlatformConfig.config.feBuildEnabled:
+            logger.warning("Frontend build disabled by config file, Not Building.")
+            return
+
         feSrcDir = PeekPlatformConfig.config.feSrcDir
         feAppDir = os.path.join(feSrcDir, 'app')
 
