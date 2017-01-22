@@ -1,6 +1,8 @@
 import logging
 import os
 
+from jsoncfg.value_mappers import require_bool
+
 logger = logging.getLogger(__name__)
 
 
@@ -51,3 +53,13 @@ class PeekFileConfigFrontendDirMixin:
             logger.error("Frontend SRC folder does not yest exist : %s", dir)
 
         return dir
+
+    @property
+    def feBuildEnabled(self) -> bool:
+        """ Frontend Build Enabled
+
+        :return True If peek should automatically try to build the frontend.
+
+        """
+        with self._cfg as c:
+            return c.frontend.buildEnabled(True, require_bool)
