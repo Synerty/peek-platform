@@ -50,7 +50,7 @@ requirements = [
     "celery[redis,auth]",
     "redis >= 2.10.5",
 
-    # Potitially useful packages
+    # Potentially useful packages
     "GitPython >= 2.0.8",
     "jira",
     "dxfgrabber >= 0.7.4",
@@ -61,9 +61,9 @@ requirements = [
     "SOAPpy-py3 >= 0.52.24", # See http://soappy.ooz.ie for tutorials
     "wstools-py3 >= 0.54.2",
 
-    "pytmpdir >= 0.1.0",  # A temporary directory, useful for extracting archives to
+    "pytmpdir >= 0.2.1",  # A temporary directory, useful for extracting archives to
     "txhttputil >= 0.1.7",  # Utility class for http requests
-    "vortexpy >= 0.4.3",  # Data serialisation and transport layer, observable based
+    "vortexpy >= 0.5.2",  # Data serialisation and transport layer, observable based
     "json-cfg-rw",
     "txsuds-py3",
     "txcelery-py3 >= 1.1.3",

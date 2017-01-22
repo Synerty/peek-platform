@@ -167,7 +167,7 @@ class PluginFrontendInstallerABC(object):
         543446    4 -rw-r--r--   1 peek     sudo         1531 Dec  2 17:37 ./src/app/environment/env-worker/env-worker.component.html
 
         """
-        ignore = (".git", ".idea", "dist")
+        ignore = (".git", ".idea", "dist", '__pycache__')
         ignore = ["'%s'" % i for i in ignore]  # Surround with quotes
         grep = "grep -v -e %s " % ' -e '.join(ignore)  # Xreate the grep command
         cmd = "find -L %s -type f -ls | %s" % (feSrcDir, grep)
