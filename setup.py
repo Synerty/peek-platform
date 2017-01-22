@@ -65,7 +65,7 @@ requirements = [
     "txhttputil >= 0.1.7",  # Utility class for http requests
     "vortexpy >= 0.5.4",  # Data serialisation and transport layer, observable based
     "json-cfg-rw",
-    "txsuds-py3",
+    "txsuds-py3 >= 0.5.5",
     "txcelery-py3 >= 1.1.3",
 
     # Peek platform dependencies, all must match
