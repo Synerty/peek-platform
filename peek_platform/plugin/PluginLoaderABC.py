@@ -84,7 +84,8 @@ class PluginLoaderABC(metaclass=ABCMeta):
 
             modSpec = find_spec(pluginName)
             if not modSpec:
-                raise Exception("Can not load Peek App package %s" % pluginName)
+                raise Exception("Failed to find package %s,"
+                                " is the python package installed?" % pluginName)
 
             PluginPackage = modSpec.loader.load_module()
             pluginRootDir = os.path.dirname(PluginPackage.__file__)
