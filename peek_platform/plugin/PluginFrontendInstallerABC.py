@@ -4,7 +4,7 @@ import subprocess
 from collections import namedtuple
 from subprocess import PIPE
 
-from jsoncfg.value_mappers import require_string
+from jsoncfg.value_mappers import require_string, require_bool
 
 from peek_platform import PeekPlatformConfig
 from peek_platform.file_config.PeekFileConfigFrontendDirMixin import \
@@ -88,6 +88,13 @@ class PluginFrontendInstallerABC(object):
         for plugin in self._loadedPlugins.values():
             assert isinstance(plugin.packageCfg, PluginPackageFileConfig)
             pluginPackageConfig = plugin.packageCfg.config
+
+            with pluginPackageConfig:
+                enabled = (pluginPackageConfig[self._platformService]
+                           .enableAngularFrontend(require_bool, True))
+
+            if not enabled:
+                continue
 
             angularFrontendDir = (pluginPackageConfig[self._platformService]
                                   .angularFrontendDir(require_string))
