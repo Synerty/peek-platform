@@ -16,7 +16,10 @@ from peek_plugin_base.PluginPackageFileConfig import PluginPackageFileConfig
 logger = logging.getLogger(__name__)
 
 PluginDetail = namedtuple("PluginDetail",
-                          ["pluginRootDir", "pluginName", "angularFrontendDir",
+                          ["pluginRootDir",
+                           "pluginName",
+                           "pluginTitle",
+                           "angularFrontendDir",
                            "angularMainModule"])
 
 
@@ -45,8 +48,15 @@ class PluginFrontendInstallerABC(object):
         @:returns a list of tuples (pluginName, pluginTitle, pluginUrl)
         """
         data = []
-        for plugin in list(self._loadedPlugins.values()):
-            data.append((plugin.name, plugin.title, "/%s" % plugin.name))
+
+        for plugin in self._loadPluginConfigs():
+
+            if not plugin.angularMainModule:
+                continue
+
+            data.append((plugin.pluginName,
+                         plugin.pluginTitle,
+                         "/%s" % plugin.pluginName))
 
         return data
 
@@ -67,19 +77,26 @@ class PluginFrontendInstallerABC(object):
 
         from peek_platform import PeekPlatformConfig
 
-        if not PeekPlatformConfig.config.feBuildEnabled:
-            logger.warning("Frontend build disabled by config file, Not Building.")
-            return
-
         feSrcDir = PeekPlatformConfig.config.feSrcDir
         feAppDir = os.path.join(feSrcDir, 'app')
+        feNodeModulesDir = os.path.join(os.path.dirname(feSrcDir), 'node_modules')
 
         self._hashFileName = os.path.join(os.path.dirname(feSrcDir), ".lastHash")
 
         pluginDetails = self._loadPluginConfigs()
 
         self._writePluginRouteLazyLoads(feAppDir, pluginDetails)
+
+        # This link probably isn't nessesary any more
         self._relinkPluginDirs(feAppDir, pluginDetails)
+
+        # Linking into the node_modules allows plugins to import code from each other.
+        self._relinkPluginDirs(feNodeModulesDir, pluginDetails)
+
+        if not PeekPlatformConfig.config.feBuildEnabled:
+            logger.warning("Frontend build disabled by config file, Not Building.")
+            return
+
         self._compileFrontend(feSrcDir)
 
     def _loadPluginConfigs(self) -> [PluginDetail]:
@@ -89,9 +106,8 @@ class PluginFrontendInstallerABC(object):
             assert isinstance(plugin.packageCfg, PluginPackageFileConfig)
             pluginPackageConfig = plugin.packageCfg.config
 
-            with pluginPackageConfig:
-                enabled = (pluginPackageConfig[self._platformService]
-                           .enableAngularFrontend(require_bool, True))
+            enabled = (pluginPackageConfig[self._platformService]
+                       .enableAngularFrontend(True, require_bool))
 
             if not enabled:
                 continue
@@ -100,11 +116,12 @@ class PluginFrontendInstallerABC(object):
                                   .angularFrontendDir(require_string))
 
             angularMainModule = (pluginPackageConfig[self._platformService]
-                                 .angularMainModule(require_string))
+                                 .angularMainModule())
 
             pluginDetails.append(
                 PluginDetail(pluginRootDir=plugin.rootDir,
                              pluginName=plugin.name,
+                             pluginTitle=plugin.title,
                              angularFrontendDir=angularFrontendDir,
                              angularMainModule=angularMainModule)
             )
@@ -153,18 +170,18 @@ class PluginFrontendInstallerABC(object):
         with open(pluginRoutesTs, 'w') as f:
             f.write(routeData)
 
-    def _relinkPluginDirs(self, feAppDir: str, pluginDetails: [PluginDetail]) -> None:
+    def _relinkPluginDirs(self, targetDir: str, pluginDetails: [PluginDetail]) -> None:
         # Remove all the old symlinks
 
-        for item in os.listdir(feAppDir):
-            path = os.path.join(feAppDir, item)
-            if item.startswith("peek_plugin_") and os.path.islink(path):
+        for item in os.listdir(targetDir):
+            path = os.path.join(targetDir, item)
+            if item.startswith("peek_plugin_"):  # and os.path.islink(path):
                 os.remove(path)
 
         for pluginDetail in pluginDetails:
             srcDir = os.path.join(pluginDetail.pluginRootDir,
                                   pluginDetail.angularFrontendDir)
-            linkPath = os.path.join(feAppDir, pluginDetail.pluginName)
+            linkPath = os.path.join(targetDir, pluginDetail.pluginName)
             os.symlink(srcDir, linkPath, target_is_directory=True)
 
     def _recompileRequiredCheck(self, feSrcDir: str) -> bool:
