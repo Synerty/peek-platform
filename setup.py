@@ -7,7 +7,7 @@ from setuptools import find_packages
 from peek_platform.WindowsPatch import isWindows
 
 package_name = "peek-platform"
-package_version = '0.0.8'
+package_version = '0.0.9'
 
 egg_info = "%s.egg-info" % package_name
 if os.path.isdir(egg_info):
@@ -63,7 +63,7 @@ requirements = [
 
     "pytmpdir >= 0.2.3",  # A temporary directory, useful for extracting archives to
     "txhttputil >= 0.1.8",  # Utility class for http requests
-    "vortexpy >= 0.5.5",  # Data serialisation and transport layer, observable based
+    "vortexpy >= 0.5.6",  # Data serialisation and transport layer, observable based
     "json-cfg-rw",
     "txsuds-py3 >= 0.5.5",
     "txcelery-py3 >= 1.1.3",
