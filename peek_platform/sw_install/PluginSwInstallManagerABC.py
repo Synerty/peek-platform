@@ -26,12 +26,12 @@ from twisted.internet import reactor, defer
 from twisted.internet.defer import inlineCallbacks
 from txhttputil.downloader.HttpFileDownloader import HttpFileDownloader
 from txhttputil.site.SpooledNamedTemporaryFile import SpooledNamedTemporaryFile
-from vortex.Payload import deferToThreadWrap
 
 from peek_platform import PeekPlatformConfig
 from peek_platform.file_config.PeekFileConfigPlatformMixin import \
     PeekFileConfigPlatformMixin
 from peek_platform.util.PtyUtil import spawnPty, logSpawnException
+from vortex.DeferUtil import deferToThreadWrapWithLogger
 
 logger = logging.getLogger(__name__)
 
@@ -162,7 +162,7 @@ class PluginSwInstallManagerABC(metaclass=ABCMeta):
 
         defer.returnValue(targetVersion)
 
-    @deferToThreadWrap
+    @deferToThreadWrapWithLogger(logger)
     def installAndReload(self, pluginName: str, targetVersion: str,
                          fullTarPath: str) -> None:
 
