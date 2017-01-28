@@ -20,7 +20,8 @@ PluginDetail = namedtuple("PluginDetail",
                            "pluginName",
                            "pluginTitle",
                            "angularFrontendDir",
-                           "angularMainModule"])
+                           "angularMainModule",
+                           "angularPluginIcon"])
 
 
 class PluginFrontendInstallerABC(object):
@@ -45,7 +46,7 @@ class PluginFrontendInstallerABC(object):
     def pluginFrontendTitleUrls(self):
         """ Plugin Admin Name Urls
 
-        @:returns a list of tuples (pluginName, pluginTitle, pluginUrl)
+        @:returns a list of tuples (pluginName, pluginTitle, pluginUrl, pluginIconUrl)
         """
         data = []
 
@@ -53,10 +54,13 @@ class PluginFrontendInstallerABC(object):
 
             if not plugin.angularMainModule:
                 continue
-
+            iconPath = ("/%s/%s" % (plugin.pluginName, plugin.angularPluginIcon)
+                        if plugin.angularPluginIcon else
+                        None)
             data.append((plugin.pluginName,
                          plugin.pluginTitle,
-                         "/%s" % plugin.pluginName))
+                         "/%s" % plugin.pluginName,
+                         iconPath))
 
         return data
 
@@ -118,12 +122,16 @@ class PluginFrontendInstallerABC(object):
             angularMainModule = (pluginPackageConfig[self._platformService]
                                  .angularMainModule())
 
+            angularPluginIcon = (pluginPackageConfig[self._platformService]
+                                 .angularPluginIcon(None))
+
             pluginDetails.append(
                 PluginDetail(pluginRootDir=plugin.rootDir,
                              pluginName=plugin.name,
                              pluginTitle=plugin.title,
                              angularFrontendDir=angularFrontendDir,
-                             angularMainModule=angularMainModule)
+                             angularMainModule=angularMainModule,
+                             angularPluginIcon=angularPluginIcon)
             )
 
         pluginDetails.sort(key=lambda x: x.pluginName)
