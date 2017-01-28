@@ -21,7 +21,15 @@ PluginDetail = namedtuple("PluginDetail",
                            "pluginTitle",
                            "angularFrontendDir",
                            "angularMainModule",
+                           "angularRootModule",
+                           "angularRootService",
                            "angularPluginIcon"])
+
+_routesTemplate = """
+    {
+        path: '%s',
+        loadChildren: "%s/%s#default"
+    }"""
 
 
 class PluginFrontendInstallerABC(object):
@@ -90,6 +98,8 @@ class PluginFrontendInstallerABC(object):
         pluginDetails = self._loadPluginConfigs()
 
         self._writePluginRouteLazyLoads(feAppDir, pluginDetails)
+        self._writePluginRootModules(feAppDir, pluginDetails)
+        self._writePluginRootServices(feAppDir, pluginDetails)
 
         # This link probably isn't nessesary any more
         self._relinkPluginDirs(feAppDir, pluginDetails)
@@ -120,7 +130,21 @@ class PluginFrontendInstallerABC(object):
                                   .angularFrontendDir(require_string))
 
             angularMainModule = (pluginPackageConfig[self._platformService]
-                                 .angularMainModule())
+                                 .angularMainModule(None))
+
+            def checkThing(name, data):
+                sub = (name, plugin.name)
+                if data:
+                    assert data["file"], "%s.file is missing for %s" % sub
+                    assert data["class"], "%s.class is missing for %s" % sub
+
+            angularRootModule = (pluginPackageConfig[self._platformService]
+                                 .angularRootModule(None))
+            checkThing("angularRootModule", angularRootModule)
+
+            angularRootService = (pluginPackageConfig[self._platformService]
+                                  .angularRootService(None))
+            checkThing("angularRootService", angularRootService)
 
             angularPluginIcon = (pluginPackageConfig[self._platformService]
                                  .angularPluginIcon(None))
@@ -131,6 +155,8 @@ class PluginFrontendInstallerABC(object):
                              pluginTitle=plugin.title,
                              angularFrontendDir=angularFrontendDir,
                              angularMainModule=angularMainModule,
+                             angularRootModule=angularRootModule,
+                             angularRootService=angularRootService,
                              angularPluginIcon=angularPluginIcon)
             )
 
@@ -149,34 +175,78 @@ class PluginFrontendInstallerABC(object):
         """
         routes = []
         for pluginDetail in pluginDetails:
-            routes.append(
-                """
-                {
-                    path: '%s',
-                    loadChildren: "%s/%s#default"
-                }
-                """ % (pluginDetail.pluginName,
-                       pluginDetail.pluginName,
-                       pluginDetail.angularMainModule))
-
-        pluginRoutesTs = os.path.join(feAppDir, 'plugin-routes.ts')
+            if not pluginDetail.angularMainModule:
+                continue
+            routes.append(_routesTemplate
+                          % (pluginDetail.pluginName,
+                             pluginDetail.pluginName,
+                             pluginDetail.angularMainModule))
 
         routeData = "// This file is auto generated, the git version is blank and .gitignored\n"
-        routeData += "export const pluginRoutes = [\n"
-        routeData += ",\n".join(routes)
-        routeData += "];\n"
+        routeData += "export const pluginRoutes = ["
+        routeData += ",".join(routes)
+        routeData += "\n];\n"
+
+        self._writeFileIfRequired(feAppDir, 'plugin-routes.ts', routeData)
+
+    def _writePluginRootModules(self, feAppDir: str,
+                                pluginDetails: [PluginDetail]) -> None:
+
+        imports = []
+        modules = []
+        for pluginDetail in pluginDetails:
+            if not pluginDetail.angularRootModule:
+                continue
+            imports.append('import {%s} from "%s/%s";'
+                           % (pluginDetail.angularRootModule["class"],
+                              pluginDetail.pluginName,
+                              pluginDetail.angularRootModule["file"]))
+            modules.append(pluginDetail.angularRootModule["class"])
+
+        routeData = "// This file is auto generated, the git version is blank and .gitignored\n"
+        routeData += '\n'.join(imports) + '\n'
+        routeData += "export const pluginRootModules = [\n\t"
+        routeData += ",\n\t".join(modules)
+        routeData += "\n];\n"
+
+        self._writeFileIfRequired(feAppDir, 'plugin-root-modules.ts', routeData)
+
+    def _writePluginRootServices(self, feAppDir: str,
+                                 pluginDetails: [PluginDetail]) -> None:
+
+        imports = []
+        services = []
+        for pluginDetail in pluginDetails:
+            if not pluginDetail.angularRootService:
+                continue
+            imports.append('import {%s} from "%s/%s";'
+                           % (pluginDetail.angularRootService["class"],
+                              pluginDetail.pluginName,
+                              pluginDetail.angularRootService["file"]))
+            services.append(pluginDetail.angularRootService["class"])
+
+        routeData = "// This file is auto generated, the git version is blank and .gitignored\n"
+        routeData += '\n'.join(imports) + '\n'
+        routeData += "export const pluginRootServices = [\n\t"
+        routeData += ",\n\t".join(services)
+        routeData += "\n];\n"
+
+        self._writeFileIfRequired(feAppDir, 'plugin-root-services.ts', routeData)
+
+    def _writeFileIfRequired(self, dir, fileName, contents):
+        fullFilePath = os.path.join(dir, fileName)
 
         # Since writing the file again changes the date/time,
         # this messes with the self._recompileRequiredCheck
-        if os.path.isfile(pluginRoutesTs):
-            with open(pluginRoutesTs, 'r') as f:
-                if routeData == f.read():
-                    logger.debug("plugin-routes.ts is up to date")
+        if os.path.isfile(fullFilePath):
+            with open(fullFilePath, 'r') as f:
+                if contents == f.read():
+                    logger.debug("%s is up to date", fileName)
                     return
 
-        logger.debug("Writing new plugin-routes.ts")
-        with open(pluginRoutesTs, 'w') as f:
-            f.write(routeData)
+        logger.debug("Writing new %s", fileName)
+        with open(fullFilePath, 'w') as f:
+            f.write(contents)
 
     def _relinkPluginDirs(self, targetDir: str, pluginDetails: [PluginDetail]) -> None:
         # Remove all the old symlinks
