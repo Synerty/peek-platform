@@ -53,14 +53,14 @@ class PeekFileConfigABC(metaclass=ABCMeta):
 
         if not os.path.isdir(self._homePath):
             assert (not os.path.exists(self._homePath))
-        os.makedirs(self._homePath, self.DEFAULT_DIR_CHMOD)
+            os.makedirs(self._homePath, self.DEFAULT_DIR_CHMOD)
 
         self._configFilePath = os.path.join(self._homePath, 'config.json')
 
         if not os.path.isfile(self._configFilePath):
             assert (not os.path.exists(self._configFilePath))
-        with open(self._configFilePath, 'w') as fobj:
-            fobj.write('{}')
+            with open(self._configFilePath, 'w') as fobj:
+                fobj.write('{}')
 
         self._cfg = ConfigWithWrapper(self._configFilePath)
 
