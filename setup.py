@@ -7,7 +7,7 @@ from setuptools import find_packages
 from peek_platform.WindowsPatch import isWindows
 
 package_name = "peek-platform"
-package_version = '0.0.17'
+package_version = '0.0.18'
 
 egg_info = "%s.egg-info" % package_name
 if os.path.isdir(egg_info):
