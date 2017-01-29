@@ -13,6 +13,9 @@ egg_info = "%s.egg-info" % package_name
 if os.path.isdir(egg_info):
     shutil.rmtree(egg_info)
 
+if os.path.isfile('MANIFEST'):
+    os.remove('MANIFEST')
+
 requirements = [
     # packages used for the platform to test and upgrade it's self
     "pip >= 9.0.0",
