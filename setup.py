@@ -7,11 +7,14 @@ from setuptools import find_packages
 from peek_platform.WindowsPatch import isWindows
 
 package_name = "peek-platform"
-package_version = '0.0.9'
+package_version = '0.0.19'
 
 egg_info = "%s.egg-info" % package_name
 if os.path.isdir(egg_info):
     shutil.rmtree(egg_info)
+
+if os.path.isfile('MANIFEST'):
+    os.remove('MANIFEST')
 
 requirements = [
     # packages used for the platform to test and upgrade it's self
