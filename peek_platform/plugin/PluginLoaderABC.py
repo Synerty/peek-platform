@@ -10,7 +10,7 @@ from jsoncfg.value_mappers import require_string, require_array
 from vortex.PayloadIO import PayloadIO
 from vortex.Tuple import removeTuplesForTupleNames, registeredTupleNames, \
     tupleForTupleName
-from vortex.TupleAction import TupleAction
+from vortex.TupleAction import TupleActionABC, TupleGenericAction, TupleUpdateAction
 
 from peek_platform import PeekPlatformConfig
 from peek_plugin_base.PluginCommonEntryHookABC import PluginCommonEntryHookABC
@@ -21,7 +21,8 @@ logger = logging.getLogger(__name__)
 
 # This doesn't do anything, but it makes sure it's imported before any plugins import it.
 TupleSelector()
-TupleAction()
+TupleUpdateAction()
+TupleGenericAction()
 
 class PluginLoaderABC(metaclass=ABCMeta):
     _instance = None
