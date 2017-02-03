@@ -1,5 +1,6 @@
 import logging
 import os
+import shutil
 import subprocess
 from collections import namedtuple
 from subprocess import PIPE
@@ -91,11 +92,21 @@ class PluginFrontendInstallerABC(object):
 
         feSrcDir = PeekPlatformConfig.config.feSrcDir
         feAppDir = os.path.join(feSrcDir, 'app')
+        feAssetsDir = os.path.join(feAppDir, 'assets')
         feNodeModulesDir = os.path.join(os.path.dirname(feSrcDir), 'node_modules')
 
         self._hashFileName = os.path.join(os.path.dirname(feSrcDir), ".lastHash")
 
         pluginDetails = self._loadPluginConfigs()
+
+        for plugin in pluginDetails:
+            iconSrc = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
+                os.path.dirname(__file__)))), plugin.iconPath)
+
+            if os.path.isfile(iconSrc):
+                iconDest = os.path.join(feAssetsDir, plugin.pluginName)
+                os.mkdir(iconDest)
+                shutil.copytree(iconSrc, iconDest)
 
         self._writePluginRouteLazyLoads(feAppDir, pluginDetails)
         self._writePluginRootModules(feAppDir, pluginDetails)
