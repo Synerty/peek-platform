@@ -1,5 +1,7 @@
+import json
 import logging
 import os
+import shutil
 import subprocess
 from collections import namedtuple
 from subprocess import PIPE
@@ -23,7 +25,11 @@ PluginDetail = namedtuple("PluginDetail",
                            "angularMainModule",
                            "angularRootModule",
                            "angularRootService",
-                           "angularPluginIcon"])
+                           "angularPluginIcon",
+                           "showPluginHomeLink",
+                           "showPluginInTitleBar",
+                           "titleBarLeft",
+                           "titleBarText"])
 
 _routesTemplate = """
     {
@@ -50,28 +56,6 @@ class PluginFrontendInstallerABC(object):
         assert platformService in ("server", "client")
         self._platformService = platformService
 
-    @property
-    def pluginFrontendTitleUrls(self):
-        """ Plugin Admin Name Urls
-
-        @:returns a list of tuples (pluginName, pluginTitle, pluginUrl, pluginIconUrl)
-        """
-        data = []
-
-        for plugin in self._loadPluginConfigs():
-
-            if not plugin.angularMainModule:
-                continue
-            iconPath = ("/%s/%s" % (plugin.pluginName, plugin.angularPluginIcon)
-                        if plugin.angularPluginIcon else
-                        None)
-            data.append((plugin.pluginName,
-                         plugin.pluginTitle,
-                         "/%s" % plugin.pluginName,
-                         iconPath))
-
-        return data
-
     def buildFrontend(self) -> None:
 
         from peek_platform.plugin.PluginLoaderABC import PluginLoaderABC
@@ -91,15 +75,22 @@ class PluginFrontendInstallerABC(object):
 
         feSrcDir = PeekPlatformConfig.config.feSrcDir
         feAppDir = os.path.join(feSrcDir, 'app')
+        feAssetsDir = os.path.join(feSrcDir, 'app', 'assets')
         feNodeModulesDir = os.path.join(os.path.dirname(feSrcDir), 'node_modules')
 
         self._hashFileName = os.path.join(os.path.dirname(feSrcDir), ".lastHash")
 
         pluginDetails = self._loadPluginConfigs()
 
+        # Write files that link the plugins into Peek.
         self._writePluginRouteLazyLoads(feAppDir, pluginDetails)
         self._writePluginRootModules(feAppDir, pluginDetails)
         self._writePluginRootServices(feAppDir, pluginDetails)
+        self._writePluginHomeLinks(feAppDir, pluginDetails)
+        self._writePluginTitleBarLinks(feAppDir, pluginDetails)
+
+        # This link probably isn't nessesary any more
+        self._copyOverAssets(feAssetsDir, pluginDetails)
 
         # This link probably isn't nessesary any more
         self._relinkPluginDirs(feAppDir, pluginDetails)
@@ -120,17 +111,20 @@ class PluginFrontendInstallerABC(object):
             assert isinstance(plugin.packageCfg, PluginPackageFileConfig)
             pluginPackageConfig = plugin.packageCfg.config
 
-            enabled = (pluginPackageConfig[self._platformService]
-                       .enableAngularFrontend(True, require_bool))
+            jsonCfgNode = pluginPackageConfig[self._platformService]
+
+            enabled = (jsonCfgNode.enableAngularFrontend(True, require_bool))
 
             if not enabled:
                 continue
 
-            angularFrontendDir = (pluginPackageConfig[self._platformService]
-                                  .angularFrontendDir(require_string))
+            angularFrontendDir = (jsonCfgNode.angularFrontendDir(require_string))
+            angularMainModule = (jsonCfgNode.angularMainModule(None))
 
-            angularMainModule = (pluginPackageConfig[self._platformService]
-                                 .angularMainModule(None))
+            showPluginHomeLink = (jsonCfgNode.showPluginHomeLink(True))
+            showPluginInTitleBar = (jsonCfgNode.showPluginInTitleBar(False))
+            titleBarLeft = (jsonCfgNode.titleBarLeft(False))
+            titleBarText = (jsonCfgNode.titleBarText(None))
 
             def checkThing(name, data):
                 sub = (name, plugin.name)
@@ -138,16 +132,13 @@ class PluginFrontendInstallerABC(object):
                     assert data["file"], "%s.file is missing for %s" % sub
                     assert data["class"], "%s.class is missing for %s" % sub
 
-            angularRootModule = (pluginPackageConfig[self._platformService]
-                                 .angularRootModule(None))
+            angularRootModule = (jsonCfgNode.angularRootModule(None))
             checkThing("angularRootModule", angularRootModule)
 
-            angularRootService = (pluginPackageConfig[self._platformService]
-                                  .angularRootService(None))
+            angularRootService = (jsonCfgNode.angularRootService(None))
             checkThing("angularRootService", angularRootService)
 
-            angularPluginIcon = (pluginPackageConfig[self._platformService]
-                                 .angularPluginIcon(None))
+            angularPluginIcon = (jsonCfgNode.angularPluginIcon(None))
 
             pluginDetails.append(
                 PluginDetail(pluginRootDir=plugin.rootDir,
@@ -157,11 +148,113 @@ class PluginFrontendInstallerABC(object):
                              angularMainModule=angularMainModule,
                              angularRootModule=angularRootModule,
                              angularRootService=angularRootService,
-                             angularPluginIcon=angularPluginIcon)
+                             angularPluginIcon=angularPluginIcon,
+                             showPluginHomeLink=showPluginHomeLink,
+                             showPluginInTitleBar=showPluginInTitleBar,
+                             titleBarLeft=titleBarLeft,
+                             titleBarText=titleBarText)
             )
 
         pluginDetails.sort(key=lambda x: x.pluginName)
         return pluginDetails
+
+    def _copyOverAssets(self, assetDir: str,
+                              pluginDetails: [PluginDetail]) -> None:
+        """ Copy Over Assets
+        
+        This method finds the images in each plugin and copies them over to the assets
+        dir. Assets are included in the ng build.
+        
+        :param assetDir: The location of the assets directory within the frontend.
+        :param pluginDetails: config details of the plugin
+        """
+        excludeDirs = ()
+        includeExts = ('.png', '.jpg', 'jpeg')
+
+        for pluginDetail in pluginDetails:
+            pluginName= pluginDetail.pluginName
+            pluginFrontendDir = pluginDetail.angularFrontendDir
+
+            srcDir = os.path.join(pluginDetail.pluginRootDir,
+                                  pluginDetail.angularFrontendDir)
+
+            # First, delete the existing files
+            if os.path.exists(os.path.join(assetDir, pluginFrontendDir)):
+                shutil.rmtree(os.path.join(assetDir, pluginFrontendDir))
+
+            for (path, directories, filenames) in os.walk(srcDir):
+                if [e for e in excludeDirs if e in path]:
+                    continue
+
+                for filename in filenames:
+                    if not [e for e in includeExts if filename.endswith(e)]:
+                        continue
+
+                    absPath = os.path.join(path, filename)
+                    relPath = os.path.join(path[len(srcDir) + 1:], filename)
+                    newPath = os.path.join(assetDir, pluginName, relPath)
+
+                    imgAssetDirName = os.path.dirname(newPath)
+                    if not os.path.exists(imgAssetDirName):
+                        os.makedirs(imgAssetDirName, mode=0o755, exist_ok=True)
+
+                    shutil.copy(absPath, newPath)
+
+    def _writePluginHomeLinks(self, feAppDir: str,
+                              pluginDetails: [PluginDetail]) -> None:
+        """
+        export const homeLinks = [
+            {
+                name: 'plugin_noop',
+                title: "Noop",
+                resourcePath: "/peek_plugin_noop",
+                pluginIconPath: "/peek_plugin_noop/home_icon.png"
+            }
+        ];
+        """
+
+        links = []
+        for pluginDetail in pluginDetails:
+            if not (pluginDetail.angularMainModule and pluginDetail.showPluginHomeLink):
+                continue
+
+            links.append(dict(name=pluginDetail.pluginName,
+                              title=pluginDetail.pluginTitle,
+                              resourcePath="/%s" % pluginDetail.pluginName,
+                              pluginIconPath=pluginDetail.angularPluginIcon))
+
+        contents = "// This file is auto generated, the git version is blank and .gitignored\n"
+        contents += "export const homeLinks = %s;\n" % json.dumps(
+            links, indent=4, separators=(', ', ': '))
+
+        self._writeFileIfRequired(feAppDir, 'plugin-home-links.ts', contents)
+
+    def _writePluginTitleBarLinks(self, feAppDir: str,
+                                  pluginDetails: [PluginDetail]) -> None:
+        """
+        export const titleBarLinks = [
+            {
+                text: "Noop",
+                left: false,
+                resourcePath: "/peek_plugin_noop/home_icon.png"
+            }
+        ];
+        """
+
+        links = []
+        for pluginDetail in pluginDetails:
+            if not (pluginDetail.angularMainModule and pluginDetail.showPluginInTitleBar):
+                continue
+
+            links.append(dict(text=pluginDetail.titleBarText,
+                              left=pluginDetail.titleBarLeft,
+                              resourcePath="/%s" % pluginDetail.pluginName))
+
+        contents = "// This file is auto generated, the git version is blank and .gitignored\n"
+        contents += "export const titleBarLinks = %s;\n" % json.dumps(
+            links, indent=4, separators=(', ', ': '))
+
+        self._writeFileIfRequired(feAppDir, 'plugin-title-bar-links.ts', contents)
 
     def _writePluginRouteLazyLoads(self, feAppDir: str,
                                    pluginDetails: [PluginDetail]) -> None:
