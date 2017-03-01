@@ -169,7 +169,7 @@ class PluginFrontendInstallerABC(object):
         :param pluginDetails: config details of the plugin
         """
         excludeDirs = ()
-        includeExts = ('.png', '.jpg', 'jpeg')
+        includeExts = ('.png', '.jpg', 'jpeg', '.mp3')
 
         for pluginDetail in pluginDetails:
             pluginName= pluginDetail.pluginName
