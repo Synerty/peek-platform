@@ -6,10 +6,11 @@ from setuptools import find_packages
 
 from peek_platform.WindowsPatch import isWindows
 
-package_name = "peek-platform"
+pip_package_name = "peek-platform"
+py_package_name = "peek_platform"
 package_version = '0.0.25'
 
-egg_info = "%s.egg-info" % package_name
+egg_info = "%s.egg-info" % pip_package_name
 if os.path.isdir(egg_info):
     shutil.rmtree(egg_info)
 
@@ -72,7 +73,7 @@ requirements = [
     "txcelery-py3 >= 1.1.3",
 
     # Peek platform dependencies, all must match
-    "peek-plugin-base",  ##==%s" % package_version,
+    "peek-plugin-base",  ##==%s" % py_package_name,
 ]
 
 win_dependencies = [
@@ -103,7 +104,7 @@ dev_requirements = [
 ]
 
 setup(
-    name=package_name,
+    name=pip_package_name,
     packages=find_packages(exclude=["*.tests", "*.tests.*", "tests.*", "tests"]),
     install_requires=requirements,
     dependency_links=dependency_links,
@@ -112,9 +113,9 @@ setup(
     description='Peek Platform Common Code',
     author='Synerty',
     author_email='contact@synerty.com',
-    url='https://github.com/Synerty/%s' % package_version,
+    url='https://github.com/Synerty/%s' % py_package_name,
     download_url='https://github.com/Synerty/%s/tarball/%s' % (
-        package_name, package_version),
+        pip_package_name, package_version),
     keywords=['Peek', 'Python', 'Platform', 'synerty'],
     classifiers=[
         "Programming Language :: Python :: 3.5",

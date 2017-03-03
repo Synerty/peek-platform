@@ -6,8 +6,7 @@ import subprocess
 from collections import namedtuple
 from subprocess import PIPE
 
-from jsoncfg.value_mappers import require_string, require_bool
-
+from jsoncfg.value_mappers import require_bool
 from peek_platform import PeekPlatformConfig
 from peek_platform.file_config.PeekFileConfigFrontendDirMixin import \
     PeekFileConfigFrontendDirMixin
@@ -21,7 +20,9 @@ PluginDetail = namedtuple("PluginDetail",
                           ["pluginRootDir",
                            "pluginName",
                            "pluginTitle",
-                           "angularFrontendDir",
+                           "angularFrontendAppDir",
+                           "angularFrontendModuleDir",
+                           "angularFrontendAssetsDir",
                            "angularMainModule",
                            "angularRootModule",
                            "angularRootService",
@@ -62,21 +63,22 @@ class PluginFrontendInstallerABC(object):
         assert isinstance(self, PluginLoaderABC)
 
         from peek_platform import PeekPlatformConfig
+
         if not isinstance(PeekPlatformConfig.config, PeekFileConfigFrontendDirMixin):
             raise Exception("The file config must inherit the"
                             " PeekFileConfigFrontendDirMixin")
 
-        from peek_platform import PeekPlatformConfig
         if not isinstance(PeekPlatformConfig.config, PeekFileConfigOsMixin):
             raise Exception("The file config must inherit the"
                             " PeekFileConfigOsMixin")
 
-        from peek_platform import PeekPlatformConfig
-
         feSrcDir = PeekPlatformConfig.config.feSrcDir
         feAppDir = os.path.join(feSrcDir, 'app')
         feAssetsDir = os.path.join(feSrcDir, 'app', 'assets')
-        feNodeModulesDir = os.path.join(os.path.dirname(feSrcDir), 'node_modules')
+        feNodeModulesDir = os.path.join(os.path.dirname(feSrcDir), 'node_modules',
+                                        PeekPlatformConfig.componentName)
+
+        fePackageJson = os.path.join(os.path.dirname(feSrcDir), 'package.json')
 
         self._hashFileName = os.path.join(os.path.dirname(feSrcDir), ".lastHash")
 
@@ -84,19 +86,31 @@ class PluginFrontendInstallerABC(object):
 
         # Write files that link the plugins into Peek.
         self._writePluginRouteLazyLoads(feAppDir, pluginDetails)
-        self._writePluginRootModules(feAppDir, pluginDetails)
-        self._writePluginRootServices(feAppDir, pluginDetails)
+        self._writePluginRootModules(feAppDir, pluginDetails,
+                                     PeekPlatformConfig.componentName)
+        self._writePluginRootServices(feAppDir, pluginDetails,
+                                      PeekPlatformConfig.componentName)
         self._writePluginHomeLinks(feAppDir, pluginDetails)
         self._writePluginTitleBarLinks(feAppDir, pluginDetails)
 
-        # This link probably isn't nessesary any more
-        self._copyOverAssets(feAssetsDir, pluginDetails)
+        # Link the lazy loaded plugins
+        self._relinkPluginDirs(feAppDir, pluginDetails, "angularFrontendAppDir")
 
-        # This link probably isn't nessesary any more
-        self._relinkPluginDirs(feAppDir, pluginDetails)
+        # Link in the assets dir
+        self._relinkPluginDirs(feAssetsDir, pluginDetails, "angularFrontendAssetsDir")
 
-        # Linking into the node_modules allows plugins to import code from each other.
-        self._relinkPluginDirs(feNodeModulesDir, pluginDetails)
+        # Link the shared code, this allows plugins
+        # * to import code from each other.
+        # * provide global services.
+        self._relinkPluginDirs(feNodeModulesDir,
+                               pluginDetails,
+                               "angularFrontendModuleDir")
+
+        # Update the package.json in the peek_client_fe project so that it includes
+        # references to the plugins linked under node_modules.
+        # Otherwise nativescript doesn't include them in it's build.
+        self._updatePackageJson(fePackageJson, pluginDetails,
+                                PeekPlatformConfig.componentName)
 
         if not PeekPlatformConfig.config.feBuildEnabled:
             logger.warning("Frontend build disabled by config file, Not Building.")
@@ -118,7 +132,9 @@ class PluginFrontendInstallerABC(object):
             if not enabled:
                 continue
 
-            angularFrontendDir = (jsonCfgNode.angularFrontendDir(require_string))
+            angularFrontendAppDir = (jsonCfgNode.angularFrontendAppDir(None))
+            angularFrontendModuleDir = (jsonCfgNode.angularFrontendModuleDir(None))
+            angularFrontendAssetsDir = (jsonCfgNode.angularFrontendAssetsDir(None))
             angularMainModule = (jsonCfgNode.angularMainModule(None))
 
             showPluginHomeLink = (jsonCfgNode.showPluginHomeLink(True))
@@ -144,7 +160,9 @@ class PluginFrontendInstallerABC(object):
                 PluginDetail(pluginRootDir=plugin.rootDir,
                              pluginName=plugin.name,
                              pluginTitle=plugin.title,
-                             angularFrontendDir=angularFrontendDir,
+                             angularFrontendAppDir=angularFrontendAppDir,
+                             angularFrontendModuleDir=angularFrontendModuleDir,
+                             angularFrontendAssetsDir=angularFrontendAssetsDir,
                              angularMainModule=angularMainModule,
                              angularRootModule=angularRootModule,
                              angularRootService=angularRootService,
@@ -157,48 +175,6 @@ class PluginFrontendInstallerABC(object):
 
         pluginDetails.sort(key=lambda x: x.pluginName)
         return pluginDetails
-
-    def _copyOverAssets(self, assetDir: str,
-                              pluginDetails: [PluginDetail]) -> None:
-        """ Copy Over Assets
-        
-        This method finds the images in each plugin and copies them over to the assets
-        dir. Assets are included in the ng build.
-        
-        :param assetDir: The location of the assets directory within the frontend.
-        :param pluginDetails: config details of the plugin
-        """
-        excludeDirs = ()
-        includeExts = ('.png', '.jpg', 'jpeg', '.mp3')
-
-        for pluginDetail in pluginDetails:
-            pluginName= pluginDetail.pluginName
-            pluginFrontendDir = pluginDetail.angularFrontendDir
-
-            srcDir = os.path.join(pluginDetail.pluginRootDir,
-                                  pluginDetail.angularFrontendDir)
-
-            # First, delete the existing files
-            if os.path.exists(os.path.join(assetDir, pluginFrontendDir)):
-                shutil.rmtree(os.path.join(assetDir, pluginFrontendDir))
-
-            for (path, directories, filenames) in os.walk(srcDir):
-                if [e for e in excludeDirs if e in path]:
-                    continue
-
-                for filename in filenames:
-                    if not [e for e in includeExts if filename.endswith(e)]:
-                        continue
-
-                    absPath = os.path.join(path, filename)
-                    relPath = os.path.join(path[len(srcDir) + 1:], filename)
-                    newPath = os.path.join(assetDir, pluginName, relPath)
-
-                    imgAssetDirName = os.path.dirname(newPath)
-                    if not os.path.exists(imgAssetDirName):
-                        os.makedirs(imgAssetDirName, mode=0o755, exist_ok=True)
-
-                    shutil.copy(absPath, newPath)
 
     def _writePluginHomeLinks(self, feAppDir: str,
                               pluginDetails: [PluginDetail]) -> None:
@@ -225,7 +201,7 @@ class PluginFrontendInstallerABC(object):
 
         contents = "// This file is auto generated, the git version is blank and .gitignored\n"
         contents += "export const homeLinks = %s;\n" % json.dumps(
-            links, indent=4, separators=(', ', ': '))
+            links, sort_keys=True, indent=4, separators=(', ', ': '))
 
         self._writeFileIfRequired(feAppDir, 'plugin-home-links.ts', contents)
 
@@ -252,7 +228,7 @@ class PluginFrontendInstallerABC(object):
 
         contents = "// This file is auto generated, the git version is blank and .gitignored\n"
         contents += "export const titleBarLinks = %s;\n" % json.dumps(
-            links, indent=4, separators=(', ', ': '))
+            links, sort_keys=True, indent=4, separators=(', ', ': '))
 
         self._writeFileIfRequired(feAppDir, 'plugin-title-bar-links.ts', contents)
 
@@ -283,15 +259,17 @@ class PluginFrontendInstallerABC(object):
         self._writeFileIfRequired(feAppDir, 'plugin-routes.ts', routeData)
 
     def _writePluginRootModules(self, feAppDir: str,
-                                pluginDetails: [PluginDetail]) -> None:
+                                pluginDetails: [PluginDetail],
+                                serviceName: str) -> None:
 
         imports = []
         modules = []
         for pluginDetail in pluginDetails:
             if not pluginDetail.angularRootModule:
                 continue
-            imports.append('import {%s} from "%s/%s";'
+            imports.append('import {%s} from "%s/%s/%s";'
                            % (pluginDetail.angularRootModule["class"],
+                              serviceName,
                               pluginDetail.pluginName,
                               pluginDetail.angularRootModule["file"]))
             modules.append(pluginDetail.angularRootModule["class"])
@@ -305,15 +283,17 @@ class PluginFrontendInstallerABC(object):
         self._writeFileIfRequired(feAppDir, 'plugin-root-modules.ts', routeData)
 
     def _writePluginRootServices(self, feAppDir: str,
-                                 pluginDetails: [PluginDetail]) -> None:
+                                 pluginDetails: [PluginDetail],
+                                 serviceName: str) -> None:
 
         imports = []
         services = []
         for pluginDetail in pluginDetails:
             if not pluginDetail.angularRootService:
                 continue
-            imports.append('import {%s} from "%s/%s";'
+            imports.append('import {%s} from "%s/%s/%s";'
                            % (pluginDetail.angularRootService["class"],
+                              serviceName,
                               pluginDetail.pluginName,
                               pluginDetail.angularRootService["file"]))
             services.append(pluginDetail.angularRootService["class"])
@@ -338,22 +318,66 @@ class PluginFrontendInstallerABC(object):
                     return
 
         logger.debug("Writing new %s", fileName)
+
         with open(fullFilePath, 'w') as f:
             f.write(contents)
 
-    def _relinkPluginDirs(self, targetDir: str, pluginDetails: [PluginDetail]) -> None:
-        # Remove all the old symlinks
+    def _relinkPluginDirs(self, targetDir: str,
+                          pluginDetails: [PluginDetail],
+                          attrName: str) -> None:
 
+        if not os.path.exists(targetDir):
+            os.mkdir(targetDir)  # The parent must exist
+
+        # Remove all the old symlinks
         for item in os.listdir(targetDir):
             path = os.path.join(targetDir, item)
-            if item.startswith("peek_plugin_"):  # and os.path.islink(path):
-                os.remove(path)
+            if item.startswith("peek_plugin_"):
+                if os.path.islink(path):
+                    os.remove(path)
+                elif os.path.isdir(path):
+                    shutil.rmtree(path)
+                else:
+                    os.remove(path)
 
         for pluginDetail in pluginDetails:
-            srcDir = os.path.join(pluginDetail.pluginRootDir,
-                                  pluginDetail.angularFrontendDir)
+            frontendDir = getattr(pluginDetail, attrName, None)
+            if not frontendDir:
+                continue
+
+            srcDir = os.path.join(pluginDetail.pluginRootDir, frontendDir)
+            if not os.path.exists(srcDir):
+                logger.warning("%s FE dir %s doesn't exist",
+                               pluginDetail.pluginName, frontendDir)
+                continue
+
             linkPath = os.path.join(targetDir, pluginDetail.pluginName)
+
             os.symlink(srcDir, linkPath, target_is_directory=True)
+
+    def _updatePackageJson(self, targetJson: str,
+                           pluginDetails: [PluginDetail],
+                           serviceName: str) -> None:
+
+        # Remove all the old symlinks
+
+        with open(targetJson, 'r') as f:
+            jsonData = json.load(f)
+
+        dependencies = jsonData["dependencies"]
+        for key in list(dependencies):
+            if key.startswith(serviceName):
+                del dependencies[key]
+
+        for pluginDetail in pluginDetails:
+            if not pluginDetail.angularFrontendModuleDir:
+                continue
+
+            name = "%s/%s" % (serviceName, pluginDetail.pluginName)
+            dependencies[name] = "file:node_modules/" + name
+
+        with open(targetJson, 'w') as f:
+            json.dump(jsonData, f, sort_keys=True, indent=2, separators=(',', ': '))
 
     def _recompileRequiredCheck(self, feSrcDir: str) -> bool:
         """ Recompile Check
