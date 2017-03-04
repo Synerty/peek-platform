@@ -208,11 +208,16 @@ class PluginFrontendInstallerABC(object):
     def _writePluginTitleBarLinks(self, feAppDir: str,
                                   pluginDetails: [PluginDetail]) -> None:
         """
-        export const titleBarLinks = [
+        
+        import {TitleBarLink} from "@synerty/peek-client-fe-util";
+
+        export const titleBarLinks :TitleBarLink = [
             {
+                plugin : "peek_plugin_noop",
                 text: "Noop",
                 left: false,
-                resourcePath: "/peek_plugin_noop/home_icon.png"
+                resourcePath: "/peek_plugin_noop/home_icon.png",
+                badgeCount : null
             }
         ];
         """
@@ -222,12 +227,15 @@ class PluginFrontendInstallerABC(object):
             if not (pluginDetail.angularMainModule and pluginDetail.showPluginInTitleBar):
                 continue
 
-            links.append(dict(text=pluginDetail.titleBarText,
+            links.append(dict(plugin=pluginDetail.pluginName,
+                              text=pluginDetail.titleBarText,
                               left=pluginDetail.titleBarLeft,
-                              resourcePath="/%s" % pluginDetail.pluginName))
+                              resourcePath="/%s" % pluginDetail.pluginName,
+                              badgeCount=None))
 
-        contents = "// This file is auto generated, the git version is blank and .gitignored\n"
-        contents += "export const titleBarLinks = %s;\n" % json.dumps(
+        contents = "// This file is auto generated, the git version is blank and .gitignored\n\n"
+        contents += "import {TitleBarLink} from '@synerty/peek-client-fe-util';\n\n"
+        contents += "export const titleBarLinks :TitleBarLink[] = %s;\n" % json.dumps(
             links, sort_keys=True, indent=4, separators=(', ', ': '))
 
         self._writeFileIfRequired(feAppDir, 'plugin-title-bar-links.ts', contents)
