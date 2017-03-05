@@ -57,6 +57,16 @@ class PluginFrontendInstallerABC(object):
         assert platformService in ("server", "client")
         self._platformService = platformService
 
+    def _findNodeModulesDir(self):
+        parent = os.path.dirname(__file__)
+        while len(parent):
+            tryDir = os.path.join(parent, "node_modules")
+            if os.path.exists(tryDir):
+                return tryDir
+            parent = os.path.dirname(parent)
+
+        raise Exception("Can't find symlinked node_modules")
+
     def buildFrontend(self) -> None:
 
         from peek_platform.plugin.PluginLoaderABC import PluginLoaderABC
@@ -75,7 +85,8 @@ class PluginFrontendInstallerABC(object):
         feSrcDir = PeekPlatformConfig.config.feSrcDir
         feAppDir = os.path.join(feSrcDir, 'app')
         feAssetsDir = os.path.join(feSrcDir, 'app', 'assets')
-        feNodeModulesDir = os.path.join(os.path.dirname(feSrcDir), 'node_modules',
+
+        feNodeModulesDir = os.path.join(self._findNodeModulesDir(),
                                         PeekPlatformConfig.componentName)
 
         fePackageJson = os.path.join(os.path.dirname(feSrcDir), 'package.json')
