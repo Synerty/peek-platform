@@ -37,7 +37,6 @@ requirements = [
     "SQLAlchemy >= 1.0.14",  # Database abstraction layer
     "SQLAlchemy-Utils >= 0.32.9",
     "alembic >= 0.8.7",  # Database migration utility
-    "pymssql >= 2.1.3",  # DB-API interface to Microsoft SQL Server, requires FreeTDS
     # installed and configured first
 
     # Utilities
@@ -77,6 +76,7 @@ requirements = [
 ]
 
 win_dependencies = [
+    "pymssql >= 2.1.3",  # DB-API interface to Microsoft SQL Server, requires FreeTDS
     "pycparser >= 2.17",
     "cffi >= 1.9.1",
     "cryptography >= 1.7.1",
