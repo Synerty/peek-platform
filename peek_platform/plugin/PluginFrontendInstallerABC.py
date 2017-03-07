@@ -35,7 +35,7 @@ PluginDetail = namedtuple("PluginDetail",
 _routesTemplate = """
     {
         path: '%s',
-        loadChildren: "%s/%s#default"
+        loadChildren: "./%s/%s"
     }"""
 
 
@@ -87,7 +87,7 @@ class PluginFrontendInstallerABC(object):
         feAssetsDir = os.path.join(feSrcDir, 'app', 'assets')
 
         feNodeModulesDir = os.path.join(self._findNodeModulesDir(),
-                                        PeekPlatformConfig.componentName)
+                                        '@' + PeekPlatformConfig.componentName)
 
         fePackageJson = os.path.join(os.path.dirname(feSrcDir), 'package.json')
 
@@ -286,7 +286,7 @@ class PluginFrontendInstallerABC(object):
         for pluginDetail in pluginDetails:
             if not pluginDetail.angularRootModule:
                 continue
-            imports.append('import {%s} from "%s/%s/%s";'
+            imports.append('import {%s} from "@%s/%s/%s";'
                            % (pluginDetail.angularRootModule["class"],
                               serviceName,
                               pluginDetail.pluginName,
@@ -310,7 +310,7 @@ class PluginFrontendInstallerABC(object):
         for pluginDetail in pluginDetails:
             if not pluginDetail.angularRootService:
                 continue
-            imports.append('import {%s} from "%s/%s/%s";'
+            imports.append('import {%s} from "@%s/%s/%s";'
                            % (pluginDetail.angularRootService["class"],
                               serviceName,
                               pluginDetail.pluginName,
@@ -385,15 +385,18 @@ class PluginFrontendInstallerABC(object):
 
         dependencies = jsonData["dependencies"]
         for key in list(dependencies):
-            if key.startswith(serviceName):
+            if key.startswith('@' + serviceName):
                 del dependencies[key]
 
         for pluginDetail in pluginDetails:
             if not pluginDetail.angularFrontendModuleDir:
                 continue
 
-            name = "%s/%s" % (serviceName, pluginDetail.pluginName)
-            dependencies[name] = "file:node_modules/" + name
+            moduleDir = os.path.join(pluginDetail.pluginRootDir,
+                                  pluginDetail.angularFrontendModuleDir)
+
+            name = "@%s/%s" % (serviceName, pluginDetail.pluginName)
+            dependencies[name] = "file:" + moduleDir
 
         with open(targetJson, 'w') as f:
             json.dump(jsonData, f, sort_keys=True, indent=2, separators=(',', ': '))
