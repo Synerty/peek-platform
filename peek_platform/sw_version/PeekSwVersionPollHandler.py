@@ -4,7 +4,8 @@ Created on 09/07/2014
 @author: synerty
 '''
 
-from twisted.internet.defer import Deferred, DeferredList, succeed
+from twisted.internet.defer import Deferred, DeferredList, succeed, inlineCallbacks
+from vortex.DeferUtil import vortexLogFailure
 
 from peek_plugin_base.PeekVortexUtil import peekServerName
 from vortex.Payload import Payload
@@ -32,6 +33,7 @@ class PeekSwVersionPollHandler(object):
         self._startupDeferred = Deferred()
         self._ep = None
 
+    @inlineCallbacks
     def start(self):
         from peek_platform import PeekPlatformConfig
         if not PeekPlatformConfig.config.autoPackageUpdate:
@@ -39,11 +41,11 @@ class PeekSwVersionPollHandler(object):
 
         self._ep = PayloadEndpoint(peekPlatformVersionFilt, self._process)
 
-        VortexFactory.sendVortexMsg(
+        yield VortexFactory.sendVortexMsg(
             vortexMsgs=Payload(filt=peekPlatformVersionFilt).toVortexMsg(),
             destVortexName=peekServerName)
 
-        return self._startupDeferred
+        yield self._startupDeferred
 
     def _process(self, payload, **kwargs):
         logger.info(payload.result)
