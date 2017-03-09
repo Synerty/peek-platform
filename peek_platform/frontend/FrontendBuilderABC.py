@@ -3,15 +3,19 @@ import logging
 import os
 import shutil
 import subprocess
+from abc import ABCMeta
 from collections import namedtuple
 from subprocess import PIPE
 
 from jsoncfg.value_mappers import require_bool
+from typing import List
+
 from peek_platform import PeekPlatformConfig
 from peek_platform.file_config.PeekFileConfigFrontendDirMixin import \
     PeekFileConfigFrontendDirMixin
 from peek_platform.file_config.PeekFileConfigOsMixin import PeekFileConfigOsMixin
 from peek_platform.util.PtyUtil import PtyOutParser, spawnPty, logSpawnException
+from peek_plugin_base.PeekVortexUtil import peekClientName, peekServerName
 from peek_plugin_base.PluginPackageFileConfig import PluginPackageFileConfig
 
 logger = logging.getLogger(__name__)
@@ -38,8 +42,31 @@ _routesTemplate = """
         loadChildren: "./%s/%s"
     }"""
 
+nodeModuleTsConfig = """
+{
+  "strictNullChecks": true,
+  "allowUnreachableCode": true,
+  "compilerOptions": {
+    "baseUrl": "",
+    "declaration": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "forceConsistentCasingInFileNames":true,
+    "lib": ["es6", "dom"],
+    "mapRoot": "./",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "sourceMap": true,
+    "target": "es5",
+    "typeRoots": [
+      "../@types"
+    ]
+  }
+}
+"""
 
-class PluginFrontendInstallerABC(object):
+
+class FrontendBuilderABC(metaclass=ABCMeta):
     """ Peek App Frontend Installer Mixin
 
     This class is used for the client and server.
@@ -53,21 +80,28 @@ class PluginFrontendInstallerABC(object):
 
     """
 
-    def __init__(self, platformService: str):
-        assert platformService in ("server", "client")
+    def __init__(self, frontendProjectDir: str, platformService: str, jsonCfg,
+                 loadedPlugins: List):
+        assert platformService in (peekClientName, peekServerName), (
+            "Unexpected service %s" % platformService)
+
         self._platformService = platformService
+        self._jsonCfg = jsonCfg
+        self._frontendProjectDir = frontendProjectDir
+        self._loadedPlugins = loadedPlugins
 
-    def _findNodeModulesDir(self):
-        parent = os.path.dirname(__file__)
-        while len(parent):
-            tryDir = os.path.join(parent, "node_modules")
-            if os.path.exists(tryDir):
-                return tryDir
-            parent = os.path.dirname(parent)
+        if not isinstance(self._jsonCfg, PeekFileConfigFrontendDirMixin):
+            raise Exception("The file config must inherit the"
+                            " PeekFileConfigFrontendDirMixin")
 
-        raise Exception("Can't find symlinked node_modules")
+        if not isinstance(self._jsonCfg, PeekFileConfigOsMixin):
+            raise Exception("The file config must inherit the"
+                            " PeekFileConfigOsMixin")
 
-    def buildFrontend(self) -> None:
+        if not os.path.isdir(frontendProjectDir):
+            raise Exception("% doesn't exist" % frontendProjectDir)
+
+    def XXXXbuildFrontend(self) -> None:
 
         from peek_platform.plugin.PluginLoaderABC import PluginLoaderABC
         assert isinstance(self, PluginLoaderABC)
@@ -136,7 +170,7 @@ class PluginFrontendInstallerABC(object):
             assert isinstance(plugin.packageCfg, PluginPackageFileConfig)
             pluginPackageConfig = plugin.packageCfg.config
 
-            jsonCfgNode = pluginPackageConfig[self._platformService]
+            jsonCfgNode = pluginPackageConfig[self._platformService.replace('peek-', '')]
 
             enabled = (jsonCfgNode.enableAngularFrontend(True, require_bool))
 
@@ -341,9 +375,9 @@ class PluginFrontendInstallerABC(object):
         with open(fullFilePath, 'w') as f:
             f.write(contents)
 
-    def _relinkPluginDirs(self, targetDir: str,
-                          pluginDetails: [PluginDetail],
-                          attrName: str) -> None:
+    def _syncPluginFiles(self, targetDir: str,
+                         pluginDetails: [PluginDetail],
+                         attrName: str) -> None:
 
         if not os.path.exists(targetDir):
             os.mkdir(targetDir)  # The parent must exist
@@ -372,7 +406,13 @@ class PluginFrontendInstallerABC(object):
 
             linkPath = os.path.join(targetDir, pluginDetail.pluginName)
 
-            os.symlink(srcDir, linkPath, target_is_directory=True)
+            self._syncFiles(srcDir, linkPath)
+
+    def _syncFiles(self, srcDir, dstDir):
+        if os.path.exists(dstDir):
+            shutil.rmtree(dstDir)
+
+        shutil.copytree(srcDir, dstDir)
 
     def _updatePackageJson(self, targetJson: str,
                            pluginDetails: [PluginDetail],
@@ -393,7 +433,7 @@ class PluginFrontendInstallerABC(object):
                 continue
 
             moduleDir = os.path.join(pluginDetail.pluginRootDir,
-                                  pluginDetail.angularFrontendModuleDir)
+                                     pluginDetail.angularFrontendModuleDir)
 
             name = "@%s/%s" % (serviceName, pluginDetail.pluginName)
             dependencies[name] = "file:" + moduleDir
