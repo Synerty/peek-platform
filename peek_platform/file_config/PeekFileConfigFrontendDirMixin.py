@@ -12,13 +12,23 @@ class PeekFileConfigFrontendDirMixin:
 
     @property
     def feNativescriptBuildPrepareEnabled(self) -> bool:
-        """ Frontend Build Enabled
+        """ Nativescript Frontend Build Enabled
 
-        :return True If peek should automatically try to build the frontend.
+        :return True If peek should prepare the build directory
 
         """
         with self._cfg as c:
             return c.frontend.nativescriptBuildPrepareEnabled(True, require_bool)
+
+    @property
+    def feSyncFilesForDebugEnabled(self) -> bool:
+        """ Sync Files for Debug Enabled
+
+        :return True If peek should watch the build files and sync them as they change
+
+        """
+        with self._cfg as c:
+            return c.frontend.syncFilesForDebugEnabled(False, require_bool)
 
 
     @property

@@ -43,6 +43,7 @@ requirements = [
     "python-dateutil >= 2.6.0",
     "Pygments >= 2.0.1",  # Generate HTML for code that is syntax styled
     "rx >= 1.5.7", # RxPY by Microsoft. Potentially used in plugins to create Observables.
+    "watchdog >= 0.8.3", # Used to detect file changes and re-copy them for frontend builds
 
     # Licensing
     "pycrypto",
@@ -95,13 +96,15 @@ dependency_links = [
 
 ]
 
-dev_requirements = [
+doc_requirements = [
     "coverage >= 4.2",
     "mock >= 2.0.0",
     "selenium >= 2.53.6",
     "Sphinx >= 1.4.8",
     "Sphinx_rtd_theme >= 0.1.10a0",
 ]
+
+requirements.extend(doc_requirements)
 
 setup(
     name=pip_package_name,

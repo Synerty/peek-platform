@@ -9,6 +9,9 @@ from subprocess import PIPE
 
 from jsoncfg.value_mappers import require_bool
 from typing import List
+from watchdog.events import FileSystemEventHandler, FileMovedEvent, FileModifiedEvent, \
+    FileDeletedEvent, FileCreatedEvent
+from watchdog.observers import Observer as WatchdogObserver
 
 from peek_platform import PeekPlatformConfig
 from peek_platform.file_config.PeekFileConfigFrontendDirMixin import \
@@ -19,6 +22,9 @@ from peek_plugin_base.PeekVortexUtil import peekClientName, peekServerName
 from peek_plugin_base.PluginPackageFileConfig import PluginPackageFileConfig
 
 logger = logging.getLogger(__name__)
+
+# Quiten the file watchdog
+logging.getLogger("watchdog.observers.inotify_buffer").setLevel(logging.INFO)
 
 PluginDetail = namedtuple("PluginDetail",
                           ["pluginRootDir",
@@ -102,6 +108,7 @@ class FrontendBuilderABC(metaclass=ABCMeta):
             raise Exception("% doesn't exist" % frontendProjectDir)
 
         self._dirSyncMap = list()
+        self._fileWatchdogObserver = None
 
     def XXXXbuildFrontend(self) -> None:
 
@@ -417,6 +424,20 @@ class FrontendBuilderABC(metaclass=ABCMeta):
         dstFile = shutil.copy2(src, dst)
         self._syncFileHook(dstFile)
 
+    def startFileSyncWatcher(self):
+        self._fileWatchdogObserver = WatchdogObserver()
+
+        for srcDir, dstDir in self._dirSyncMap:
+            self._fileWatchdogObserver.schedule(
+                _FileChangeHandler(self._syncFileHook, srcDir, dstDir),
+                srcDir, recursive=True)
+        self._fileWatchdogObserver.start()
+
+    def stopFileSyncWatcher(self):
+        self._fileWatchdogObserver.stop()
+        self._fileWatchdogObserver.join()
+        self._fileWatchdogObserver = None
+
     def syncFiles(self):
         for srcDir, dstDir in self._dirSyncMap:
             if os.path.exists(dstDir):
@@ -547,3 +568,33 @@ class FrontendBuilderABC(metaclass=ABCMeta):
             # Update the detail of the exception and raise it
             e.message = "The angular frontend failed to build."
             raise
+
+
+class _FileChangeHandler(FileSystemEventHandler):
+    def __init__(self, syncFileHook, srcDir: str, dstDir: str):
+        self._syncFileHook = syncFileHook
+        self._srcDir = srcDir
+        self._dstDir = dstDir
+
+    def on_created(self, event):
+        if not isinstance(event, FileCreatedEvent) or event.src_path.endswith("__"):
+            return
+        pass
+
+    def on_deleted(self, event):
+        if not isinstance(event, FileDeletedEvent) or event.src_path.endswith("__"):
+            return
+        pass
+
+    def on_modified(self, event):
+        if not isinstance(event, FileModifiedEvent) or event.src_path.endswith("__"):
+            return
+
+        srcFilePath = event.src_path
+        dstFilePath = self._dstDir + event.src_path[len(self._srcDir):]
+        shutil.copy2(srcFilePath, dstFilePath)
+        self._syncFileHook(dstFilePath)
+
+    def on_moved(self, event):
+        if not isinstance(event, FileMovedEvent) or event.src_path.endswith("__"):
+            return

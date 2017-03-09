@@ -79,6 +79,10 @@ class NativescriptBuilder(FrontendBuilderABC):
 
         self.syncFiles()
 
+        if self._jsonCfg.feSyncFilesForDebugEnabled:
+            logger.info("Starting frontend development file sync")
+            self.startFileSyncWatcher()
+
     def _syncFileHook(self, fileName: str):
         if fileName.endswith(".ts"):
             self._patchComponent(fileName)
