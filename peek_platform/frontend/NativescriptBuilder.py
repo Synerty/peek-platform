@@ -20,6 +20,8 @@ class NativescriptBuilder(FrontendBuilderABC):
             logger.info("SKIPPING, Nativescript build prepare is disabled in config")
             return
 
+        self._dirSyncMap = list()
+
         feBuildDir = os.path.join(self._frontendProjectDir, 'build-ns')
         feSrcAppDir = os.path.join(self._frontendProjectDir, 'src', 'app')
 
@@ -40,8 +42,7 @@ class NativescriptBuilder(FrontendBuilderABC):
         ## --------------------
         # Prepare the common frontend application
 
-        self._syncFiles(feSrcAppDir, os.path.join(feAppDir, 'app'))
-
+        self._addSyncMapping(feSrcAppDir, os.path.join(feAppDir, 'app'))
 
         ## --------------------
         # Prepare the home and title bar configuration for the plugins
@@ -75,3 +76,29 @@ class NativescriptBuilder(FrontendBuilderABC):
         # references to the plugins linked under node_modules.
         # Otherwise nativescript doesn't include them in it's build.
         self._updatePackageJson(fePackageJson, pluginDetails, self._platformService)
+
+        self.syncFiles()
+
+    def _syncFileHook(self, fileName: str):
+        if fileName.endswith(".ts"):
+            self._patchComponent(fileName)
+
+    def _patchComponent(self, fileName: str):
+
+        with open(fileName, 'r') as f:
+            contents = f.read()
+            if not '@Component' in contents:
+                return
+
+        newContents = ''
+        for line in contents.splitlines(True):
+            if line.strip().startswith('templateUrl'):
+                newContents += (line
+                                .replace('web.html', 'ns.html')
+                                .replace("'./", "'"))
+
+            else:
+                newContents += line
+
+        with open(fileName, 'w') as f:
+            f.write(newContents)

@@ -3,7 +3,7 @@ import logging
 import os
 import shutil
 import subprocess
-from abc import ABCMeta
+from abc import ABCMeta, abstractmethod
 from collections import namedtuple
 from subprocess import PIPE
 
@@ -100,6 +100,8 @@ class FrontendBuilderABC(metaclass=ABCMeta):
 
         if not os.path.isdir(frontendProjectDir):
             raise Exception("% doesn't exist" % frontendProjectDir)
+
+        self._dirSyncMap = list()
 
     def XXXXbuildFrontend(self) -> None:
 
@@ -406,13 +408,36 @@ class FrontendBuilderABC(metaclass=ABCMeta):
 
             linkPath = os.path.join(targetDir, pluginDetail.pluginName)
 
-            self._syncFiles(srcDir, linkPath)
+            self._addSyncMapping(srcDir, linkPath)
 
-    def _syncFiles(self, srcDir, dstDir):
-        if os.path.exists(dstDir):
-            shutil.rmtree(dstDir)
+    def _addSyncMapping(self, srcDir, dstDir):
+        self._dirSyncMap.append((srcDir, dstDir))
 
-        shutil.copytree(srcDir, dstDir)
+    def _fileCopier(self, src, dst):
+        dstFile = shutil.copy2(src, dst)
+        self._syncFileHook(dstFile)
+
+    def syncFiles(self):
+        for srcDir, dstDir in self._dirSyncMap:
+            if os.path.exists(dstDir):
+                shutil.rmtree(dstDir)
+
+            shutil.copytree(srcDir, dstDir, copy_function=self._fileCopier)
+
+    @abstractmethod
+    def _syncFileHook(self, fileName: str):
+        """ Sync File Hook
+        
+        This method is called after each file is sync'd, allowing the files to be 
+        modified for a particular build.
+        
+        EG, Replace 
+            templateUrl: "app.component.web.html"
+        with
+            templateUrl: "app.component.ns.html"
+        
+        """
+        pass
 
     def _updatePackageJson(self, targetJson: str,
                            pluginDetails: [PluginDetail],
