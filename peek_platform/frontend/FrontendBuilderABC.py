@@ -8,16 +8,15 @@ from collections import namedtuple
 from subprocess import PIPE
 
 from jsoncfg.value_mappers import require_bool
+from typing import List
+
 from peek_platform import PeekPlatformConfig
 from peek_platform.file_config.PeekFileConfigFrontendDirMixin import \
     PeekFileConfigFrontendDirMixin
 from peek_platform.file_config.PeekFileConfigOsMixin import PeekFileConfigOsMixin
+from peek_platform.frontend.FrontendFileSync import FrontendFileSync
 from peek_plugin_base.PeekVortexUtil import peekClientName, peekServerName
 from peek_plugin_base.PluginPackageFileConfig import PluginPackageFileConfig
-from typing import List
-from watchdog.events import FileSystemEventHandler, FileMovedEvent, FileModifiedEvent, \
-    FileDeletedEvent, FileCreatedEvent
-from watchdog.observers import Observer as WatchdogObserver
 
 logger = logging.getLogger(__name__)
 
@@ -52,21 +51,29 @@ nodeModuleTsConfig = """
   "allowUnreachableCode": true,
   "compilerOptions": {
     "baseUrl": "",
-    "declaration": true,
+    "declaration": false,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "forceConsistentCasingInFileNames":true,
     "lib": ["es6", "dom"],
-    "mapRoot": "./",
     "module": "commonjs",
     "moduleResolution": "node",
-    "sourceMap": true,
+    "sourceMap": false,
     "target": "es5",
     "typeRoots": [
       "../@types"
     ]
   }
 }
+"""
+
+nodeModuleTypingsD = """
+/* SystemJS module definition */
+declare let module: {
+  id: string;
+};
+
+declare let require: any;
 """
 
 
@@ -105,6 +112,7 @@ class FrontendBuilderABC(metaclass=ABCMeta):
         if not os.path.isdir(frontendProjectDir):
             raise Exception("% doesn't exist" % frontendProjectDir)
 
+        self.fileSync = FrontendFileSync(lambda f, c: self._syncFileHook(f, c))
         self._dirSyncMap = list()
         self._fileWatchdogObserver = None
 
@@ -327,16 +335,12 @@ class FrontendBuilderABC(metaclass=ABCMeta):
         if not os.path.exists(targetDir):
             os.mkdir(targetDir)  # The parent must exist
 
-        # Remove all the old symlinks
+        # Make a note of the existing items
+        currentItems = set()
+        createdItems = set()
         for item in os.listdir(targetDir):
-            path = os.path.join(targetDir, item)
             if item.startswith("peek_plugin_"):
-                if os.path.islink(path):
-                    os.remove(path)
-                elif os.path.isdir(path):
-                    shutil.rmtree(path)
-                else:
-                    os.remove(path)
+                currentItems.add(item)
 
         for pluginDetail in pluginDetails:
             frontendDir = getattr(pluginDetail, attrName, None)
@@ -349,58 +353,26 @@ class FrontendBuilderABC(metaclass=ABCMeta):
                                pluginDetail.pluginName, frontendDir)
                 continue
 
+            createdItems.add(pluginDetail.pluginName)
+
             linkPath = os.path.join(targetDir, pluginDetail.pluginName)
+            self.fileSync.addSyncMapping(srcDir, linkPath)
 
-            self._addSyncMapping(srcDir, linkPath)
-
-    def _addSyncMapping(self, srcDir, dstDir):
-        self._dirSyncMap.append((srcDir, dstDir))
-
-    def _fileCopier(self, src, dst):
-        with open(src, 'rb') as f:
-            contents = f.read()
-
-        contents = self._syncFileHook(dst, contents)
-
-        with open(dst, 'wb') as f:
-            f.write(contents)
-
-    def startFileSyncWatcher(self):
-        self._fileWatchdogObserver = WatchdogObserver()
-
-        for srcDir, dstDir in self._dirSyncMap:
-            self._fileWatchdogObserver.schedule(
-                _FileChangeHandler(self._syncFileHook, srcDir, dstDir),
-                srcDir, recursive=True)
-        self._fileWatchdogObserver.start()
-
-    def stopFileSyncWatcher(self):
-        self._fileWatchdogObserver.stop()
-        self._fileWatchdogObserver.join()
-        self._fileWatchdogObserver = None
-
-    def syncFiles(self):
-        for srcDir, dstDir in self._dirSyncMap:
-            if os.path.exists(dstDir):
-                shutil.rmtree(dstDir)
-
-            shutil.copytree(srcDir, dstDir, copy_function=self._fileCopier)
+        # Delete the items that we didn't create
+        for item in currentItems - createdItems:
+            path = os.path.join(targetDir, item)
+            if os.path.islink(path):
+                os.remove(path)
+            elif os.path.isdir(path):
+                shutil.rmtree(path)
+            else:
+                os.remove(path)
 
     @abstractmethod
     def _syncFileHook(self, fileName: str, contents: bytes) -> bytes:
         """ Sync File Hook
         
-        :param fileName: The filename that is being sync'd
-        :param contents: The contents of the file
-        :return: The new contents of the file 
-        
-        This method is called after each file is sync'd, allowing the files to be 
-        modified for a particular build.
-        
-        EG, Replace 
-            templateUrl: "app.component.web.html"
-        with
-            templateUrl: "app.component.ns.html"
+        see FrontendFileSync._syncFileHook
         
         """
         pass
@@ -429,8 +401,12 @@ class FrontendBuilderABC(metaclass=ABCMeta):
             name = "@%s/%s" % (serviceName, pluginDetail.pluginName)
             dependencies[name] = "file:" + moduleDir
 
-        with open(targetJson, 'w') as f:
-            json.dump(jsonData, f, sort_keys=True, indent=2, separators=(',', ': '))
+        contents = json.dumps(jsonData, f, sort_keys=True, indent=2,
+                              separators=(',', ': '))
+
+        self._writeFileIfRequired(os.path.dirname(targetJson),
+                                  os.path.basename(targetJson),
+                                  contents)
 
     def _recompileRequiredCheck(self, feBuildDir: str, hashFileName: str) -> bool:
         """ Recompile Check
@@ -444,7 +420,8 @@ class FrontendBuilderABC(metaclass=ABCMeta):
         543446    4 -rw-r--r--   1 peek     sudo         1531 Dec  2 17:37 ./src/app/environment/env-worker/env-worker.component.html
 
         """
-        ignore = (".git", ".idea", "dist", '__pycache__', 'node_modules')
+        ignore = (".git", ".idea", "dist", '__pycache__', 'node_modules',
+                  '.lastHash', "platforms")
         ignore = ["'%s'" % i for i in ignore]  # Surround with quotes
         grep = "grep -v -e %s " % ' -e '.join(ignore)  # Xreate the grep command
         cmd = "find -L %s -type f -ls | %s" % (feBuildDir, grep)
@@ -485,61 +462,3 @@ class FrontendBuilderABC(metaclass=ABCMeta):
                 f.write(newHash)
 
         return changes
-
-
-class _FileChangeHandler(FileSystemEventHandler):
-    def __init__(self, syncFileHook, srcDir: str, dstDir: str):
-        self._syncFileHook = syncFileHook
-        self._srcDir = srcDir
-        self._dstDir = dstDir
-
-    def _makeDestPath(self, srcFilePath: str) -> str:
-        return self._dstDir + srcFilePath[len(self._srcDir):]
-
-    def _updateFileContents(self, srcFilePath):
-        dstFilePath = self._makeDestPath(srcFilePath)
-
-        # Copy files this way to ensure we only make one file event on the dest side.
-        # tns in particular reloads on every file event.
-
-        # This used to be done by copying the file,
-        #   then _syncFileHook would modify it in place
-
-        with open(srcFilePath, 'rb') as f:
-            contents = f.read()
-
-        contents = self._syncFileHook(dstFilePath, contents)
-
-        with open(dstFilePath, 'wb') as f:
-            f.write(contents)
-
-    def on_created(self, event):
-        if not isinstance(event, FileCreatedEvent) or event.src_path.endswith("__"):
-            return
-
-        self._updateFileContents(event.src_path)
-
-    def on_deleted(self, event):
-        if not isinstance(event, FileDeletedEvent) or event.src_path.endswith("__"):
-            return
-
-        dstFilePath = self._makeDestPath(event.src_path)
-
-        if os.path.exists(dstFilePath):
-            os.remove(dstFilePath)
-
-    def on_modified(self, event):
-        if not isinstance(event, FileModifiedEvent) or event.src_path.endswith("__"):
-            return
-
-        self._updateFileContents(event.src_path)
-
-    def on_moved(self, event):
-        if not isinstance(event, FileMovedEvent) or event.src_path.endswith("__"):
-            return
-
-        oldDestFilePath = self._makeDestPath(event.src_path)
-        if os.path.exists(oldDestFilePath):
-            os.remove(oldDestFilePath)
-
-        self._updateFileContents(event.dst_path)

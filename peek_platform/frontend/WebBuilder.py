@@ -45,7 +45,7 @@ class WebBuilder(FrontendBuilderABC):
         ## --------------------
         # Prepare the common frontend application
 
-        self._addSyncMapping(feSrcAppDir, os.path.join(feBuildSrcDir, 'app'))
+        self.fileSync.addSyncMapping(feSrcAppDir, os.path.join(feBuildSrcDir, 'app'))
 
         ## --------------------
         # Prepare the home and title bar configuration for the plugins
@@ -73,11 +73,11 @@ class WebBuilder(FrontendBuilderABC):
         self._syncPluginFiles(fePluginModulesDir, pluginDetails,
                               "angularFrontendModuleDir")
 
-        self.syncFiles()
+        self.fileSync.syncFiles()
 
         if self._jsonCfg.feSyncFilesForDebugEnabled:
             logger.info("Starting frontend development file sync")
-            self.startFileSyncWatcher()
+            self.fileSync.startFileSyncWatcher()
 
         if self._jsonCfg.feWebBuildEnabled:
             logger.info("Starting frontend web build")
