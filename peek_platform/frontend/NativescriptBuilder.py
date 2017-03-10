@@ -1,10 +1,9 @@
 import logging
 import os
 
-from typing import List
-
 from peek_platform.frontend.FrontendBuilderABC import FrontendBuilderABC, \
     nodeModuleTsConfig
+from typing import List
 
 logger = logging.getLogger(__name__)
 
@@ -35,9 +34,14 @@ class NativescriptBuilder(FrontendBuilderABC):
 
         fePackageJson = os.path.join(feBuildDir, 'package.json')
 
-        self._hashFileName = os.path.join(feBuildDir, ".lastHash")
-
         pluginDetails = self._loadPluginConfigs()
+
+        ## --------------------
+        # Check if node_modules exists
+
+        if not os.path.exists(os.path.join(feBuildDir, 'node_modules')):
+            raise NotADirectoryError("node_modules doesn't exist, ensure you've run "
+                                     "`npm install` in dir %s" % feBuildDir)
 
         ## --------------------
         # Prepare the common frontend application
@@ -83,26 +87,34 @@ class NativescriptBuilder(FrontendBuilderABC):
             logger.info("Starting frontend development file sync")
             self.startFileSyncWatcher()
 
-    def _syncFileHook(self, fileName: str):
+    def _syncFileHook(self, fileName: str, contents: bytes) -> bytes:
         if fileName.endswith(".ts"):
-            self._patchComponent(fileName)
+            return self._patchComponent(fileName, contents)
 
-    def _patchComponent(self, fileName: str):
+        return contents
 
-        with open(fileName, 'r') as f:
-            contents = f.read()
-            if not '@Component' in contents:
-                return
+    def _patchComponent(self, fileName: str, contents: bytes) -> bytes:
 
-        newContents = ''
+        if not b'@Component' in contents:
+            return contents
+
+        inComponentHeader = False
+
+        newContents = b''
         for line in contents.splitlines(True):
-            if line.strip().startswith('templateUrl'):
-                newContents += (line
-                                .replace('web.html', 'ns.html')
-                                .replace("'./", "'"))
+            if line.startswith(b"@Component"):
+                inComponentHeader = True
 
-            else:
-                newContents += line
+            elif line.startswith(b"export"):
+                inComponentHeader = False
 
-        with open(fileName, 'w') as f:
-            f.write(newContents)
+            elif inComponentHeader:
+                line = (line
+                        .replace(b'web.html', b'ns.html')
+                        .replace(b'web.css', b'ns.css')
+                        .replace(b'web.scss', b'ns.scss')
+                        .replace(b"'./", b"'"))
+
+            newContents += line
+
+        return newContents

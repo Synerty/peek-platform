@@ -8,18 +8,16 @@ from collections import namedtuple
 from subprocess import PIPE
 
 from jsoncfg.value_mappers import require_bool
-from typing import List
-from watchdog.events import FileSystemEventHandler, FileMovedEvent, FileModifiedEvent, \
-    FileDeletedEvent, FileCreatedEvent
-from watchdog.observers import Observer as WatchdogObserver
-
 from peek_platform import PeekPlatformConfig
 from peek_platform.file_config.PeekFileConfigFrontendDirMixin import \
     PeekFileConfigFrontendDirMixin
 from peek_platform.file_config.PeekFileConfigOsMixin import PeekFileConfigOsMixin
-from peek_platform.util.PtyUtil import PtyOutParser, spawnPty, logSpawnException
 from peek_plugin_base.PeekVortexUtil import peekClientName, peekServerName
 from peek_plugin_base.PluginPackageFileConfig import PluginPackageFileConfig
+from typing import List
+from watchdog.events import FileSystemEventHandler, FileMovedEvent, FileModifiedEvent, \
+    FileDeletedEvent, FileCreatedEvent
+from watchdog.observers import Observer as WatchdogObserver
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +43,7 @@ PluginDetail = namedtuple("PluginDetail",
 _routesTemplate = """
     {
         path: '%s',
-        loadChildren: "./%s/%s"
+        loadChildren: "%s/%s"
     }"""
 
 nodeModuleTsConfig = """
@@ -109,68 +107,6 @@ class FrontendBuilderABC(metaclass=ABCMeta):
 
         self._dirSyncMap = list()
         self._fileWatchdogObserver = None
-
-    def XXXXbuildFrontend(self) -> None:
-
-        from peek_platform.plugin.PluginLoaderABC import PluginLoaderABC
-        assert isinstance(self, PluginLoaderABC)
-
-        from peek_platform import PeekPlatformConfig
-
-        if not isinstance(PeekPlatformConfig.config, PeekFileConfigFrontendDirMixin):
-            raise Exception("The file config must inherit the"
-                            " PeekFileConfigFrontendDirMixin")
-
-        if not isinstance(PeekPlatformConfig.config, PeekFileConfigOsMixin):
-            raise Exception("The file config must inherit the"
-                            " PeekFileConfigOsMixin")
-
-        feSrcDir = PeekPlatformConfig.config.feSrcDir
-        feAppDir = os.path.join(feSrcDir, 'app')
-        feAssetsDir = os.path.join(feSrcDir, 'app', 'assets')
-
-        feNodeModulesDir = os.path.join(self._findNodeModulesDir(),
-                                        '@' + PeekPlatformConfig.componentName)
-
-        fePackageJson = os.path.join(os.path.dirname(feSrcDir), 'package.json')
-
-        self._hashFileName = os.path.join(os.path.dirname(feSrcDir), ".lastHash")
-
-        pluginDetails = self._loadPluginConfigs()
-
-        # Write files that link the plugins into Peek.
-        self._writePluginRouteLazyLoads(feAppDir, pluginDetails)
-        self._writePluginRootModules(feAppDir, pluginDetails,
-                                     PeekPlatformConfig.componentName)
-        self._writePluginRootServices(feAppDir, pluginDetails,
-                                      PeekPlatformConfig.componentName)
-        self._writePluginHomeLinks(feAppDir, pluginDetails)
-        self._writePluginTitleBarLinks(feAppDir, pluginDetails)
-
-        # Link the lazy loaded plugins
-        self._relinkPluginDirs(feAppDir, pluginDetails, "angularFrontendAppDir")
-
-        # Link in the assets dir
-        self._relinkPluginDirs(feAssetsDir, pluginDetails, "angularFrontendAssetsDir")
-
-        # Link the shared code, this allows plugins
-        # * to import code from each other.
-        # * provide global services.
-        self._relinkPluginDirs(feNodeModulesDir,
-                               pluginDetails,
-                               "angularFrontendModuleDir")
-
-        # Update the package.json in the peek_client_fe project so that it includes
-        # references to the plugins linked under node_modules.
-        # Otherwise nativescript doesn't include them in it's build.
-        self._updatePackageJson(fePackageJson, pluginDetails,
-                                PeekPlatformConfig.componentName)
-
-        if not PeekPlatformConfig.config.feBuildEnabled:
-            logger.warning("Frontend build disabled by config file, Not Building.")
-            return
-
-        self._compileFrontend(feSrcDir)
 
     def _loadPluginConfigs(self) -> [PluginDetail]:
         pluginDetails = []
@@ -421,8 +357,13 @@ class FrontendBuilderABC(metaclass=ABCMeta):
         self._dirSyncMap.append((srcDir, dstDir))
 
     def _fileCopier(self, src, dst):
-        dstFile = shutil.copy2(src, dst)
-        self._syncFileHook(dstFile)
+        with open(src, 'rb') as f:
+            contents = f.read()
+
+        contents = self._syncFileHook(dst, contents)
+
+        with open(dst, 'wb') as f:
+            f.write(contents)
 
     def startFileSyncWatcher(self):
         self._fileWatchdogObserver = WatchdogObserver()
@@ -446,8 +387,12 @@ class FrontendBuilderABC(metaclass=ABCMeta):
             shutil.copytree(srcDir, dstDir, copy_function=self._fileCopier)
 
     @abstractmethod
-    def _syncFileHook(self, fileName: str):
+    def _syncFileHook(self, fileName: str, contents: bytes) -> bytes:
         """ Sync File Hook
+        
+        :param fileName: The filename that is being sync'd
+        :param contents: The contents of the file
+        :return: The new contents of the file 
         
         This method is called after each file is sync'd, allowing the files to be 
         modified for a particular build.
@@ -487,7 +432,7 @@ class FrontendBuilderABC(metaclass=ABCMeta):
         with open(targetJson, 'w') as f:
             json.dump(jsonData, f, sort_keys=True, indent=2, separators=(',', ': '))
 
-    def _recompileRequiredCheck(self, feSrcDir: str) -> bool:
+    def _recompileRequiredCheck(self, feBuildDir: str, hashFileName: str) -> bool:
         """ Recompile Check
 
         This command lists the details of the source dir to see if a recompile is needed
@@ -499,10 +444,10 @@ class FrontendBuilderABC(metaclass=ABCMeta):
         543446    4 -rw-r--r--   1 peek     sudo         1531 Dec  2 17:37 ./src/app/environment/env-worker/env-worker.component.html
 
         """
-        ignore = (".git", ".idea", "dist", '__pycache__')
+        ignore = (".git", ".idea", "dist", '__pycache__', 'node_modules')
         ignore = ["'%s'" % i for i in ignore]  # Surround with quotes
         grep = "grep -v -e %s " % ' -e '.join(ignore)  # Xreate the grep command
-        cmd = "find -L %s -type f -ls | %s" % (feSrcDir, grep)
+        cmd = "find -L %s -type f -ls | %s" % (feBuildDir, grep)
         commandComplete = subprocess.run(cmd,
                                          executable=PeekPlatformConfig.config.bashLocation,
                                          stdout=PIPE, stderr=PIPE, shell=True)
@@ -519,8 +464,8 @@ class FrontendBuilderABC(metaclass=ABCMeta):
         newHash = commandComplete.stdout
         fileHash = ""
 
-        if os.path.isfile(self._hashFileName):
-            with open(self._hashFileName, 'rb') as f:
+        if os.path.isfile(hashFileName):
+            with open(hashFileName, 'rb') as f:
                 fileHash = f.read()
 
         fileHashLines = set(fileHash.splitlines())
@@ -536,38 +481,10 @@ class FrontendBuilderABC(metaclass=ABCMeta):
             logger.debug("Added %s" % line)
 
         if changes:
-            with open(self._hashFileName, 'wb') as f:
+            with open(hashFileName, 'wb') as f:
                 f.write(newHash)
 
         return changes
-
-    def _compileFrontend(self, feSrcDir: str) -> None:
-        """ Compile the frontend
-
-        this runs `ng build`
-
-        We need to use a pty otherwise webpack doesn't run.
-
-        """
-
-        if not self._recompileRequiredCheck(feSrcDir):
-            logger.info("Frondend has not changed, recompile not required.")
-            return
-
-        logger.info("Rebuilding frontend distribution")
-
-        try:
-            parser = PtyOutParser(loggingStartMarker="Hash: ")
-            spawnPty("cd %s && ng build" % feSrcDir, parser)
-            logger.info("Frontend distribution rebuild complete.")
-
-        except Exception as e:
-            logSpawnException(e)
-            os.remove(self._hashFileName)
-
-            # Update the detail of the exception and raise it
-            e.message = "The angular frontend failed to build."
-            raise
 
 
 class _FileChangeHandler(FileSystemEventHandler):
@@ -576,25 +493,53 @@ class _FileChangeHandler(FileSystemEventHandler):
         self._srcDir = srcDir
         self._dstDir = dstDir
 
+    def _makeDestPath(self, srcFilePath: str) -> str:
+        return self._dstDir + srcFilePath[len(self._srcDir):]
+
+    def _updateFileContents(self, srcFilePath):
+        dstFilePath = self._makeDestPath(srcFilePath)
+
+        # Copy files this way to ensure we only make one file event on the dest side.
+        # tns in particular reloads on every file event.
+
+        # This used to be done by copying the file,
+        #   then _syncFileHook would modify it in place
+
+        with open(srcFilePath, 'rb') as f:
+            contents = f.read()
+
+        contents = self._syncFileHook(dstFilePath, contents)
+
+        with open(dstFilePath, 'wb') as f:
+            f.write(contents)
+
     def on_created(self, event):
         if not isinstance(event, FileCreatedEvent) or event.src_path.endswith("__"):
             return
-        pass
+
+        self._updateFileContents(event.src_path)
 
     def on_deleted(self, event):
         if not isinstance(event, FileDeletedEvent) or event.src_path.endswith("__"):
             return
-        pass
+
+        dstFilePath = self._makeDestPath(event.src_path)
+
+        if os.path.exists(dstFilePath):
+            os.remove(dstFilePath)
 
     def on_modified(self, event):
         if not isinstance(event, FileModifiedEvent) or event.src_path.endswith("__"):
             return
 
-        srcFilePath = event.src_path
-        dstFilePath = self._dstDir + event.src_path[len(self._srcDir):]
-        shutil.copy2(srcFilePath, dstFilePath)
-        self._syncFileHook(dstFilePath)
+        self._updateFileContents(event.src_path)
 
     def on_moved(self, event):
         if not isinstance(event, FileMovedEvent) or event.src_path.endswith("__"):
             return
+
+        oldDestFilePath = self._makeDestPath(event.src_path)
+        if os.path.exists(oldDestFilePath):
+            os.remove(oldDestFilePath)
+
+        self._updateFileContents(event.dst_path)
