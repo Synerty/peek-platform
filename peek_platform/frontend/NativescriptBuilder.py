@@ -1,9 +1,11 @@
 import logging
 import os
 
+from typing import List
+
 from peek_platform.frontend.FrontendBuilderABC import FrontendBuilderABC, \
     nodeModuleTsConfig, nodeModuleTypingsD
-from typing import List
+from peek_platform.util.PtyUtil import PtyOutParser, spawnPty, logSpawnException
 
 logger = logging.getLogger(__name__)
 
@@ -29,8 +31,9 @@ class NativescriptBuilder(FrontendBuilderABC):
 
         feNodeModulesDir = os.path.join(feBuildDir, 'node_modules')
 
+        pluingModulesDirName = '@' + self._platformService
         fePluginModulesDir = os.path.join(feNodeModulesDir,
-                                          '@' + self._platformService)
+                                          pluingModulesDirName)
 
         fePackageJson = os.path.join(feBuildDir, 'package.json')
 
@@ -84,41 +87,48 @@ class NativescriptBuilder(FrontendBuilderABC):
 
         # Now sync those node_modules/@peek-xxx packages into the "platforms" build dirs
 
-        # androidDir1 = 'platforms/android/src/main/assets/app/tns_modules'
-        # androidDir2 = ('platforms/android'
-        #                '/build/intermediates/assets/F0F1/debug/app/tns_modules')
-        # self.fileSync.addSyncMapping(fePluginModulesDir,
-        #                              os.path.join(feBuildDir, androidDir1))
-        # self.fileSync.addSyncMapping(fePluginModulesDir,
-        #                              os.path.join(feBuildDir, androidDir2))
+        compilePluginModules = lambda: self._compilePluginModules(fePluginModulesDir)
+
+        androidDir1 = 'platforms/android/src/main/assets/app/tns_modules'
+        androidDir2 = ('platforms/android'
+                       '/build/intermediates/assets/F0F1/debug/app/tns_modules')
+
+        self.fileSync.addSyncMapping(fePluginModulesDir,
+                                     os.path.join(feBuildDir, androidDir1, pluingModulesDirName),
+                                     parentMustExist=True,
+                                     preSyncCallback=compilePluginModules)
+
+        self.fileSync.addSyncMapping(fePluginModulesDir,
+                                     os.path.join(feBuildDir, androidDir2, pluingModulesDirName),
+                                     parentMustExist=True)
 
         self.fileSync.syncFiles()
+        compilePluginModules()
 
         if self._jsonCfg.feSyncFilesForDebugEnabled:
             logger.info("Starting frontend development file sync")
             self.fileSync.startFileSyncWatcher()
 
-        self._recompileRequiredCheck(feBuildDir, os.path.join(feBuildDir, '.lastHash'))
-
     def _syncFileHook(self, fileName: str, contents: bytes) -> bytes:
         if fileName.endswith(".ts"):
-            if b'@NgModule' in contents:
-                return self._patchModule(fileName, contents)
+            contents = contents.replace(b'@synerty/peek-web-ns/index.web',
+                                        b'@synerty/peek-web-ns/index.nativescript')
+
+            # if b'@NgModule' in contents:
+            #     return self._patchModule(fileName, contents)
 
             if b'@Component' in contents:
                 return self._patchComponent(fileName, contents)
 
         return contents
 
-    def _patchModule(self, fileName: str, contents: bytes) -> bytes:
-        newContents = b''
-        for line in contents.splitlines(True):
-            line = line.replace(b'@synerty/peek-web-ns/index.web',
-                                b'@synerty/peek-web-ns/index.nativescript')
-
-            newContents += line
-
-        return newContents
+    # def _patchModule(self, fileName: str, contents: bytes) -> bytes:
+    #     newContents = b''
+    #     for line in contents.splitlines(True):
+    #
+    #         newContents += line
+    #
+    #     return newContents
 
     def _patchComponent(self, fileName: str, contents: bytes) -> bytes:
         inComponentHeader = False
@@ -138,10 +148,37 @@ class NativescriptBuilder(FrontendBuilderABC):
                         .replace(b'web.scss', b'ns.scss')
                         .replace(b"'./", b"'"))
 
-            else:
-                line = line.replace(b'@synerty/peek-web-ns/index.web',
-                                    b'@synerty/peek-web-ns/index.nativescript')
-
             newContents += line
 
         return newContents
+
+    def _compilePluginModules(self, fePluginModulesDir: str) -> None:
+        """ Compile the frontend
+
+        this runs `ng build`
+
+        We need to use a pty otherwise webpack doesn't run.
+
+        """
+
+        hashFileName = os.path.join(fePluginModulesDir, ".lastHash")
+
+        if not self._recompileRequiredCheck(fePluginModulesDir, hashFileName):
+            logger.info("Modules have not changed, recompile not required.")
+            return
+
+        logger.info("Compiling plugin modules")
+
+        try:
+            parser = PtyOutParser(loggingStartMarker="Hash: ")
+            spawnPty("cd %s && tsc" % fePluginModulesDir, parser)
+            logger.info("Frontend plugin module compile complete.")
+
+        except Exception as e:
+            logSpawnException(e)
+            # if os.path.exists(hashFileName):
+            #     os.remove(hashFileName)
+
+            # Update the detail of the exception and raise it
+            e.message = "The frontend plugin modules to compile."
+            # raise

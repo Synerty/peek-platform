@@ -110,7 +110,8 @@ class WebBuilder(FrontendBuilderABC):
 
         except Exception as e:
             logSpawnException(e)
-            os.remove(hashFileName)
+            if os.path.exists(hashFileName):
+                os.remove(hashFileName)
 
             # Update the detail of the exception and raise it
             e.message = "The angular frontend failed to build."

@@ -1,8 +1,9 @@
 import logging
 import os
 import shutil
+from collections import namedtuple
 
-from typing import Callable
+from typing import Callable, Optional
 from watchdog.events import FileSystemEventHandler, FileMovedEvent, FileModifiedEvent, \
     FileDeletedEvent, FileCreatedEvent
 from watchdog.observers import Observer as WatchdogObserver
@@ -13,6 +14,10 @@ logger = logging.getLogger(__name__)
 logging.getLogger("watchdog.observers.inotify_buffer").setLevel(logging.INFO)
 
 SyncFileHookCallable = Callable[[str, bytes], bytes]
+
+FileSyncCfg = namedtuple('FileSyncCfg',
+                         ['srcDir', 'dstDir', 'parentMustExist',
+                          'preSyncCallback', 'postSyncCallback'])
 
 
 class FrontendFileSync:
@@ -28,17 +33,23 @@ class FrontendFileSync:
         self._dirSyncMap = list()
         self._fileWatchdogObserver = None
 
-    def addSyncMapping(self, srcDir, dstDir):
-        self._dirSyncMap.append((srcDir, dstDir))
+    def addSyncMapping(self, srcDir, dstDir,
+                       parentMustExist=False,
+                       preSyncCallback: Optional[Callable[[], None]] = None,
+                       postSyncCallback: Optional[Callable[[], None]] = None):
+        self._dirSyncMap.append(
+            FileSyncCfg(srcDir, dstDir, parentMustExist,
+                        preSyncCallback, postSyncCallback)
+        )
 
     def startFileSyncWatcher(self):
 
         self._fileWatchdogObserver = WatchdogObserver()
 
-        for srcDir, dstDir in self._dirSyncMap:
+        for cfg in self._dirSyncMap:
             self._fileWatchdogObserver.schedule(
-                _FileChangeHandler(self._syncFileHookCallable, srcDir, dstDir),
-                srcDir, recursive=True)
+                _FileChangeHandler(self._syncFileHookCallable, cfg),
+                cfg.srcDir, recursive=True)
 
         self._fileWatchdogObserver.start()
 
@@ -49,21 +60,29 @@ class FrontendFileSync:
 
     def syncFiles(self):
 
-        for srcDir, dstDir in self._dirSyncMap:
+        for cfg in self._dirSyncMap:
+            parentDstDir = os.path.dirname(cfg.dstDir)
+            if cfg.parentMustExist and not os.path.isdir(parentDstDir):
+                logger.debug("Skipping sink, parent doesn't exist. dstDir=%s", cfg.dstDir)
+                continue
+
+            if cfg.preSyncCallback:
+                cfg.preSyncCallback()
+
             # Create lists of files relative to the dstDir and srcDir
-            existingFiles = set(self._listFiles(dstDir))
-            srcFiles = set(self._listFiles(srcDir))
+            existingFiles = set(self._listFiles(cfg.dstDir))
+            srcFiles = set(self._listFiles(cfg.srcDir))
 
             for srcFile in srcFiles:
-                srcFilePath = os.path.join(srcDir, srcFile)
-                dstFilePath = os.path.join(dstDir, srcFile)
+                srcFilePath = os.path.join(cfg.srcDir, srcFile)
+                dstFilePath = os.path.join(cfg.dstDir, srcFile)
 
                 dstFileDir = os.path.dirname(dstFilePath)
                 os.makedirs(dstFileDir, exist_ok=True)
                 self._fileCopier(srcFilePath, dstFilePath)
 
             for obsoleteFile in existingFiles - srcFiles:
-                obsoleteFile = os.path.join(dstDir, obsoleteFile)
+                obsoleteFile = os.path.join(cfg.dstDir, obsoleteFile)
 
                 if os.path.islink(obsoleteFile):
                     os.remove(obsoleteFile)
@@ -73,6 +92,9 @@ class FrontendFileSync:
 
                 else:
                     os.remove(obsoleteFile)
+
+            if cfg.postSyncCallback:
+                cfg.postSyncCallback()
 
     def _writeFileIfRequired(self, dir, fileName, contents):
         fullFilePath = os.path.join(dir, fileName)
@@ -106,25 +128,41 @@ class FrontendFileSync:
             f.write(contents)
 
     def _listFiles(self, dir):
+        ignoreFiles = set('.lastHash')
         paths = []
         for (path, directories, filenames) in os.walk(dir):
 
             for filename in filenames:
+                if filename in ignoreFiles:
+                    continue
                 paths.append(os.path.join(path[len(dir) + 1:], filename))
 
         return paths
 
 
 class _FileChangeHandler(FileSystemEventHandler):
-    def __init__(self, syncFileHook, srcDir: str, dstDir: str):
+    def __init__(self, syncFileHook, cfg: FileSyncCfg):
         self._syncFileHook = syncFileHook
-        self._srcDir = srcDir
-        self._dstDir = dstDir
+        self._srcDir = cfg.srcDir
+        self._dstDir = cfg.dstDir
+        self._cfg = cfg
 
     def _makeDestPath(self, srcFilePath: str) -> str:
         return self._dstDir + srcFilePath[len(self._srcDir):]
 
     def _updateFileContents(self, srcFilePath):
+        parentDstDir = os.path.dirname(self._dstDir)
+        if self._cfg.parentMustExist and not os.path.isdir(parentDstDir):
+            logger.debug("Skipping sink, parent doesn't exist. dstDir=%s", self._dstDir)
+            return
+
+        if self._cfg.preSyncCallback:
+            self._cfg.preSyncCallback()
+
+        # if the file had vanished, then do nothing
+        if not os.path.exists(srcFilePath):
+            return
+
         dstFilePath = self._makeDestPath(srcFilePath)
 
         # Copy files this way to ensure we only make one file event on the dest side.
@@ -149,6 +187,9 @@ class _FileChangeHandler(FileSystemEventHandler):
 
         with open(dstFilePath, 'wb') as f:
             f.write(contents)
+
+        if self._cfg.postSyncCallback:
+            self._cfg.postSyncCallback()
 
     def on_created(self, event):
         if not isinstance(event, FileCreatedEvent) or event.src_path.endswith("__"):

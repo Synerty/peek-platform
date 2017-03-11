@@ -423,8 +423,8 @@ class FrontendBuilderABC(metaclass=ABCMeta):
         ignore = (".git", ".idea", "dist", '__pycache__', 'node_modules',
                   '.lastHash', "platforms")
         ignore = ["'%s'" % i for i in ignore]  # Surround with quotes
-        grep = "grep -v -e %s " % ' -e '.join(ignore)  # Xreate the grep command
-        cmd = "find -L %s -type f -ls | %s" % (feBuildDir, grep)
+        grep = "grep -v -e %s " % ' -e '.join(ignore)  # Create the grep command
+        cmd = "find -L %s -type f -ls" % feBuildDir # | %s" % (feBuildDir, grep)
         commandComplete = subprocess.run(cmd,
                                          executable=PeekPlatformConfig.config.bashLocation,
                                          stdout=PIPE, stderr=PIPE, shell=True)
@@ -432,8 +432,10 @@ class FrontendBuilderABC(metaclass=ABCMeta):
         if commandComplete.returncode:
             for line in commandComplete.stdout.splitlines():
                 logger.error(line)
+
             for line in commandComplete.stderr.splitlines():
                 logger.error(line)
+
             raise Exception("Frontend compile diff check failed")
 
         logger.debug("Frontend compile diff check ran ok")
