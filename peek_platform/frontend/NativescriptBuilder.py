@@ -1,6 +1,7 @@
 import logging
 import os
 
+from twisted.internet.task import LoopingCall
 from typing import List
 
 from peek_platform.frontend.FrontendBuilderABC import FrontendBuilderABC, \
@@ -34,6 +35,10 @@ class NativescriptBuilder(FrontendBuilderABC):
         pluingModulesDirName = '@' + self._platformService
         fePluginModulesDir = os.path.join(feNodeModulesDir,
                                           pluingModulesDirName)
+
+        self._moduleCompileRequired = False
+        self._moduleCompileLoopingCall = None
+        self._fePluginModulesDir = fePluginModulesDir
 
         fePackageJson = os.path.join(feBuildDir, 'package.json')
 
@@ -87,8 +92,6 @@ class NativescriptBuilder(FrontendBuilderABC):
 
         # Now sync those node_modules/@peek-xxx packages into the "platforms" build dirs
 
-        compilePluginModules = lambda: self._compilePluginModules(fePluginModulesDir)
-
         androidDir1 = 'platforms/android/src/main/assets/app/tns_modules'
         androidDir2 = ('platforms/android'
                        '/build/intermediates/assets/F0F1/debug/app/tns_modules')
@@ -96,18 +99,25 @@ class NativescriptBuilder(FrontendBuilderABC):
         self.fileSync.addSyncMapping(fePluginModulesDir,
                                      os.path.join(feBuildDir, androidDir1, pluingModulesDirName),
                                      parentMustExist=True,
-                                     preSyncCallback=compilePluginModules)
+                                     preSyncCallback=self._scheduleModuleCompile)
 
         self.fileSync.addSyncMapping(fePluginModulesDir,
                                      os.path.join(feBuildDir, androidDir2, pluingModulesDirName),
                                      parentMustExist=True)
 
         self.fileSync.syncFiles()
-        compilePluginModules()
+        self._compilePluginModules(True)
 
         if self._jsonCfg.feSyncFilesForDebugEnabled:
             logger.info("Starting frontend development file sync")
+            self._moduleCompileLoopingCall = LoopingCall(self._compilePluginModules)
+            self._moduleCompileLoopingCall.start(0.5, now=False)
             self.fileSync.startFileSyncWatcher()
+
+    def stopDebugWatchers(self):
+        logger.info("Stoping frontend development file sync")
+        self.fileSync.stopFileSyncWatcher()
+        self._moduleCompileLoopingCall.stop()
 
     def _syncFileHook(self, fileName: str, contents: bytes) -> bytes:
         if fileName.endswith(".ts"):
@@ -152,7 +162,10 @@ class NativescriptBuilder(FrontendBuilderABC):
 
         return newContents
 
-    def _compilePluginModules(self, fePluginModulesDir: str) -> None:
+    def _scheduleModuleCompile(self):
+        self._moduleCompileRequired = True
+
+    def _compilePluginModules(self, force=False) -> None:
         """ Compile the frontend
 
         this runs `ng build`
@@ -161,9 +174,14 @@ class NativescriptBuilder(FrontendBuilderABC):
 
         """
 
-        hashFileName = os.path.join(fePluginModulesDir, ".lastHash")
+        if not (self._moduleCompileRequired or force):
+            return
 
-        if not self._recompileRequiredCheck(fePluginModulesDir, hashFileName):
+        self._moduleCompileRequired = False
+
+        hashFileName = os.path.join(self._fePluginModulesDir, ".lastHash")
+
+        if not self._recompileRequiredCheck(self._fePluginModulesDir, hashFileName):
             logger.info("Modules have not changed, recompile not required.")
             return
 
@@ -171,7 +189,7 @@ class NativescriptBuilder(FrontendBuilderABC):
 
         try:
             parser = PtyOutParser(loggingStartMarker="Hash: ")
-            spawnPty("cd %s && tsc" % fePluginModulesDir, parser)
+            spawnPty("cd %s && tsc" % self._fePluginModulesDir, parser)
             logger.info("Frontend plugin module compile complete.")
 
         except Exception as e:
