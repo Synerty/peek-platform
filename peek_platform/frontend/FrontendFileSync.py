@@ -17,6 +17,7 @@ SyncFileHookCallable = Callable[[str, bytes], bytes]
 
 FileSyncCfg = namedtuple('FileSyncCfg',
                          ['srcDir', 'dstDir', 'parentMustExist',
+                          'deleteExtraDstFiles',
                           'preSyncCallback', 'postSyncCallback'])
 
 
@@ -35,10 +36,12 @@ class FrontendFileSync:
 
     def addSyncMapping(self, srcDir, dstDir,
                        parentMustExist=False,
+                       deleteExtraDstFiles=True,
                        preSyncCallback: Optional[Callable[[], None]] = None,
                        postSyncCallback: Optional[Callable[[], None]] = None):
         self._dirSyncMap.append(
             FileSyncCfg(srcDir, dstDir, parentMustExist,
+                        deleteExtraDstFiles,
                         preSyncCallback, postSyncCallback)
         )
 
@@ -81,17 +84,18 @@ class FrontendFileSync:
                 os.makedirs(dstFileDir, exist_ok=True)
                 self._fileCopier(srcFilePath, dstFilePath)
 
-            for obsoleteFile in existingFiles - srcFiles:
-                obsoleteFile = os.path.join(cfg.dstDir, obsoleteFile)
+            if cfg.deleteExtraDstFiles:
+                for obsoleteFile in existingFiles - srcFiles:
+                    obsoleteFile = os.path.join(cfg.dstDir, obsoleteFile)
 
-                if os.path.islink(obsoleteFile):
-                    os.remove(obsoleteFile)
+                    if os.path.islink(obsoleteFile):
+                        os.remove(obsoleteFile)
 
-                elif os.path.isdir(obsoleteFile):
-                    shutil.rmtree(obsoleteFile)
+                    elif os.path.isdir(obsoleteFile):
+                        shutil.rmtree(obsoleteFile)
 
-                else:
-                    os.remove(obsoleteFile)
+                    else:
+                        os.remove(obsoleteFile)
 
             if cfg.postSyncCallback:
                 cfg.postSyncCallback()

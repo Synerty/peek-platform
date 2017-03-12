@@ -105,6 +105,12 @@ class NativescriptBuilder(FrontendBuilderABC):
                                      os.path.join(feBuildDir, androidDir2, pluingModulesDirName),
                                      parentMustExist=True)
 
+        # Lastly, Allow the clients to override any frontend files they wish.
+        self.fileSync.addSyncMapping(self._jsonCfg.feFrontendCustomisationsDir,
+                                     feAppDir,
+                                     parentMustExist=True,
+                                     deleteExtraDstFiles=False)
+
         self.fileSync.syncFiles()
         self._compilePluginModules(True)
 

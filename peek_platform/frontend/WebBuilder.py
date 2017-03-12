@@ -73,6 +73,12 @@ class WebBuilder(FrontendBuilderABC):
         self._syncPluginFiles(fePluginModulesDir, pluginDetails,
                               "angularFrontendModuleDir")
 
+        # Lastly, Allow the clients to override any frontend files they wish.
+        self.fileSync.addSyncMapping(self._jsonCfg.feFrontendCustomisationsDir,
+                                     feBuildSrcDir,
+                                     parentMustExist=True,
+                                     deleteExtraDstFiles=False)
+
         self.fileSync.syncFiles()
 
         if self._jsonCfg.feSyncFilesForDebugEnabled:

@@ -1,7 +1,7 @@
 import logging
 import os
 
-from jsoncfg.value_mappers import require_bool
+from jsoncfg.value_mappers import require_bool, require_string
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +19,18 @@ class PeekFileConfigFrontendDirMixin:
         """
         with self._cfg as c:
             return c.frontend.nativescriptBuildPrepareEnabled(True, require_bool)
+
+    @property
+    def feFrontendCustomisationsDir(self) -> bool:
+        """ Frontend Customisations Directory
+
+        :return The path of the directory that will override any frontend file with 
+            customers customisations.
+
+        """
+        default = os.path.join(self._homePath, 'frontendCustomisations')
+        with self._cfg as c:
+            return self._chkDir(c.disk.tmp(default, require_string))
 
     @property
     def feSyncFilesForDebugEnabled(self) -> bool:
