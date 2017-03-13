@@ -32,7 +32,6 @@ requirements = [
 
     # Database
     "psycopg2 >= 2.6.2",  # PostGreSQL for Linux
-    "GeoAlchemy2",  # Geospatial addons to SQLAlchemy
     "Shapely >= 1.5.16",  # Geospatial shape manipulation
     "SQLAlchemy >= 1.0.14",  # Database abstraction layer
     "SQLAlchemy-Utils >= 0.32.9",
@@ -42,7 +41,6 @@ requirements = [
     # Utilities
     "python-dateutil >= 2.6.0",
     "Pygments >= 2.0.1",  # Generate HTML for code that is syntax styled
-    "rx >= 1.5.7", # RxPY by Microsoft. Potentially used in plugins to create Observables.
     "watchdog >= 0.8.3", # Used to detect file changes and re-copy them for frontend builds
 
     # Licensing
@@ -55,22 +53,9 @@ requirements = [
     "redis >= 2.10.5",
 
     # Potentially useful packages
-    "GitPython >= 2.0.8",
-    "jira",
-    "dxfgrabber >= 0.7.4",
-
-
-    # Synerty packages
-    # SOAPpy, used in Twisted, twisted.web.soap is only valid for py2
-    "SOAPpy-py3 >= 0.52.24", # See http://soappy.ooz.ie for tutorials
-    "wstools-py3 >= 0.54.2",
-
-    "pytmpdir >= 0.2.3",  # A temporary directory, useful for extracting archives to
-    "txhttputil >= 0.1.8",  # Utility class for http requests
-    "vortexpy >= 0.6.4",  # Data serialisation and transport layer, observable based
-    "json-cfg-rw",
-    "txsuds-py3 >= 0.5.9",
-    "txcelery-py3 >= 1.1.3",
+    # "GitPython >= 2.0.8",
+    # "jira",
+    # "dxfgrabber >= 0.7.4",
 
     # Peek platform dependencies, all must match
     "peek-plugin-base",  ##==%s" % py_package_name,
