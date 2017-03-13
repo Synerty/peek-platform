@@ -30,7 +30,7 @@ class PeekFileConfigFrontendDirMixin:
         """
         default = os.path.join(self._homePath, 'frontendCustomisations')
         with self._cfg as c:
-            return self._chkDir(c.disk.tmp(default, require_string))
+            return self._chkDir(c.frontend.frontendCustomisations(default, require_string))
 
     @property
     def feSyncFilesForDebugEnabled(self) -> bool:
