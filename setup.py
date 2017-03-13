@@ -32,7 +32,6 @@ requirements = [
 
     # Database
     "psycopg2 >= 2.6.2",  # PostGreSQL for Linux
-    "Shapely >= 1.5.16",  # Geospatial shape manipulation
     "SQLAlchemy >= 1.0.14",  # Database abstraction layer
     "SQLAlchemy-Utils >= 0.32.9",
     "alembic >= 0.8.7",  # Database migration utility
@@ -61,6 +60,11 @@ requirements = [
     "peek-plugin-base",  ##==%s" % py_package_name,
 ]
 
+lin_dependencies = [
+    # We still require shapely on windows, but we need to manually download the win wheel
+    "Shapely >= 1.5.16",  # Geospatial shape manipulation
+]
+
 win_dependencies = [
     "pymssql >= 2.1.3",  # DB-API interface to Microsoft SQL Server, requires FreeTDS
     "pycparser >= 2.17",
@@ -72,6 +76,9 @@ win_dependencies = [
 
 if isWindows:
     requirements.extend(win_dependencies)
+
+else:
+    requirements.extend(lin_dependencies)
 
 # Packages that are presently installed from a git repo
 # See http://stackoverflow.com/questions/17366784/setuptools-unable-to-use-link-from-dependency-links/17442663#17442663
