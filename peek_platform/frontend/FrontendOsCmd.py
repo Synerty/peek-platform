@@ -9,22 +9,14 @@ logger = logging.getLogger(__name__)
 
 
 def runNgBuild(feBuildDir: str):
-    try:
-        if isWindows:
-            return __runNodeCmdWin(feBuildDir, ["ng", "build"])
-        return __runNodeCmdLin(feBuildDir, ["ng", "build"])
-
-    finally:
-        logger.info("Frontend distribution rebuild complete.")
+    if isWindows:
+        return __runNodeCmdWin(feBuildDir, ["ng", "build"])
+    return __runNodeCmdLin(feBuildDir, ["ng", "build"])
 
 def runTsc(feDir: str):
-    try:
-        if isWindows:
-            return __runNodeCmdWin(feDir, ["tsc"])
-        return __runNodeCmdLin(feDir, ["tsc"])
-
-    finally:
-        logger.info("Frontend plugin module compile complete.")
+    if isWindows:
+        return __runNodeCmdWin(feDir, ["tsc"])
+    return __runNodeCmdLin(feDir, ["tsc"])
 
 
 def __runNodeCmdWin(feBuildDir: str, cmds: List[str]):
@@ -33,16 +25,18 @@ def __runNodeCmdWin(feBuildDir: str, cmds: List[str]):
                             stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                             shell=True)
 
-    outs, errs = proc.communicate(timeout=20)
+    logger.info("Wating up to 60s for command to finish")
+    outs, errs = proc.communicate(timeout=60)
 
     if proc.returncode in (0,):
-        for line in (outs + errs).decode().splitlines():
-            print(".")
+        logger.info("%s finished successfully" % ' '.join(cmds))
+        # for line in (outs + errs).decode().splitlines():
+        #     print(".")
     else:
         for line in (outs + errs).decode().splitlines():
             print(line)
 
-    raise Exception("ng build in %s failed" % feBuildDir)
+        raise Exception("%s in %s failed" % (' '.join(cmds), feBuildDir))
 
 
 def __runNodeCmdLin(feBuildDir: str, cmds: List[str]):
