@@ -2,21 +2,17 @@ import json
 import logging
 import os
 import shutil
-import subprocess
 from abc import ABCMeta, abstractmethod
 from collections import namedtuple
-from subprocess import PIPE
 
 from jsoncfg.value_mappers import require_bool
-from typing import List
-
-from peek_platform import PeekPlatformConfig
 from peek_platform.file_config.PeekFileConfigFrontendDirMixin import \
     PeekFileConfigFrontendDirMixin
 from peek_platform.file_config.PeekFileConfigOsMixin import PeekFileConfigOsMixin
 from peek_platform.frontend.FrontendFileSync import FrontendFileSync
 from peek_plugin_base.PeekVortexUtil import peekClientName, peekServerName
 from peek_plugin_base.PluginPackageFileConfig import PluginPackageFileConfig
+from typing import List
 
 logger = logging.getLogger(__name__)
 
@@ -44,37 +40,6 @@ _routesTemplate = """
         path: '%s',
         loadChildren: "%s/%s"
     }"""
-
-nodeModuleTsConfig = """
-{
-  "strictNullChecks": true,
-  "allowUnreachableCode": true,
-  "compilerOptions": {
-    "baseUrl": "",
-    "declaration": false,
-    "emitDecoratorMetadata": true,
-    "experimentalDecorators": true,
-    "forceConsistentCasingInFileNames":true,
-    "lib": ["es6", "dom"],
-    "module": "commonjs",
-    "moduleResolution": "node",
-    "sourceMap": false,
-    "target": "es5",
-    "typeRoots": [
-      "../@types"
-    ]
-  }
-}
-"""
-
-nodeModuleTypingsD = """
-/* SystemJS module definition */
-declare let module: {
-  id: string;
-};
-
-declare let require: any;
-"""
 
 
 class FrontendBuilderABC(metaclass=ABCMeta):
@@ -420,31 +385,34 @@ class FrontendBuilderABC(metaclass=ABCMeta):
         543446    4 -rw-r--r--   1 peek     sudo         1531 Dec  2 17:37 ./src/app/environment/env-worker/env-worker.component.html
 
         """
-        ignore = (".git", ".idea", "dist", '__pycache__', 'node_modules',
-                  '.lastHash', "platforms")
-        ignore = ["'%s'" % i for i in ignore]  # Surround with quotes
-        grep = "grep -v -e %s " % ' -e '.join(ignore)  # Create the grep command
-        cmd = "find -L %s -type f -ls" % feBuildDir # | %s" % (feBuildDir, grep)
-        commandComplete = subprocess.run(cmd,
-                                         executable=PeekPlatformConfig.config.bashLocation,
-                                         stdout=PIPE, stderr=PIPE, shell=True)
 
-        if commandComplete.returncode:
-            for line in commandComplete.stdout.splitlines():
-                logger.error(line)
+        excludePathContains = ('__pycache__', 'node_modules', 'platforms', 'dist')
+        excludeFilesEndWith = (".git", ".idea", '.lastHash')
+        excludeFilesStartWith = ()
 
-            for line in commandComplete.stderr.splitlines():
-                logger.error(line)
+        fileList = []
 
-            raise Exception("Frontend compile diff check failed")
+        for (path, directories, filenames) in os.walk(feBuildDir):
+            if [e for e in excludePathContains if path.endswith(os.path.sep + e)]:
+                continue
 
-        logger.debug("Frontend compile diff check ran ok")
+            for filename in filenames:
+                if [e for e in excludeFilesEndWith if filename.endswith(e)]:
+                    continue
 
-        newHash = commandComplete.stdout
+                if [e for e in excludeFilesStartWith if filename.startswith(e)]:
+                    continue
+
+                fullPath = os.path.join(path, filename)
+                relPath = fullPath[len(feBuildDir) + 1:]
+                stat = os.stat(fullPath)
+                fileList.append('%s %s %s' % (relPath, stat.st_size, stat.st_mtime))
+
+        newHash = '\n'.join(fileList)
         fileHash = ""
 
         if os.path.isfile(hashFileName):
-            with open(hashFileName, 'rb') as f:
+            with open(hashFileName, 'r') as f:
                 fileHash = f.read()
 
         fileHashLines = set(fileHash.splitlines())
@@ -460,7 +428,7 @@ class FrontendBuilderABC(metaclass=ABCMeta):
             logger.debug("Added %s" % line)
 
         if changes:
-            with open(hashFileName, 'wb') as f:
+            with open(hashFileName, 'w') as f:
                 f.write(newHash)
 
         return changes

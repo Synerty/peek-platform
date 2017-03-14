@@ -1,14 +1,43 @@
 import logging
 import os
 
+from peek_platform.frontend.FrontendBuilderABC import FrontendBuilderABC
+from peek_platform.frontend.FrontendOsCmd import runTsc
 from twisted.internet.task import LoopingCall
 from typing import List
 
-from peek_platform.frontend.FrontendBuilderABC import FrontendBuilderABC, \
-    nodeModuleTsConfig, nodeModuleTypingsD
-from peek_platform.util.PtyUtil import PtyOutParser, spawnPty, logSpawnException
-
 logger = logging.getLogger(__name__)
+
+nodeModuleTsConfig = """
+{
+  "strictNullChecks": true,
+  "allowUnreachableCode": true,
+  "compilerOptions": {
+    "baseUrl": "",
+    "declaration": false,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "forceConsistentCasingInFileNames":true,
+    "lib": ["es2016", "dom"],
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "sourceMap": false,
+    "target": "es5",
+    "typeRoots": [
+      "../@types"
+    ]
+  }
+}
+"""
+
+nodeModuleTypingsD = """
+/* SystemJS module definition */
+declare let module: {
+  id: string;
+};
+
+declare let require: any;
+"""
 
 
 class NativescriptBuilder(FrontendBuilderABC):
@@ -97,12 +126,14 @@ class NativescriptBuilder(FrontendBuilderABC):
                        '/build/intermediates/assets/F0F1/debug/app/tns_modules')
 
         self.fileSync.addSyncMapping(fePluginModulesDir,
-                                     os.path.join(feBuildDir, androidDir1, pluingModulesDirName),
+                                     os.path.join(feBuildDir, androidDir1,
+                                                  pluingModulesDirName),
                                      parentMustExist=True,
                                      preSyncCallback=self._scheduleModuleCompile)
 
         self.fileSync.addSyncMapping(fePluginModulesDir,
-                                     os.path.join(feBuildDir, androidDir2, pluingModulesDirName),
+                                     os.path.join(feBuildDir, androidDir2,
+                                                  pluingModulesDirName),
                                      parentMustExist=True)
 
         # Lastly, Allow the clients to override any frontend files they wish.
@@ -194,12 +225,9 @@ class NativescriptBuilder(FrontendBuilderABC):
         logger.info("Compiling plugin modules")
 
         try:
-            parser = PtyOutParser(loggingStartMarker="Hash: ")
-            spawnPty("cd %s && tsc" % self._fePluginModulesDir, parser)
-            logger.info("Frontend plugin module compile complete.")
+            runTsc(self._fePluginModulesDir)
 
         except Exception as e:
-            logSpawnException(e)
             # if os.path.exists(hashFileName):
             #     os.remove(hashFileName)
 

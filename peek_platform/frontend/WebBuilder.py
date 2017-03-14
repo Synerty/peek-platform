@@ -1,6 +1,7 @@
 import logging
 import os
 
+from peek_platform.frontend.FrontendOsCmd import runNgBuild
 from typing import List
 
 from peek_platform.frontend.FrontendBuilderABC import FrontendBuilderABC
@@ -110,12 +111,9 @@ class WebBuilder(FrontendBuilderABC):
         logger.info("Rebuilding frontend distribution")
 
         try:
-            parser = PtyOutParser(loggingStartMarker="Hash: ")
-            spawnPty("cd %s && ng build" % feBuildDir, parser)
-            logger.info("Frontend distribution rebuild complete.")
+            runNgBuild(feBuildDir)
 
         except Exception as e:
-            logSpawnException(e)
             if os.path.exists(hashFileName):
                 os.remove(hashFileName)
 
