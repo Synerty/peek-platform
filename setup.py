@@ -88,15 +88,13 @@ dependency_links = [
 
 ]
 
-doc_requirements = [
+dev_requirements = [
     "coverage >= 4.2",
     "mock >= 2.0.0",
     "selenium >= 2.53.6",
-    "Sphinx >= 1.4.8",
-    "Sphinx_rtd_theme >= 0.1.10a0",
 ]
 
-requirements.extend(doc_requirements)
+requirements.extend(dev_requirements)
 
 setup(
     name=pip_package_name,
