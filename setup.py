@@ -72,6 +72,8 @@ win_dependencies = [
     "cryptography >= 1.7.1",
     "pytest >= 3.0.5",
     "pypiwin32",
+    "wheel >= 0.30.0a0",
+    "virtualenv >= 15.1.0",
 ]
 
 if isWindows:
