@@ -93,11 +93,11 @@ class NativescriptBuilder(FrontendBuilderABC):
         ## --------------------
         # Prepare the plugin lazy loaded part of the application
         self._writePluginRouteLazyLoads(feAppDir, pluginDetails)
-        self._syncPluginFiles(feAppDir, pluginDetails, "angularFrontendAppDir")
+        self._syncPluginFiles(feAppDir, pluginDetails, "appDir")
 
         ## --------------------
         # Prepare the plugin assets
-        self._syncPluginFiles(feAssetsDir, pluginDetails, "angularFrontendAssetsDir")
+        self._syncPluginFiles(feAssetsDir, pluginDetails, "assetDir")
 
         ## --------------------
         # Prepare the shared / global parts of the plugins
@@ -109,7 +109,7 @@ class NativescriptBuilder(FrontendBuilderABC):
         # * to import code from each other.
         # * provide global services.
         self._syncPluginFiles(fePluginModulesDir, pluginDetails,
-                              "angularFrontendModuleDir")
+                              "moduleDir")
 
         self._writeFileIfRequired(fePluginModulesDir, 'tsconfig.json', nodeModuleTsConfig)
         self._writeFileIfRequired(fePluginModulesDir, 'typings.d.ts', nodeModuleTypingsD)

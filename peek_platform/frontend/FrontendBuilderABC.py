@@ -23,15 +23,15 @@ PluginDetail = namedtuple("PluginDetail",
                           ["pluginRootDir",
                            "pluginName",
                            "pluginTitle",
-                           "angularFrontendAppDir",
-                           "angularFrontendModuleDir",
-                           "angularFrontendAssetsDir",
-                           "angularMainModule",
-                           "angularRootModule",
-                           "angularRootService",
-                           "angularPluginIcon",
-                           "showPluginHomeLink",
-                           "showPluginInTitleBar",
+                           "appDir",
+                           "appModule",
+                           "moduleDir",
+                           "assetDir",
+                           "rootModule",
+                           "rootService",
+                           "icon",
+                           "showHomeLink",
+                           "showInTitleBar",
                            "titleBarLeft",
                            "titleBarText"])
 
@@ -58,7 +58,7 @@ class FrontendBuilderABC(metaclass=ABCMeta):
 
     def __init__(self, frontendProjectDir: str, platformService: str, jsonCfg,
                  loadedPlugins: List):
-        assert platformService in (peekClientName, peekServerName), (
+        assert platformService in ("mobile", "admin"), (
             "Unexpected service %s" % platformService)
 
         self._platformService = platformService
@@ -95,13 +95,13 @@ class FrontendBuilderABC(metaclass=ABCMeta):
             if not enabled:
                 continue
 
-            angularFrontendAppDir = (jsonCfgNode.angularFrontendAppDir(None))
-            angularFrontendModuleDir = (jsonCfgNode.angularFrontendModuleDir(None))
-            angularFrontendAssetsDir = (jsonCfgNode.angularFrontendAssetsDir(None))
-            angularMainModule = (jsonCfgNode.angularMainModule(None))
+            appDir = (jsonCfgNode.appDir(None))
+            moduleDir = (jsonCfgNode.moduleDir(None))
+            assetDir = (jsonCfgNode.assetDir(None))
+            appModule = (jsonCfgNode.appModule(None))
 
-            showPluginHomeLink = (jsonCfgNode.showPluginHomeLink(True))
-            showPluginInTitleBar = (jsonCfgNode.showPluginInTitleBar(False))
+            showHomeLink = (jsonCfgNode.showHomeLink(True))
+            showInTitleBar = (jsonCfgNode.showInTitleBar(False))
             titleBarLeft = (jsonCfgNode.titleBarLeft(False))
             titleBarText = (jsonCfgNode.titleBarText(None))
 
@@ -111,27 +111,27 @@ class FrontendBuilderABC(metaclass=ABCMeta):
                     assert data["file"], "%s.file is missing for %s" % sub
                     assert data["class"], "%s.class is missing for %s" % sub
 
-            angularRootModule = (jsonCfgNode.angularRootModule(None))
-            checkThing("angularRootModule", angularRootModule)
+            rootModule = (jsonCfgNode.rootModule(None))
+            checkThing("rootModule", rootModule)
 
-            angularRootService = (jsonCfgNode.angularRootService(None))
-            checkThing("angularRootService", angularRootService)
+            rootService = (jsonCfgNode.rootService(None))
+            checkThing("rootService", rootService)
 
-            angularPluginIcon = (jsonCfgNode.angularPluginIcon(None))
+            icon = (jsonCfgNode.icon(None))
 
             pluginDetails.append(
                 PluginDetail(pluginRootDir=plugin.rootDir,
                              pluginName=plugin.name,
                              pluginTitle=plugin.title,
-                             angularFrontendAppDir=angularFrontendAppDir,
-                             angularFrontendModuleDir=angularFrontendModuleDir,
-                             angularFrontendAssetsDir=angularFrontendAssetsDir,
-                             angularMainModule=angularMainModule,
-                             angularRootModule=angularRootModule,
-                             angularRootService=angularRootService,
-                             angularPluginIcon=angularPluginIcon,
-                             showPluginHomeLink=showPluginHomeLink,
-                             showPluginInTitleBar=showPluginInTitleBar,
+                             appDir=appDir,
+                             moduleDir=moduleDir,
+                             assetDir=assetDir,
+                             appModule=appModule,
+                             rootModule=rootModule,
+                             rootService=rootService,
+                             icon=icon,
+                             showHomeLink=showHomeLink,
+                             showInTitleBar=showInTitleBar,
                              titleBarLeft=titleBarLeft,
                              titleBarText=titleBarText)
             )
@@ -154,13 +154,13 @@ class FrontendBuilderABC(metaclass=ABCMeta):
 
         links = []
         for pluginDetail in pluginDetails:
-            if not (pluginDetail.angularMainModule and pluginDetail.showPluginHomeLink):
+            if not (pluginDetail.appModule and pluginDetail.showHomeLink):
                 continue
 
             links.append(dict(name=pluginDetail.pluginName,
                               title=pluginDetail.pluginTitle,
                               resourcePath="/%s" % pluginDetail.pluginName,
-                              pluginIconPath=pluginDetail.angularPluginIcon))
+                              pluginIconPath=pluginDetail.icon))
 
         contents = "// This file is auto generated, the git version is blank and .gitignored\n"
         contents += "export const homeLinks = %s;\n" % json.dumps(
@@ -187,7 +187,7 @@ class FrontendBuilderABC(metaclass=ABCMeta):
 
         links = []
         for pluginDetail in pluginDetails:
-            if not (pluginDetail.angularMainModule and pluginDetail.showPluginInTitleBar):
+            if not (pluginDetail.appModule and pluginDetail.showInTitleBar):
                 continue
 
             links.append(dict(plugin=pluginDetail.pluginName,
@@ -215,12 +215,12 @@ class FrontendBuilderABC(metaclass=ABCMeta):
         """
         routes = []
         for pluginDetail in pluginDetails:
-            if not pluginDetail.angularMainModule:
+            if not pluginDetail.appModule:
                 continue
             routes.append(_routesTemplate
                           % (pluginDetail.pluginName,
                              pluginDetail.pluginName,
-                             pluginDetail.angularMainModule))
+                             pluginDetail.appModule))
 
         routeData = "// This file is auto generated, the git version is blank and .gitignored\n"
         routeData += "export const pluginRoutes = ["
@@ -236,14 +236,14 @@ class FrontendBuilderABC(metaclass=ABCMeta):
         imports = []
         modules = []
         for pluginDetail in pluginDetails:
-            if not pluginDetail.angularRootModule:
+            if not pluginDetail.rootModule:
                 continue
             imports.append('import {%s} from "@%s/%s/%s";'
-                           % (pluginDetail.angularRootModule["class"],
+                           % (pluginDetail.rootModule["class"],
                               serviceName,
                               pluginDetail.pluginName,
-                              pluginDetail.angularRootModule["file"]))
-            modules.append(pluginDetail.angularRootModule["class"])
+                              pluginDetail.rootModule["file"]))
+            modules.append(pluginDetail.rootModule["class"])
 
         routeData = "// This file is auto generated, the git version is blank and .gitignored\n"
         routeData += '\n'.join(imports) + '\n'
@@ -260,14 +260,14 @@ class FrontendBuilderABC(metaclass=ABCMeta):
         imports = []
         services = []
         for pluginDetail in pluginDetails:
-            if not pluginDetail.angularRootService:
+            if not pluginDetail.rootService:
                 continue
             imports.append('import {%s} from "@%s/%s/%s";'
-                           % (pluginDetail.angularRootService["class"],
+                           % (pluginDetail.rootService["class"],
                               serviceName,
                               pluginDetail.pluginName,
-                              pluginDetail.angularRootService["file"]))
-            services.append(pluginDetail.angularRootService["class"])
+                              pluginDetail.rootService["file"]))
+            services.append(pluginDetail.rootService["class"])
 
         routeData = "// This file is auto generated, the git version is blank and .gitignored\n"
         routeData += '\n'.join(imports) + '\n'
@@ -357,11 +357,11 @@ class FrontendBuilderABC(metaclass=ABCMeta):
                 del dependencies[key]
 
         for pluginDetail in pluginDetails:
-            if not pluginDetail.angularFrontendModuleDir:
+            if not pluginDetail.moduleDir:
                 continue
 
             moduleDir = os.path.join(pluginDetail.pluginRootDir,
-                                     pluginDetail.angularFrontendModuleDir)
+                                     pluginDetail.moduleDir)
 
             name = "@%s/%s" % (serviceName, pluginDetail.pluginName)
             dependencies[name] = "file:" + moduleDir

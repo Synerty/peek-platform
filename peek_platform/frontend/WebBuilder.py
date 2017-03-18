@@ -56,11 +56,11 @@ class WebBuilder(FrontendBuilderABC):
         ## --------------------
         # Prepare the plugin lazy loaded part of the application
         self._writePluginRouteLazyLoads(feBuildSrcDir, pluginDetails)
-        self._syncPluginFiles(feBuildSrcDir, pluginDetails, "angularFrontendAppDir")
+        self._syncPluginFiles(feBuildSrcDir, pluginDetails, "appDir")
 
         ## --------------------
         # Prepare the plugin assets
-        self._syncPluginFiles(feBuildAssetsDir, pluginDetails, "angularFrontendAssetsDir")
+        self._syncPluginFiles(feBuildAssetsDir, pluginDetails, "assetDir")
 
         ## --------------------
         # Prepare the shared / global parts of the plugins
@@ -72,7 +72,7 @@ class WebBuilder(FrontendBuilderABC):
         # * to import code from each other.
         # * provide global services.
         self._syncPluginFiles(fePluginModulesDir, pluginDetails,
-                              "angularFrontendModuleDir")
+                              "moduleDir")
 
         # Lastly, Allow the clients to override any frontend files they wish.
         self.fileSync.addSyncMapping(self._jsonCfg.feFrontendCustomisationsDir,
