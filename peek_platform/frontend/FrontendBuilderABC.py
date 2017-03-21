@@ -172,7 +172,7 @@ class FrontendBuilderABC(metaclass=ABCMeta):
                                   pluginDetails: [PluginDetail]) -> None:
         """
         
-        import {TitleBarLink} from "@synerty/peek-client-fe-util";
+        import {TitleBarLink} from "@synerty/peek-mobile-util";
 
         export const titleBarLinks :TitleBarLink = [
             {
@@ -197,7 +197,7 @@ class FrontendBuilderABC(metaclass=ABCMeta):
                               badgeCount=None))
 
         contents = "// This file is auto generated, the git version is blank and .gitignored\n\n"
-        contents += "import {TitleBarLink} from '@synerty/peek-client-fe-util';\n\n"
+        contents += "import {TitleBarLink} from '@synerty/peek-mobile-util';\n\n"
         contents += "export const titleBarLinks :TitleBarLink[] = %s;\n" % json.dumps(
             links, sort_keys=True, indent=4, separators=(', ', ': '))
 

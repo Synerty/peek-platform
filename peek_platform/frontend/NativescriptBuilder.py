@@ -160,6 +160,8 @@ class NativescriptBuilder(FrontendBuilderABC):
         if fileName.endswith(".ts"):
             contents = contents.replace(b'@synerty/peek-web-ns/index.web',
                                         b'@synerty/peek-web-ns/index.nativescript')
+            contents = contents.replace(b'@synerty/peek-web-ns/index.mweb',
+                                        b'@synerty/peek-web-ns/index.nativescript')
 
             # if b'@NgModule' in contents:
             #     return self._patchModule(fileName, contents)
