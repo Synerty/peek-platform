@@ -104,7 +104,7 @@ setup(
     install_requires=requirements,
     dependency_links=dependency_links,
     process_dependency_links=True,
-    version=package_version,
+    zip_safe=False,version=package_version,
     description='Peek Platform Common Code',
     author='Synerty',
     author_email='contact@synerty.com',
