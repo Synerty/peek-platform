@@ -6,13 +6,13 @@ from abc import ABCMeta, abstractmethod
 from collections import namedtuple
 
 from jsoncfg.value_mappers import require_bool
+from typing import List
+
 from peek_platform.file_config.PeekFileConfigFrontendDirMixin import \
     PeekFileConfigFrontendDirMixin
 from peek_platform.file_config.PeekFileConfigOsMixin import PeekFileConfigOsMixin
 from peek_platform.frontend.FrontendFileSync import FrontendFileSync
-from peek_plugin_base.PeekVortexUtil import peekClientName, peekServerName
 from peek_plugin_base.PluginPackageFileConfig import PluginPackageFileConfig
-from typing import List
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +26,8 @@ PluginDetail = namedtuple("PluginDetail",
                            "appDir",
                            "appModule",
                            "moduleDir",
+                           "privateModuleDir",
+                           "publicModuleDir",
                            "assetDir",
                            "rootModule",
                            "rootService",
@@ -84,7 +86,7 @@ class FrontendBuilderABC(metaclass=ABCMeta):
     def _loadPluginConfigs(self) -> [PluginDetail]:
         pluginDetails = []
 
-        for plugin in self._loadedPlugins.values():
+        for plugin in self._loadedPlugins:
             assert isinstance(plugin.packageCfg, PluginPackageFileConfig)
             pluginPackageConfig = plugin.packageCfg.config
 
@@ -95,15 +97,15 @@ class FrontendBuilderABC(metaclass=ABCMeta):
             if not enabled:
                 continue
 
-            appDir = (jsonCfgNode.appDir(None))
-            moduleDir = (jsonCfgNode.moduleDir(None))
-            assetDir = (jsonCfgNode.assetDir(None))
-            appModule = (jsonCfgNode.appModule(None))
+            appDir = jsonCfgNode.appDir(None)
+            moduleDir = jsonCfgNode.moduleDir(None)
+            assetDir = jsonCfgNode.assetDir(None)
+            appModule = jsonCfgNode.appModule(None)
 
-            showHomeLink = (jsonCfgNode.showHomeLink(True))
-            showInTitleBar = (jsonCfgNode.showInTitleBar(False))
-            titleBarLeft = (jsonCfgNode.titleBarLeft(False))
-            titleBarText = (jsonCfgNode.titleBarText(None))
+            showHomeLink = jsonCfgNode.showHomeLink(True)
+            showInTitleBar = jsonCfgNode.showInTitleBar(False)
+            titleBarLeft = jsonCfgNode.titleBarLeft(False)
+            titleBarText = jsonCfgNode.titleBarText(None)
 
             def checkThing(name, data):
                 sub = (name, plugin.name)

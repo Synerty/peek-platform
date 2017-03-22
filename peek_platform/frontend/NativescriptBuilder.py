@@ -1,10 +1,11 @@
 import logging
 import os
 
-from peek_platform.frontend.FrontendBuilderABC import FrontendBuilderABC
-from peek_platform.frontend.FrontendOsCmd import runTsc
 from twisted.internet.task import LoopingCall
 from typing import List
+
+from peek_platform.frontend.FrontendBuilderABC import FrontendBuilderABC
+from peek_platform.frontend.FrontendOsCmd import runTsc
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +47,10 @@ class NativescriptBuilder(FrontendBuilderABC):
         FrontendBuilderABC.__init__(self, frontendProjectDir, platformService,
                                     jsonCfg, loadedPlugins)
 
+        self._moduleCompileRequired = None
+        self._moduleCompileLoopingCall = None
+        self._feModuleDirs = None
+
     def build(self) -> None:
         if not self._jsonCfg.feNativescriptBuildPrepareEnabled:
             logger.info("SKIPPING, Nativescript build prepare is disabled in config")
@@ -61,80 +66,81 @@ class NativescriptBuilder(FrontendBuilderABC):
 
         feNodeModulesDir = os.path.join(feBuildDir, 'node_modules')
 
-        pluingModulesDirName = '@' + self._platformService
-        fePluginModulesDir = os.path.join(feNodeModulesDir,
-                                          pluingModulesDirName)
-
         self._moduleCompileRequired = False
         self._moduleCompileLoopingCall = None
-        self._fePluginModulesDir = fePluginModulesDir
+
+        self._feModuleDirs = [
+            (os.path.join(feNodeModulesDir, '@peek'), "moduleDir"),
+        ]
 
         fePackageJson = os.path.join(feBuildDir, 'package.json')
 
         pluginDetails = self._loadPluginConfigs()
 
-        ## --------------------
+        # --------------------
         # Check if node_modules exists
 
         if not os.path.exists(os.path.join(feBuildDir, 'node_modules')):
             raise NotADirectoryError("node_modules doesn't exist, ensure you've run "
                                      "`npm install` in dir %s" % feBuildDir)
 
-        ## --------------------
+        # --------------------
         # Prepare the common frontend application
 
         self.fileSync.addSyncMapping(feSrcAppDir, os.path.join(feAppDir, 'app'))
 
-        ## --------------------
+        # --------------------
         # Prepare the home and title bar configuration for the plugins
         self._writePluginHomeLinks(feAppDir, pluginDetails)
         self._writePluginTitleBarLinks(feAppDir, pluginDetails)
 
-        ## --------------------
+        # --------------------
         # Prepare the plugin lazy loaded part of the application
         self._writePluginRouteLazyLoads(feAppDir, pluginDetails)
         self._syncPluginFiles(feAppDir, pluginDetails, "appDir")
 
-        ## --------------------
+        # --------------------
         # Prepare the plugin assets
         self._syncPluginFiles(feAssetsDir, pluginDetails, "assetDir")
 
-        ## --------------------
+        # --------------------
         # Prepare the shared / global parts of the plugins
 
         self._writePluginRootModules(feAppDir, pluginDetails, self._platformService)
         self._writePluginRootServices(feAppDir, pluginDetails, self._platformService)
 
-        # Link the shared code, this allows plugins
-        # * to import code from each other.
-        # * provide global services.
-        self._syncPluginFiles(fePluginModulesDir, pluginDetails,
-                              "moduleDir")
+        # There are two
+        for feModDir, jsonAttr, in self._feModuleDirs:
+            # Link the shared code, this allows plugins
+            # * to import code from each other.
+            # * provide global services.
+            self._syncPluginFiles(feModDir, pluginDetails, jsonAttr)
 
-        self._writeFileIfRequired(fePluginModulesDir, 'tsconfig.json', nodeModuleTsConfig)
-        self._writeFileIfRequired(fePluginModulesDir, 'typings.d.ts', nodeModuleTypingsD)
+            self._writeFileIfRequired(feModDir, 'tsconfig.json', nodeModuleTsConfig)
+            self._writeFileIfRequired(feModDir, 'typings.d.ts', nodeModuleTypingsD)
 
-        # Update the package.json in the peek_client_fe project so that it includes
-        # references to the plugins linked under node_modules.
-        # Otherwise nativescript doesn't include them in it's build.
-        self._updatePackageJson(fePackageJson, pluginDetails, self._platformService)
+            # Update the package.json in the peek_client_fe project so that it includes
+            # references to the plugins linked under node_modules.
+            # Otherwise nativescript doesn't include them in it's build.
+            self._updatePackageJson(fePackageJson, pluginDetails, self._platformService)
 
-        # Now sync those node_modules/@peek-xxx packages into the "platforms" build dirs
+            # Now sync those node_modules/@peek-xxx packages into the
+            # "platforms" build dirs
 
-        androidDir1 = 'platforms/android/src/main/assets/app/tns_modules'
-        androidDir2 = ('platforms/android'
-                       '/build/intermediates/assets/F0F1/debug/app/tns_modules')
+            androidDir1 = 'platforms/android/src/main/assets/app/tns_modules'
+            androidDir2 = ('platforms/android'
+                           '/build/intermediates/assets/F0F1/debug/app/tns_modules')
 
-        self.fileSync.addSyncMapping(fePluginModulesDir,
-                                     os.path.join(feBuildDir, androidDir1,
-                                                  pluingModulesDirName),
-                                     parentMustExist=True,
-                                     preSyncCallback=self._scheduleModuleCompile)
+            self.fileSync.addSyncMapping(feModDir,
+                                         os.path.join(feBuildDir, androidDir1,
+                                                      os.path.dirname(feModDir)),
+                                         parentMustExist=True,
+                                         preSyncCallback=self._scheduleModuleCompile)
 
-        self.fileSync.addSyncMapping(fePluginModulesDir,
-                                     os.path.join(feBuildDir, androidDir2,
-                                                  pluingModulesDirName),
-                                     parentMustExist=True)
+            self.fileSync.addSyncMapping(feModDir,
+                                         os.path.join(feBuildDir, androidDir2,
+                                                      os.path.dirname(feModDir)),
+                                         parentMustExist=True)
 
         # Lastly, Allow the clients to override any frontend files they wish.
         self.fileSync.addSyncMapping(self._jsonCfg.feFrontendCustomisationsDir,
@@ -180,6 +186,14 @@ class NativescriptBuilder(FrontendBuilderABC):
     #     return newContents
 
     def _patchComponent(self, fileName: str, contents: bytes) -> bytes:
+        """ Patch Component
+        
+        Apply patches to the WEB file to convert it to the NativeScript version
+
+        :param fileName: The name of the file
+        :param contents: The original contents of the file
+        :return: The new contents of the file
+        """
         inComponentHeader = False
 
         newContents = b''
@@ -221,21 +235,23 @@ class NativescriptBuilder(FrontendBuilderABC):
 
         self._moduleCompileRequired = False
 
-        hashFileName = os.path.join(self._fePluginModulesDir, ".lastHash")
+        for feModDir, _ in self._feModuleDirs:
 
-        if not self._recompileRequiredCheck(self._fePluginModulesDir, hashFileName):
-            logger.info("Modules have not changed, recompile not required.")
-            return
+            hashFileName = os.path.join(feModDir, ".lastHash")
 
-        logger.info("Compiling plugin modules")
+            if not self._recompileRequiredCheck(feModDir, hashFileName):
+                logger.info("Modules have not changed, recompile not required.")
+                return
 
-        try:
-            runTsc(self._fePluginModulesDir)
+            logger.info("Compiling plugin modules")
 
-        except Exception as e:
-            # if os.path.exists(hashFileName):
-            #     os.remove(hashFileName)
+            try:
+                runTsc(feModDir)
 
-            # Update the detail of the exception and raise it
-            e.message = "The frontend plugin modules to compile."
-            # raise
+            except Exception as e:
+                # if os.path.exists(hashFileName):
+                #     os.remove(hashFileName)
+
+                # Update the detail of the exception and raise it
+                e.message = "The frontend plugin modules to compile."
+                # raise

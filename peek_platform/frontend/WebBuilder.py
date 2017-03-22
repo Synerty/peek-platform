@@ -31,48 +31,51 @@ class WebBuilder(FrontendBuilderABC):
 
         feNodeModulesDir = os.path.join(feBuildDir, 'node_modules')
 
-        fePluginModulesDir = os.path.join(feNodeModulesDir,
-                                          '@' + self._platformService)
+        feModuleDirs = [
+            (os.path.join(feNodeModulesDir, '@peek'), "moduleDir"),
+        ]
 
         pluginDetails = self._loadPluginConfigs()
 
-        ## --------------------
+        # --------------------
         # Check if node_modules exists
 
         if not os.path.exists(os.path.join(feBuildDir, 'node_modules')):
             raise NotADirectoryError("node_modules doesn't exist, ensure you've run "
                                      "`npm install` in dir %s" % feBuildDir)
 
-        ## --------------------
+        # --------------------
         # Prepare the common frontend application
 
         self.fileSync.addSyncMapping(feSrcAppDir, os.path.join(feBuildSrcDir, 'app'))
 
-        ## --------------------
+        # --------------------
         # Prepare the home and title bar configuration for the plugins
         self._writePluginHomeLinks(feBuildSrcDir, pluginDetails)
         self._writePluginTitleBarLinks(feBuildSrcDir, pluginDetails)
 
-        ## --------------------
+        # --------------------
         # Prepare the plugin lazy loaded part of the application
         self._writePluginRouteLazyLoads(feBuildSrcDir, pluginDetails)
         self._syncPluginFiles(feBuildSrcDir, pluginDetails, "appDir")
 
-        ## --------------------
+        # --------------------
         # Prepare the plugin assets
         self._syncPluginFiles(feBuildAssetsDir, pluginDetails, "assetDir")
 
-        ## --------------------
+        # --------------------
         # Prepare the shared / global parts of the plugins
 
         self._writePluginRootModules(feBuildSrcDir, pluginDetails, self._platformService)
         self._writePluginRootServices(feBuildSrcDir, pluginDetails, self._platformService)
 
-        # Link the shared code, this allows plugins
-        # * to import code from each other.
-        # * provide global services.
-        self._syncPluginFiles(fePluginModulesDir, pluginDetails,
-                              "moduleDir")
+
+        for feModDir, jsonAttr, in feModuleDirs:
+            # Link the shared code, this allows plugins
+            # * to import code from each other.
+            # * provide global services.
+            self._syncPluginFiles(feModDir, pluginDetails,jsonAttr)
+
 
         # Lastly, Allow the clients to override any frontend files they wish.
         self.fileSync.addSyncMapping(self._jsonCfg.feFrontendCustomisationsDir,
