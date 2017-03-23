@@ -386,14 +386,29 @@ class FrontendBuilderABC(metaclass=ABCMeta):
 
         """
 
-        excludePathContains = ('__pycache__', 'node_modules', 'platforms', 'dist')
         excludeFilesEndWith = (".git", ".idea", '.lastHash')
         excludeFilesStartWith = ()
+
+        def dirCheck(path):
+            excludePathContains = ('__pycache__', 'node_modules', 'platforms', 'dist')
+
+            # Always include the node_modules/@peek module dir
+            if path.endswith("@peek"):
+                return True
+
+            for exPath in excludePathContains:
+                if path.endswith(os.path.sep + exPath):
+                    return False
+
+                if path.startswith(exPath + os.path.sep):
+                    return False
+
+            return True
 
         fileList = []
 
         for (path, directories, filenames) in os.walk(feBuildDir):
-            if [e for e in excludePathContains if path.endswith(os.path.sep + e)]:
+            if not dirCheck(path):
                 continue
 
             for filename in filenames:
