@@ -122,7 +122,7 @@ class NativescriptBuilder(FrontendBuilderABC):
             # Update the package.json in the peek_client_fe project so that it includes
             # references to the plugins linked under node_modules.
             # Otherwise nativescript doesn't include them in it's build.
-            self._updatePackageJson(fePackageJson, pluginDetails, self._platformService)
+            self._updatePackageJson(fePackageJson, pluginDetails)
 
             # Now sync those node_modules/@peek-xxx packages into the
             # "platforms" build dirs

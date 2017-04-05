@@ -343,8 +343,9 @@ class FrontendBuilderABC(metaclass=ABCMeta):
         pass
 
     def _updatePackageJson(self, targetJson: str,
-                           pluginDetails: [PluginDetail],
-                           serviceName: str) -> None:
+                           pluginDetails: [PluginDetail]) -> None:
+
+        serviceName = "@peek"
 
         # Remove all the old symlinks
 
@@ -353,7 +354,7 @@ class FrontendBuilderABC(metaclass=ABCMeta):
 
         dependencies = jsonData["dependencies"]
         for key in list(dependencies):
-            if key.startswith('@' + serviceName):
+            if key.startswith(serviceName):
                 del dependencies[key]
 
         for pluginDetail in pluginDetails:
@@ -363,7 +364,7 @@ class FrontendBuilderABC(metaclass=ABCMeta):
             moduleDir = os.path.join(pluginDetail.pluginRootDir,
                                      pluginDetail.moduleDir)
 
-            name = "@%s/%s" % (serviceName, pluginDetail.pluginName)
+            name = "%s/%s" % (serviceName, pluginDetail.pluginName)
             dependencies[name] = "file:" + moduleDir
 
         contents = json.dumps(jsonData, f, sort_keys=True, indent=2,
