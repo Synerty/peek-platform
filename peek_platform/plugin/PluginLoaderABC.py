@@ -16,6 +16,7 @@ from peek_platform import PeekPlatformConfig
 from peek_plugin_base.PluginCommonEntryHookABC import PluginCommonEntryHookABC
 from peek_plugin_base.PluginPackageFileConfig import PluginPackageFileConfig
 from vortex.TupleSelector import TupleSelector
+from vortex.rpc.RPC import _VortexRPCResultTuple, _VortexRPCArgTuple
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +24,8 @@ logger = logging.getLogger(__name__)
 TupleSelector()
 TupleUpdateAction()
 TupleGenericAction()
+_VortexRPCResultTuple()
+_VortexRPCArgTuple()
 
 class PluginLoaderABC(metaclass=ABCMeta):
     _instance = None
