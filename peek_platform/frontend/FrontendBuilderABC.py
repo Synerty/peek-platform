@@ -230,17 +230,15 @@ class FrontendBuilderABC(metaclass=ABCMeta):
         self._writeFileIfRequired(feAppDir, 'plugin-routes.ts', routeData)
 
     def _writePluginRootModules(self, feAppDir: str,
-                                pluginDetails: [PluginDetail],
-                                serviceName: str) -> None:
+                                pluginDetails: [PluginDetail]) -> None:
 
         imports = []
         modules = []
         for pluginDetail in pluginDetails:
             if not pluginDetail.rootModule:
                 continue
-            imports.append('import {%s} from "@%s/%s/%s";'
+            imports.append('import {%s} from "@peek/%s/%s";'
                            % (pluginDetail.rootModule["class"],
-                              serviceName,
                               pluginDetail.pluginName,
                               pluginDetail.rootModule["file"]))
             modules.append(pluginDetail.rootModule["class"])
@@ -254,17 +252,15 @@ class FrontendBuilderABC(metaclass=ABCMeta):
         self._writeFileIfRequired(feAppDir, 'plugin-root-modules.ts', routeData)
 
     def _writePluginRootServices(self, feAppDir: str,
-                                 pluginDetails: [PluginDetail],
-                                 serviceName: str) -> None:
+                                 pluginDetails: [PluginDetail]) -> None:
 
         imports = []
         services = []
         for pluginDetail in pluginDetails:
             if not pluginDetail.rootService:
                 continue
-            imports.append('import {%s} from "@%s/%s/%s";'
+            imports.append('import {%s} from "@peek/%s/%s";'
                            % (pluginDetail.rootService["class"],
-                              serviceName,
                               pluginDetail.pluginName,
                               pluginDetail.rootService["file"]))
             services.append(pluginDetail.rootService["class"])

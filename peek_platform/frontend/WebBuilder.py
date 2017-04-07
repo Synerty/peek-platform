@@ -66,8 +66,8 @@ class WebBuilder(FrontendBuilderABC):
         # --------------------
         # Prepare the shared / global parts of the plugins
 
-        self._writePluginRootModules(feBuildSrcDir, pluginDetails, self._platformService)
-        self._writePluginRootServices(feBuildSrcDir, pluginDetails, self._platformService)
+        self._writePluginRootModules(feBuildSrcDir, pluginDetails)
+        self._writePluginRootServices(feBuildSrcDir, pluginDetails)
 
 
         for feModDir, jsonAttr, in feModuleDirs:

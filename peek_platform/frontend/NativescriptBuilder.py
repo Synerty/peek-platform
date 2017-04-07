@@ -106,8 +106,8 @@ class NativescriptBuilder(FrontendBuilderABC):
         # --------------------
         # Prepare the shared / global parts of the plugins
 
-        self._writePluginRootModules(feAppDir, pluginDetails, self._platformService)
-        self._writePluginRootServices(feAppDir, pluginDetails, self._platformService)
+        self._writePluginRootModules(feAppDir, pluginDetails)
+        self._writePluginRootServices(feAppDir, pluginDetails)
 
         # There are two
         for feModDir, jsonAttr, in self._feModuleDirs:
