@@ -47,7 +47,6 @@ class FrontendFileSync:
         )
 
     def startFileSyncWatcher(self):
-
         self._fileWatchdogObserver = WatchdogObserver()
 
         for cfg in self._dirSyncMap:

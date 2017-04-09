@@ -1,8 +1,8 @@
 import logging
 import os
+from typing import List
 
 from twisted.internet.task import LoopingCall
-from typing import List
 
 from peek_platform.frontend.FrontendBuilderABC import FrontendBuilderABC
 from peek_platform.frontend.FrontendOsCmd import runTsc
@@ -127,19 +127,22 @@ class NativescriptBuilder(FrontendBuilderABC):
             # Now sync those node_modules/@peek-xxx packages into the
             # "platforms" build dirs
 
-            androidDir1 = 'platforms/android/src/main/assets/app/tns_modules'
-            androidDir2 = ('platforms/android'
-                           '/build/intermediates/assets/F0F1/debug/app/tns_modules')
+            androidDir1 = os.path.join(feBuildDir,
+                                       'platforms', 'android', 'src', 'main', 'assets',
+                                       'app', 'tns_modules',
+                                       os.path.basename(feModDir))
+            androidDir2 = os.path.join(feBuildDir, 'platforms', 'android',
+                                       'build', 'intermediates', 'assets', 'F0F1',
+                                       'debug', 'app', 'tns_modules',
+                                       os.path.basename(feModDir))
 
             self.fileSync.addSyncMapping(feModDir,
-                                         os.path.join(feBuildDir, androidDir1,
-                                                      os.path.dirname(feModDir)),
+                                         androidDir1,
                                          parentMustExist=True,
                                          preSyncCallback=self._scheduleModuleCompile)
 
             self.fileSync.addSyncMapping(feModDir,
-                                         os.path.join(feBuildDir, androidDir2,
-                                                      os.path.dirname(feModDir)),
+                                         androidDir2,
                                          parentMustExist=True)
 
         # Lastly, Allow the clients to override any frontend files they wish.
