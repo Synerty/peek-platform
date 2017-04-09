@@ -6,6 +6,7 @@ from collections import defaultdict
 from importlib.util import find_spec
 from typing import Type, Tuple, Optional
 
+import gc
 from jsoncfg.value_mappers import require_string, require_array
 from vortex.PayloadIO import PayloadIO
 from vortex.Tuple import removeTuplesForTupleNames, registeredTupleNames, \
@@ -163,6 +164,8 @@ class PluginLoaderABC(metaclass=ABCMeta):
         if not oldLoadedPlugin:
             return
 
+        del oldLoadedPlugin
+
         # Remove the registered endpoints
         for endpoint in self._vortexEndpointInstancesByPluginName[pluginName]:
             PayloadIO().remove(endpoint)
@@ -172,7 +175,8 @@ class PluginLoaderABC(metaclass=ABCMeta):
         removeTuplesForTupleNames(self._vortexTupleNamesByPluginName[pluginName])
         del self._vortexTupleNamesByPluginName[pluginName]
 
-        self._unloadPluginPackage(pluginName, oldLoadedPlugin)
+        self._unloadPluginPackage(pluginName)
+
 
     def listPlugins(self):
         def pluginTest(name):
@@ -192,7 +196,9 @@ class PluginLoaderABC(metaclass=ABCMeta):
         while self._loadedPlugins:
             self.unloadPlugin(list(self._loadedPlugins.keys())[0])
 
-    def _unloadPluginPackage(self, pluginName, oldLoadedPlugin):
+    def _unloadPluginPackage(self, pluginName):
+
+        oldLoadedPlugin = self._loadedPlugins.get(pluginName)
 
         # Stop and remove the Plugin
         del self._loadedPlugins[pluginName]
@@ -217,10 +223,17 @@ class PluginLoaderABC(metaclass=ABCMeta):
         if pluginName in sys.modules:
             del sys.modules[pluginName]
 
+        gc.collect()
+
         # pypy doesn't have getrefcount
+        # ("oldLoadedPlugin" in this method and the call to getrefcount) == 2 references
         if hasattr(sys, "getrefcount") and sys.getrefcount(oldLoadedPlugin) > 2:
             logger.warning("Old references to %s still exist, count = %s",
                            pluginName, sys.getrefcount(oldLoadedPlugin))
+
+        del oldLoadedPlugin
+        gc.collect()
+        # Now there should be no references.
 
     def sanityCheckServerPlugin(self, pluginName):
         ''' Sanity Check Plugin

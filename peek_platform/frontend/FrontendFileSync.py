@@ -2,8 +2,9 @@ import logging
 import os
 import shutil
 from collections import namedtuple
-
 from typing import Callable, Optional
+
+from twisted.internet import reactor
 from watchdog.events import FileSystemEventHandler, FileMovedEvent, FileModifiedEvent, \
     FileDeletedEvent, FileCreatedEvent
 from watchdog.observers import Observer as WatchdogObserver
@@ -56,10 +57,14 @@ class FrontendFileSync:
 
         self._fileWatchdogObserver.start()
 
+        reactor.addSystemEventTrigger('before', 'shutdown', self.stopFileSyncWatcher)
+        logger.debug("Started frontend file watchers")
+
     def stopFileSyncWatcher(self):
         self._fileWatchdogObserver.stop()
         self._fileWatchdogObserver.join()
         self._fileWatchdogObserver = None
+        logger.debug("Stopped frontend file watchers")
 
     def syncFiles(self):
 
