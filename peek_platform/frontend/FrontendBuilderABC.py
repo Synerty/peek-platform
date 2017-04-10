@@ -4,9 +4,9 @@ import os
 import shutil
 from abc import ABCMeta, abstractmethod
 from collections import namedtuple
+from typing import List, Callable, Optional
 
 from jsoncfg.value_mappers import require_bool
-from typing import List
 
 from peek_platform.file_config.PeekFileConfigFrontendDirMixin import \
     PeekFileConfigFrontendDirMixin
@@ -291,7 +291,9 @@ class FrontendBuilderABC(metaclass=ABCMeta):
 
     def _syncPluginFiles(self, targetDir: str,
                          pluginDetails: [PluginDetail],
-                         attrName: str) -> None:
+                         attrName: str,
+                         preSyncCallback: Optional[Callable[[], None]] = None,
+                         postSyncCallback: Optional[Callable[[], None]] = None) -> None:
 
         if not os.path.exists(targetDir):
             os.mkdir(targetDir)  # The parent must exist
@@ -317,7 +319,9 @@ class FrontendBuilderABC(metaclass=ABCMeta):
             createdItems.add(pluginDetail.pluginName)
 
             linkPath = os.path.join(targetDir, pluginDetail.pluginName)
-            self.fileSync.addSyncMapping(srcDir, linkPath)
+            self.fileSync.addSyncMapping(srcDir, linkPath,
+                                         preSyncCallback=preSyncCallback,
+                                         postSyncCallback=postSyncCallback)
 
         # Delete the items that we didn't create
         for item in currentItems - createdItems:

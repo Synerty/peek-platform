@@ -114,7 +114,8 @@ class NativescriptBuilder(FrontendBuilderABC):
             # Link the shared code, this allows plugins
             # * to import code from each other.
             # * provide global services.
-            self._syncPluginFiles(feModDir, pluginDetails, jsonAttr)
+            self._syncPluginFiles(feModDir, pluginDetails, jsonAttr,
+                                  postSyncCallback=self._scheduleModuleCompile)
 
             self._writeFileIfRequired(feModDir, 'tsconfig.json', nodeModuleTsConfig)
             self._writeFileIfRequired(feModDir, 'typings.d.ts', nodeModuleTypingsD)
@@ -127,6 +128,7 @@ class NativescriptBuilder(FrontendBuilderABC):
             # Now sync those node_modules/@peek-xxx packages into the
             # "platforms" build dirs
 
+            '''
             androidDir1 = os.path.join(feBuildDir,
                                        'platforms', 'android', 'src', 'main', 'assets',
                                        'app', 'tns_modules',
@@ -138,12 +140,12 @@ class NativescriptBuilder(FrontendBuilderABC):
 
             self.fileSync.addSyncMapping(feModDir,
                                          androidDir1,
-                                         parentMustExist=True,
-                                         preSyncCallback=self._scheduleModuleCompile)
+                                         parentMustExist=True)
 
             self.fileSync.addSyncMapping(feModDir,
                                          androidDir2,
                                          parentMustExist=True)
+            '''
 
         # Lastly, Allow the clients to override any frontend files they wish.
         self.fileSync.addSyncMapping(self._jsonCfg.feFrontendCustomisationsDir,
@@ -157,13 +159,14 @@ class NativescriptBuilder(FrontendBuilderABC):
         if self._jsonCfg.feSyncFilesForDebugEnabled:
             logger.info("Starting frontend development file sync")
             self._moduleCompileLoopingCall = LoopingCall(self._compilePluginModules)
-            self._moduleCompileLoopingCall.start(0.5, now=False)
+            self._moduleCompileLoopingCall.start(1, now=False)
             self.fileSync.startFileSyncWatcher()
 
     def stopDebugWatchers(self):
         logger.info("Stoping frontend development file sync")
         self.fileSync.stopFileSyncWatcher()
         self._moduleCompileLoopingCall.stop()
+        self._moduleCompileLoopingCall = None
 
     def _syncFileHook(self, fileName: str, contents: bytes) -> bytes:
         if fileName.endswith(".ts"):
@@ -242,7 +245,7 @@ class NativescriptBuilder(FrontendBuilderABC):
 
             hashFileName = os.path.join(feModDir, ".lastHash")
 
-            if not self._recompileRequiredCheck(feModDir, hashFileName):
+            if not force and not self._recompileRequiredCheck(feModDir, hashFileName):
                 logger.info("Modules have not changed, recompile not required.")
                 return
 
