@@ -43,7 +43,7 @@ requirements = [
     "watchdog >= 0.8.3", # Used to detect file changes and re-copy them for frontend builds
 
     # Licensing
-    "pycrypto",
+    "pycryptodome",
 
     # Celery packages
     "flower",
