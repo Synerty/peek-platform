@@ -63,10 +63,13 @@ requirements = [
 lin_dependencies = [
     # We still require shapely on windows, but we need to manually download the win wheel
     "Shapely >= 1.5.16",  # Geospatial shape manipulation
+
+    # We still require pymssql on windows, but we need to manually download the win wheel
+    "pymssql",
 ]
 
 win_dependencies = [
-    "pymssql >= 2.1.3",  # DB-API interface to Microsoft SQL Server, requires FreeTDS
+    # "pymssql >= 2.1.3",  # DB-API interface to Microsoft SQL Server, requires FreeTDS
     "pycparser >= 2.17",
     "cffi >= 1.9.1",
     "cryptography >= 1.7.1",
