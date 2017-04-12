@@ -398,13 +398,12 @@ class FrontendBuilderABC(metaclass=ABCMeta):
                 return True
 
             for exPath in excludePathContains:
+                # EG "C:\thing\node_modules"
                 if path.endswith(os.path.sep + exPath):
                     return False
 
-                if path.startswith(exPath + os.path.sep):
-                    return False
-
-                if path == exPath:
+                # EG "C:\thing\node_modules\thing"
+                if (os.path.sep + exPath + os.path.sep) in path:
                     return False
 
             return True
