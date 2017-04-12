@@ -404,6 +404,9 @@ class FrontendBuilderABC(metaclass=ABCMeta):
                 if path.startswith(exPath + os.path.sep):
                     return False
 
+                if path == exPath:
+                    return False
+
             return True
 
         fileList = []
