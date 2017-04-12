@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 class PeekFileConfigSqlAlchemyMixin:
     @property
     def dbConnectString(self):
-        default = 'postgresql://peek:PASSWORD@localhost/peek'
+        default = 'postgresql://peek:PASSWORD@127.0.0.1/peek'
         with self._cfg as c:
             return c.sqlalchemy.connectUrl(default, require_string)
 
