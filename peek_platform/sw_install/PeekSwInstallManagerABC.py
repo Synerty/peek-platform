@@ -26,6 +26,7 @@ from twisted.internet.defer import inlineCallbacks
 from txhttputil.downloader.HttpFileDownloader import HttpFileDownloader
 from txhttputil.util.DeferUtil import deferToThreadWrap
 
+from peek_platform.WindowsPatch import isWindows
 from peek_platform.util.PtyUtil import spawnPty, \
     logSpawnException
 
@@ -256,4 +257,13 @@ class PeekSwInstallManagerABC(metaclass=ABCMeta):
         python = sys.executable
         argv = list(sys.argv)
         argv.insert(0, "-u")
+
+        def addExe(val):
+            if not "run_peek_" in val:
+                return val
+            if isWindows and not val.lower().endswith(".exe"):
+                return val + ".exe"
+            return val
+
+        argv = map(addExe, argv)
         os.execl(python, python, *argv)
