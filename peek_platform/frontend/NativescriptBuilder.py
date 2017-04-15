@@ -10,34 +10,50 @@ from peek_platform.frontend.FrontendOsCmd import runTsc
 logger = logging.getLogger(__name__)
 
 nodeModuleTsConfig = """
+
 {
   "strictNullChecks": true,
   "allowUnreachableCode": true,
   "compilerOptions": {
-    "baseUrl": "",
     "declaration": false,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "forceConsistentCasingInFileNames":true,
-    "lib": ["es2016", "dom"],
+    "forceConsistentCasingInFileNames": true,
     "module": "commonjs",
     "moduleResolution": "node",
     "sourceMap": false,
     "target": "es5",
+    "skipDefaultLibCheck": true,
+    "skipLibCheck": true,
+    "lib": [],
     "typeRoots": [
       "../@types"
+    ],
+    "types": [
+      "moment"
     ]
   }
 }
+
+
 """
 
 nodeModuleTypingsD = """
-/* SystemJS module definition */
-declare let module: {
-  id: string;
-};
 
-declare let require: any;
+declare let localStorage:any;
+declare let location:any;
+declare let WebSocket:any;
+declare let Console:any;
+
+
+"""
+
+nodeReferencesD = """
+
+/// <reference path="../tns-core-modules/tns-core-modules.d.ts" />
+/// <reference path="../tns-core-modules/lib.core.d.ts" />
+/// <reference path="../tns-core-modules/lib.dom.d.ts" />
+
 """
 
 
@@ -118,7 +134,8 @@ class NativescriptBuilder(FrontendBuilderABC):
                                   postSyncCallback=self._scheduleModuleCompile)
 
             self._writeFileIfRequired(feModDir, 'tsconfig.json', nodeModuleTsConfig)
-            self._writeFileIfRequired(feModDir, 'typings.d.ts', nodeModuleTypingsD)
+            # self._writeFileIfRequired(feModDir, 'typings.d.ts', nodeModuleTypingsD)
+            self._writeFileIfRequired(feModDir, 'references.d.ts', nodeReferencesD)
 
             # Update the package.json in the peek_client_fe project so that it includes
             # references to the plugins linked under node_modules.

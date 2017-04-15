@@ -367,7 +367,7 @@ class FrontendBuilderABC(metaclass=ABCMeta):
             name = "%s/%s" % (serviceName, pluginDetail.pluginName)
             dependencies[name] = "file:" + moduleDir
 
-        contents = json.dumps(jsonData, f, sort_keys=True, indent=2,
+        contents = json.dumps(jsonData, sort_keys=True, indent=2,
                               separators=(',', ': '))
 
         self._writeFileIfRequired(os.path.dirname(targetJson),
