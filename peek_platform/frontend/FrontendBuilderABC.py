@@ -1,13 +1,12 @@
 import json
 import logging
+from typing import List, Callable, Optional
+
 import os
 import shutil
 from abc import ABCMeta, abstractmethod
 from collections import namedtuple
-from typing import List, Callable, Optional
-
 from jsoncfg.value_mappers import require_bool
-
 from peek_platform.file_config.PeekFileConfigFrontendDirMixin import \
     PeekFileConfigFrontendDirMixin
 from peek_platform.file_config.PeekFileConfigOsMixin import PeekFileConfigOsMixin
@@ -393,19 +392,20 @@ class FrontendBuilderABC(metaclass=ABCMeta):
         excludeFilesStartWith = ()
 
         def dirCheck(path):
+            s = os.path.sep
             excludePathContains = ('__pycache__', 'node_modules', 'platforms', 'dist')
 
             # Always include the node_modules/@peek module dir
-            if path.endswith("@peek"):
+            if path.endswith(s + "@peek") or (s + "@peek" + s) in path:
                 return True
 
             for exPath in excludePathContains:
                 # EG "C:\thing\node_modules"
-                if path.endswith(os.path.sep + exPath):
+                if path.endswith(s + exPath):
                     return False
 
                 # EG "C:\thing\node_modules\thing"
-                if (os.path.sep + exPath + os.path.sep) in path:
+                if (s + exPath + s) in path:
                     return False
 
             return True

@@ -149,7 +149,6 @@ class NativescriptBuilder(FrontendBuilderABC):
             # Now sync those node_modules/@peek-xxx packages into the
             # "platforms" build dirs
 
-            '''
             androidDir1 = os.path.join(feBuildDir,
                                        'platforms', 'android', 'src', 'main', 'assets',
                                        'app', 'tns_modules',
@@ -166,7 +165,6 @@ class NativescriptBuilder(FrontendBuilderABC):
             self.fileSync.addSyncMapping(feModDir,
                                          androidDir2,
                                          parentMustExist=True)
-            '''
 
         # Lastly, Allow the clients to override any frontend files they wish.
         self.fileSync.addSyncMapping(self._jsonCfg.feFrontendCustomisationsDir,
