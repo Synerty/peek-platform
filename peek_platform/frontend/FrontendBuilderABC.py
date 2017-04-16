@@ -293,7 +293,8 @@ class FrontendBuilderABC(metaclass=ABCMeta):
                          pluginDetails: [PluginDetail],
                          attrName: str,
                          preSyncCallback: Optional[Callable[[], None]] = None,
-                         postSyncCallback: Optional[Callable[[], None]] = None) -> None:
+                         postSyncCallback: Optional[Callable[[], None]] = None,
+                         keepExtraDstJsAndMapFiles=False) -> None:
 
         if not os.path.exists(targetDir):
             os.mkdir(targetDir)  # The parent must exist
@@ -320,6 +321,7 @@ class FrontendBuilderABC(metaclass=ABCMeta):
 
             linkPath = os.path.join(targetDir, pluginDetail.pluginName)
             self.fileSync.addSyncMapping(srcDir, linkPath,
+                                         keepExtraDstJsAndMapFiles=keepExtraDstJsAndMapFiles,
                                          preSyncCallback=preSyncCallback,
                                          postSyncCallback=postSyncCallback)
 

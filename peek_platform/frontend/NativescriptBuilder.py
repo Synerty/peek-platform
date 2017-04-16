@@ -103,7 +103,9 @@ class NativescriptBuilder(FrontendBuilderABC):
         # --------------------
         # Prepare the common frontend application
 
-        self.fileSync.addSyncMapping(feSrcAppDir, os.path.join(feAppDir, 'app'))
+        self.fileSync.addSyncMapping(feSrcAppDir,
+                                     os.path.join(feAppDir, 'app'),
+                                     keepExtraDstJsAndMapFiles=True)
 
         # --------------------
         # Prepare the home and title bar configuration for the plugins
@@ -113,7 +115,8 @@ class NativescriptBuilder(FrontendBuilderABC):
         # --------------------
         # Prepare the plugin lazy loaded part of the application
         self._writePluginRouteLazyLoads(feAppDir, pluginDetails)
-        self._syncPluginFiles(feAppDir, pluginDetails, "appDir")
+        self._syncPluginFiles(feAppDir, pluginDetails, "appDir",
+                                     keepExtraDstJsAndMapFiles=True)
 
         # --------------------
         # Prepare the plugin assets
@@ -131,10 +134,11 @@ class NativescriptBuilder(FrontendBuilderABC):
             # * to import code from each other.
             # * provide global services.
             self._syncPluginFiles(feModDir, pluginDetails, jsonAttr,
+                                  keepExtraDstJsAndMapFiles=True,
                                   postSyncCallback=self._scheduleModuleCompile)
 
             self._writeFileIfRequired(feModDir, 'tsconfig.json', nodeModuleTsConfig)
-            # self._writeFileIfRequired(feModDir, 'typings.d.ts', nodeModuleTypingsD)
+            self._writeFileIfRequired(feModDir, 'typings.d.ts', nodeModuleTypingsD)
             self._writeFileIfRequired(feModDir, 'references.d.ts', nodeReferencesD)
 
             # Update the package.json in the peek_client_fe project so that it includes
@@ -187,10 +191,10 @@ class NativescriptBuilder(FrontendBuilderABC):
 
     def _syncFileHook(self, fileName: str, contents: bytes) -> bytes:
         if fileName.endswith(".ts"):
-            contents = contents.replace(b'@synerty/peek-web-ns/index.web',
-                                        b'@synerty/peek-web-ns/index.nativescript')
-            contents = contents.replace(b'@synerty/peek-web-ns/index.mweb',
-                                        b'@synerty/peek-web-ns/index.nativescript')
+            contents = contents.replace(b'@synerty/peek-mobile-util/index.web',
+                                        b'@synerty/peek-mobile-util/index.nativescript')
+            contents = contents.replace(b'@synerty/peek-mobile-util/index.mweb',
+                                        b'@synerty/peek-mobile-util/index.nativescript')
 
             # if b'@NgModule' in contents:
             #     return self._patchModule(fileName, contents)

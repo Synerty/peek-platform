@@ -1,9 +1,9 @@
 import logging
+from typing import Callable, Optional
+
 import os
 import shutil
 from collections import namedtuple
-from typing import Callable, Optional
-
 from twisted.internet import reactor
 from watchdog.events import FileSystemEventHandler, FileMovedEvent, FileModifiedEvent, \
     FileDeletedEvent, FileCreatedEvent
@@ -19,6 +19,7 @@ SyncFileHookCallable = Callable[[str, bytes], bytes]
 FileSyncCfg = namedtuple('FileSyncCfg',
                          ['srcDir', 'dstDir', 'parentMustExist',
                           'deleteExtraDstFiles',
+                          'keepExtraDstJsAndMapFiles',
                           'preSyncCallback', 'postSyncCallback'])
 
 
@@ -39,10 +40,38 @@ class FrontendFileSync:
                        parentMustExist=False,
                        deleteExtraDstFiles=True,
                        preSyncCallback: Optional[Callable[[], None]] = None,
-                       postSyncCallback: Optional[Callable[[], None]] = None):
+                       postSyncCallback: Optional[Callable[[], None]] = None,
+                       keepExtraDstJsAndMapFiles=True):
+        """ Add Sync Mapping
+        
+        :param srcDir: The source dir to sync files from
+        
+        :param dstDir: The dest dir to sync files to
+        
+        :param parentMustExist: The parent must exist for file syncing to happen.
+                If it doesn't syncing quitely doesn't occur.
+                
+        :param deleteExtraDstFiles: If there are additional files in the dest directory
+                that are not in the source directory, then delete them.
+                
+        :param keepExtraDstJsAndMapFiles:  
+                If this is a TS file and we want to keep dest .js and .js.map files
+                 then add them to our srcFiles list, this
+                The reason being, the JS files will be deleted because they don't
+                 exist in the source, which causes nativescript to rebuild FOR EVERY
+                .js file delete
+                
+        :param preSyncCallback: This will be called before syncing occurs.
+                This include any incremental syncing.
+                
+        :param postSyncCallback: This will be called after syncing occurs.
+                This includes any incremental syncing.
+        
+        """
         self._dirSyncMap.append(
             FileSyncCfg(srcDir, dstDir, parentMustExist,
                         deleteExtraDstFiles,
+                        keepExtraDstJsAndMapFiles,
                         preSyncCallback, postSyncCallback)
         )
 
@@ -79,17 +108,24 @@ class FrontendFileSync:
             # Create lists of files relative to the dstDir and srcDir
             existingFiles = set(self._listFiles(cfg.dstDir))
             srcFiles = set(self._listFiles(cfg.srcDir))
+            jsAndJsMapFiles = set()
 
             for srcFile in srcFiles:
                 srcFilePath = os.path.join(cfg.srcDir, srcFile)
                 dstFilePath = os.path.join(cfg.dstDir, srcFile)
+
+                # If this is a TS file and we want to keep dest .js and .js.map files
+                # then add them to our srcFiles list, this
+                if cfg.keepExtraDstJsAndMapFiles and srcFile.endswith(".ts"):
+                    jsAndJsMapFiles.add(srcFile[:-3] + ".js")
+                    jsAndJsMapFiles.add(srcFile[:-3] + ".js.map")
 
                 dstFileDir = os.path.dirname(dstFilePath)
                 os.makedirs(dstFileDir, exist_ok=True)
                 self._fileCopier(srcFilePath, dstFilePath)
 
             if cfg.deleteExtraDstFiles:
-                for obsoleteFile in existingFiles - srcFiles:
+                for obsoleteFile in existingFiles - srcFiles - jsAndJsMapFiles:
                     obsoleteFile = os.path.join(cfg.dstDir, obsoleteFile)
 
                     if os.path.islink(obsoleteFile):
@@ -182,6 +218,7 @@ class _FileChangeHandler(FileSystemEventHandler):
         with open(srcFilePath, 'rb') as f:
             contents = f.read()
 
+
         contents = self._syncFileHook(dstFilePath, contents)
 
         # If the contents hasn't change, don't write it
@@ -193,6 +230,12 @@ class _FileChangeHandler(FileSystemEventHandler):
         logger.debug("Syncing %s -> %s", srcFilePath[len(self._srcDir) + 1:],
                      self._dstDir)
 
+        # if the dest dir doesn't exist, then create it
+        dstDir = os.path.dirname(dstFilePath)
+        if not os.path.isdir(dstDir):
+            os.makedirs(dstDir, mode=0o755, exist_ok=True)
+
+        # Write the contents
         with open(dstFilePath, 'wb') as f:
             f.write(contents)
 
@@ -213,6 +256,17 @@ class _FileChangeHandler(FileSystemEventHandler):
 
         if os.path.exists(dstFilePath):
             os.remove(dstFilePath)
+
+        # If this is a typescript file, make sure we remove the associated js and js.map
+        # files.
+        if dstFilePath.endswith(".ts"):
+            jsFile = dstFilePath[:-3] + ".js"
+            if os.path.exists(jsFile):
+                os.remove(jsFile)
+
+            jsMapFile = dstFilePath[:-3] + ".js.map"
+            if os.path.exists(jsMapFile):
+                os.remove(jsMapFile)
 
         logger.debug("Removing %s -> %s", event.src_path[len(self._srcDir) + 1:],
                      self._dstDir)
