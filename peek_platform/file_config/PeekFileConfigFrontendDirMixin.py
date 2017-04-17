@@ -18,7 +18,7 @@ class PeekFileConfigFrontendDirMixin:
 
         """
         with self._cfg as c:
-            return c.frontend.nativescriptBuildPrepareEnabled(True, require_bool)
+            return c.frontend.nativescriptBuildPrepareEnabled(False, require_bool)
 
     @property
     def feFrontendCustomisationsDir(self) -> bool:
