@@ -157,7 +157,10 @@ class NativescriptBuilder(FrontendBuilderABC):
                                        'build', 'intermediates', 'assets', 'F0F1',
                                        'debug', 'app', 'tns_modules',
                                        os.path.basename(feModDir))
-
+            '''
+            # LATEST STATUS
+            # This all works just as it should, but nativescript TNS does not update
+            # the app correctly.
             self.fileSync.addSyncMapping(feModDir,
                                          androidDir1,
                                          parentMustExist=True)
@@ -165,6 +168,7 @@ class NativescriptBuilder(FrontendBuilderABC):
             self.fileSync.addSyncMapping(feModDir,
                                          androidDir2,
                                          parentMustExist=True)
+            '''
 
         # Lastly, Allow the clients to override any frontend files they wish.
         self.fileSync.addSyncMapping(self._jsonCfg.feFrontendCustomisationsDir,
