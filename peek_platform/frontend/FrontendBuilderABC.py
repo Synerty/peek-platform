@@ -26,8 +26,8 @@ PluginDetail = namedtuple("PluginDetail",
                            "appModule",
                            "moduleDir",
                            "assetDir",
-                           "rootModule",
-                           "rootService",
+                           "rootModules",
+                           "rootServices",
                            "icon",
                            "showHomeLink",
                            "showInTitleBar",
@@ -110,11 +110,15 @@ class FrontendBuilderABC(metaclass=ABCMeta):
                     assert data["file"], "%s.file is missing for %s" % sub
                     assert data["class"], "%s.class is missing for %s" % sub
 
-            rootModule = (jsonCfgNode.rootModule(None))
-            checkThing("rootModule", rootModule)
+            # Root Modules
+            rootModules = jsonCfgNode.rootModules([])
+            for rootModule in rootModules:
+                checkThing("rootModules", rootModule)
 
-            rootService = (jsonCfgNode.rootService(None))
-            checkThing("rootService", rootService)
+            # Root Services
+            rootServices = jsonCfgNode.rootServices([])
+            for rootService in rootServices:
+                checkThing("rootServices", rootService)
 
             icon = (jsonCfgNode.icon(None))
 
@@ -126,8 +130,8 @@ class FrontendBuilderABC(metaclass=ABCMeta):
                              moduleDir=moduleDir,
                              assetDir=assetDir,
                              appModule=appModule,
-                             rootModule=rootModule,
-                             rootService=rootService,
+                             rootModules=rootModules,
+                             rootServices=rootServices,
                              icon=icon,
                              showHomeLink=showHomeLink,
                              showInTitleBar=showInTitleBar,
@@ -234,13 +238,12 @@ class FrontendBuilderABC(metaclass=ABCMeta):
         imports = []
         modules = []
         for pluginDetail in pluginDetails:
-            if not pluginDetail.rootModule:
-                continue
-            imports.append('import {%s} from "@peek/%s/%s";'
-                           % (pluginDetail.rootModule["class"],
-                              pluginDetail.pluginName,
-                              pluginDetail.rootModule["file"]))
-            modules.append(pluginDetail.rootModule["class"])
+            for rootModule in pluginDetail.rootModules:
+                imports.append('import {%s} from "@peek/%s/%s";'
+                               % (rootModule["class"],
+                                  pluginDetail.pluginName,
+                                  rootModule["file"]))
+                modules.append(rootModule["class"])
 
         routeData = "// This file is auto generated, the git version is blank and .gitignored\n"
         routeData += '\n'.join(imports) + '\n'
@@ -256,13 +259,12 @@ class FrontendBuilderABC(metaclass=ABCMeta):
         imports = []
         services = []
         for pluginDetail in pluginDetails:
-            if not pluginDetail.rootService:
-                continue
-            imports.append('import {%s} from "@peek/%s/%s";'
-                           % (pluginDetail.rootService["class"],
-                              pluginDetail.pluginName,
-                              pluginDetail.rootService["file"]))
-            services.append(pluginDetail.rootService["class"])
+            for rootService in pluginDetail.rootServices:
+                imports.append('import {%s} from "@peek/%s/%s";'
+                               % (rootService["class"],
+                                  pluginDetail.pluginName,
+                                  rootService["file"]))
+                services.append(rootService["class"])
 
         routeData = "// This file is auto generated, the git version is blank and .gitignored\n"
         routeData += '\n'.join(imports) + '\n'
