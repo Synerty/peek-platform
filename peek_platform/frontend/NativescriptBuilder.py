@@ -26,6 +26,7 @@ nodeModuleTsConfig = """
     "skipDefaultLibCheck": true,
     "skipLibCheck": true,
     "lib": [],
+    "rootDir": ".",
     "typeRoots": [
       "../@types"
     ],
