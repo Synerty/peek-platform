@@ -42,8 +42,77 @@ nodeModuleTypingsD = """
 
 declare let localStorage:any;
 declare let location:any;
-declare let WebSocket:any;
-declare let Console:any;
+
+// From node_modules/typescript/lib/lib.es6.d.ts
+interface Console {
+    assert(test?: boolean, message?: string, ...optionalParams: any[]): void;
+    clear(): void;
+    count(countTitle?: string): void;
+    debug(message?: any, ...optionalParams: any[]): void;
+    dir(value?: any, ...optionalParams: any[]): void;
+    dirxml(value: any): void;
+    error(message?: any, ...optionalParams: any[]): void;
+    exception(message?: string, ...optionalParams: any[]): void;
+    group(groupTitle?: string): void;
+    groupCollapsed(groupTitle?: string): void;
+    groupEnd(): void;
+    info(message?: any, ...optionalParams: any[]): void;
+    log(message?: any, ...optionalParams: any[]): void;
+    msIsIndependentlyComposed(element: Element): boolean;
+    profile(reportName?: string): void;
+    profileEnd(): void;
+    select(element: Element): void;
+    table(...data: any[]): void;
+    time(timerName?: string): void;
+    timeEnd(timerName?: string): void;
+    trace(message?: any, ...optionalParams: any[]): void;
+    warn(message?: any, ...optionalParams: any[]): void;
+}
+
+declare var Console: {
+    prototype: Console;
+    new(): Console;
+}
+
+
+// From node_modules/typescript/lib/lib.es6.d.ts
+interface WebSocketEventMap {
+    "close": CloseEvent;
+    "error": Event;
+    "message": MessageEvent;
+    "open": Event;
+}
+
+interface WebSocket extends EventTarget {
+    binaryType: string;
+    readonly bufferedAmount: number;
+    readonly extensions: string;
+    onclose: (this: WebSocket, ev: CloseEvent) => any;
+    onerror: (this: WebSocket, ev: Event) => any;
+    onmessage: (this: WebSocket, ev: MessageEvent) => any;
+    onopen: (this: WebSocket, ev: Event) => any;
+    readonly protocol: string;
+    readonly readyState: number;
+    readonly url: string;
+    close(code?: number, reason?: string): void;
+    send(data: any): void;
+    readonly CLOSED: number;
+    readonly CLOSING: number;
+    readonly CONNECTING: number;
+    readonly OPEN: number;
+    addEventListener<K extends keyof WebSocketEventMap>(type: K, listener: (this: WebSocket, ev: WebSocketEventMap[K]) => any, useCapture?: boolean): void;
+    addEventListener(type: string, listener: EventListenerOrEventListenerObject, useCapture?: boolean): void;
+}
+
+
+declare var WebSocket: {
+    prototype: WebSocket;
+    new(url: string, protocols?: string | string[]): WebSocket;
+    readonly CLOSED: number;
+    readonly CLOSING: number;
+    readonly CONNECTING: number;
+    readonly OPEN: number;
+}
 
 
 """
