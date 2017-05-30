@@ -25,7 +25,11 @@ nodeModuleTsConfig = """
     "target": "es5",
     "skipDefaultLibCheck": true,
     "skipLibCheck": true,
-    "lib": [],
+    "lib": [
+            "es6",
+            "dom",
+            "es2015.iterable"
+            ],
     "rootDir": ".",
     "typeRoots": [
       "../@types"
@@ -41,8 +45,8 @@ nodeModuleTsConfig = """
 
 nodeModuleTypingsD = """
 
-declare let localStorage:any;
-declare let location:any;
+//declare let localStorage:any;
+//declare let location:any;
 
 // From node_modules/typescript/lib/lib.es6.d.ts
 interface Console {
@@ -121,8 +125,8 @@ declare var WebSocket: {
 nodeReferencesD = """
 
 /// <reference path="../tns-core-modules/tns-core-modules.d.ts" />
-/// <reference path="../tns-core-modules/lib.core.d.ts" />
-/// <reference path="../tns-core-modules/lib.dom.d.ts" />
+// /// <reference path="../tns-core-modules/lib.core.d.ts" />
+// /// <reference path="../tns-core-modules/lib.dom.d.ts" />
 
 """
 
