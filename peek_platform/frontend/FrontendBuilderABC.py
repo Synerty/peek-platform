@@ -368,7 +368,7 @@ class FrontendBuilderABC(metaclass=ABCMeta):
                                      pluginDetail.moduleDir)
 
             name = "%s/%s" % (serviceName, pluginDetail.pluginName)
-            dependencies[name] = "file:" + moduleDir
+            dependencies[name] = "file:///" + moduleDir.replace("\\", '/')
 
         contents = json.dumps(jsonData, sort_keys=True, indent=2,
                               separators=(',', ': '))
