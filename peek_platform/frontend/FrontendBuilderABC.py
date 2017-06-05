@@ -110,6 +110,9 @@ class FrontendBuilderABC(metaclass=ABCMeta):
                     assert data["file"], "%s.file is missing for %s" % sub
                     assert data["class"], "%s.class is missing for %s" % sub
 
+                if not data.get("persistent"):
+                    data["persistent"] = False
+
             # Root Modules
             rootModules = jsonCfgNode.rootModules([])
             for rootModule in rootModules:
@@ -235,8 +238,11 @@ class FrontendBuilderABC(metaclass=ABCMeta):
     def _writePluginRootModules(self, feAppDir: str,
                                 pluginDetails: [PluginDetail]) -> None:
 
-        imports = []
-        modules = []
+        # initiliase the arrays, and put in the persisten service module
+        imports = ['''import {PluginRootServicePersistentLoadModule} 
+                        from "./plugin-root-services";''']
+        modules = ['PluginRootServicePersistentLoadModule']
+
         for pluginDetail in pluginDetails:
             for rootModule in pluginDetail.rootModules:
                 imports.append('import {%s} from "@peek/%s/%s";'
@@ -258,6 +264,7 @@ class FrontendBuilderABC(metaclass=ABCMeta):
 
         imports = []
         services = []
+        persistentServices = []
         for pluginDetail in pluginDetails:
             for rootService in pluginDetail.rootServices:
                 imports.append('import {%s} from "@peek/%s/%s";'
@@ -265,12 +272,28 @@ class FrontendBuilderABC(metaclass=ABCMeta):
                                   pluginDetail.pluginName,
                                   rootService["file"]))
                 services.append(rootService["class"])
+                if rootService["persistent"]:
+                    persistentServices.append(rootService["class"])
 
         routeData = "// This file is auto generated, the git version is blank and .gitignored\n"
         routeData += '\n'.join(imports) + '\n'
         routeData += "export const pluginRootServices = [\n\t"
         routeData += ",\n\t".join(services)
         routeData += "\n];\n"
+
+        routeData +=  '''
+        import {NgModule} from "@angular/core";
+
+        @NgModule({
+        
+        })
+        export class PluginRootServicePersistentLoadModule {
+            constructor(%s){
+        
+            }
+        
+        }
+        ''' % ', '.join(['private _%s:%s' % (s,s) for s in persistentServices])
 
         self._writeFileIfRequired(feAppDir, 'plugin-root-services.ts', routeData)
 
