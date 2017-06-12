@@ -1,7 +1,7 @@
 import logging
-import os
 from typing import List
 
+import os
 from twisted.internet.task import LoopingCall
 
 from peek_platform.frontend.FrontendBuilderABC import FrontendBuilderABC
@@ -190,7 +190,7 @@ class NativescriptBuilder(FrontendBuilderABC):
         # Prepare the plugin lazy loaded part of the application
         self._writePluginRouteLazyLoads(feAppDir, pluginDetails)
         self._syncPluginFiles(feAppDir, pluginDetails, "appDir",
-                                     keepExtraDstJsAndMapFiles=True)
+                              keepExtraDstJsAndMapFiles=True)
 
         # --------------------
         # Prepare the plugin assets
@@ -272,6 +272,12 @@ class NativescriptBuilder(FrontendBuilderABC):
             contents = contents.replace(b'@synerty/peek-mobile-util/index.mweb',
                                         b'@synerty/peek-mobile-util/index.nativescript')
 
+            # replace imports that end with .web/.mweb with .ns
+            # This will allow platform dependent typescript modules,
+            # EG photo taking modules
+            contents = contents.replace(b'.mweb";', b'.ns";')
+            contents = contents.replace(b'.web";', b'.ns";')
+
             # if b'@NgModule' in contents:
             #     return self._patchModule(fileName, contents)
 
@@ -309,15 +315,16 @@ class NativescriptBuilder(FrontendBuilderABC):
 
             elif inComponentHeader:
                 line = (line
-                        .replace(b'.mweb.ts', b'.ns.ts')
+                        .replace(b'.mweb;"', b'.ns";')
                         .replace(b'.mweb.html', b'.ns.html')
                         .replace(b'.mweb.css', b'.ns.css')
                         .replace(b'.mweb.scss', b'.ns.scss')
-                        .replace(b'.web.ts', b'.ns.ts')
+                        .replace(b'.web;"', b'.ns";')
                         .replace(b'.web.html', b'.ns.html')
                         .replace(b'.web.css', b'.ns.css')
                         .replace(b'.web.scss', b'.ns.scss')
-                        .replace(b"'./", b"'"))
+                        .replace(b"'./", b"'")
+                        )
 
             newContents += line
 
