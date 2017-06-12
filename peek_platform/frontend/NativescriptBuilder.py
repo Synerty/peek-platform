@@ -146,6 +146,8 @@ class NativescriptBuilder(FrontendBuilderABC):
             logger.info("SKIPPING, Nativescript build prepare is disabled in config")
             return
 
+        excludeRegexp = (r'.*[.]web[.]ts$', r'.*[.]mweb[.]ts$', r'.*__pycache__.*')
+
         self._dirSyncMap = list()
 
         feBuildDir = os.path.join(self._frontendProjectDir, 'build-ns')
@@ -179,7 +181,8 @@ class NativescriptBuilder(FrontendBuilderABC):
 
         self.fileSync.addSyncMapping(feSrcAppDir,
                                      os.path.join(feAppDir, 'app'),
-                                     keepExtraDstJsAndMapFiles=True)
+                                     keepExtraDstJsAndMapFiles=True,
+                                     excludeFilesRegex=excludeRegexp)
 
         # --------------------
         # Prepare the home and title bar configuration for the plugins
@@ -190,11 +193,13 @@ class NativescriptBuilder(FrontendBuilderABC):
         # Prepare the plugin lazy loaded part of the application
         self._writePluginRouteLazyLoads(feAppDir, pluginDetails)
         self._syncPluginFiles(feAppDir, pluginDetails, "appDir",
-                              keepExtraDstJsAndMapFiles=True)
+                              keepExtraDstJsAndMapFiles=True,
+                              excludeFilesRegex=excludeRegexp)
 
         # --------------------
         # Prepare the plugin assets
-        self._syncPluginFiles(feAssetsDir, pluginDetails, "assetDir")
+        self._syncPluginFiles(feAssetsDir, pluginDetails, "assetDir",
+                              excludeFilesRegex=excludeRegexp)
 
         # --------------------
         # Prepare the shared / global parts of the plugins
@@ -209,7 +214,8 @@ class NativescriptBuilder(FrontendBuilderABC):
             # * provide global services.
             self._syncPluginFiles(feModDir, pluginDetails, jsonAttr,
                                   keepExtraDstJsAndMapFiles=True,
-                                  postSyncCallback=self._scheduleModuleCompile)
+                                  postSyncCallback=self._scheduleModuleCompile,
+                                  excludeFilesRegex=excludeRegexp)
 
             self._writeFileIfRequired(feModDir, 'tsconfig.json', nodeModuleTsConfig)
             self._writeFileIfRequired(feModDir, 'typings.d.ts', nodeModuleTypingsD)
@@ -237,18 +243,21 @@ class NativescriptBuilder(FrontendBuilderABC):
             # the app correctly.
             self.fileSync.addSyncMapping(feModDir,
                                          androidDir1,
-                                         parentMustExist=True)
+                                         parentMustExist=True,
+                                     excludeFilesRegex=excludeRegexp)
 
             self.fileSync.addSyncMapping(feModDir,
                                          androidDir2,
-                                         parentMustExist=True)
+                                         parentMustExist=True,
+                                     excludeFilesRegex=excludeRegexp)
             '''
 
         # Lastly, Allow the clients to override any frontend files they wish.
         self.fileSync.addSyncMapping(self._jsonCfg.feFrontendCustomisationsDir,
                                      feAppDir,
                                      parentMustExist=True,
-                                     deleteExtraDstFiles=False)
+                                     deleteExtraDstFiles=False,
+                                     excludeFilesRegex=excludeRegexp)
 
         self.fileSync.syncFiles()
         self._compilePluginModules(True)

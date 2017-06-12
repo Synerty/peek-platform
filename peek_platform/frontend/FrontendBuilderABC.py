@@ -7,6 +7,7 @@ import shutil
 from abc import ABCMeta, abstractmethod
 from collections import namedtuple
 from jsoncfg.value_mappers import require_bool
+
 from peek_platform.file_config.PeekFileConfigFrontendDirMixin import \
     PeekFileConfigFrontendDirMixin
 from peek_platform.file_config.PeekFileConfigOsMixin import PeekFileConfigOsMixin
@@ -281,7 +282,7 @@ class FrontendBuilderABC(metaclass=ABCMeta):
         routeData += ",\n\t".join(services)
         routeData += "\n];\n"
 
-        routeData +=  '''
+        routeData += '''
         import {NgModule} from "@angular/core";
 
         @NgModule({
@@ -293,7 +294,7 @@ class FrontendBuilderABC(metaclass=ABCMeta):
             }
         
         }
-        ''' % ', '.join(['private _%s:%s' % (s,s) for s in persistentServices])
+        ''' % ', '.join(['private _%s:%s' % (s, s) for s in persistentServices])
 
         self._writeFileIfRequired(feAppDir, 'plugin-root-services.ts', routeData)
 
@@ -318,7 +319,8 @@ class FrontendBuilderABC(metaclass=ABCMeta):
                          attrName: str,
                          preSyncCallback: Optional[Callable[[], None]] = None,
                          postSyncCallback: Optional[Callable[[], None]] = None,
-                         keepExtraDstJsAndMapFiles=False) -> None:
+                         keepExtraDstJsAndMapFiles=False,
+                         excludeFilesRegex=()) -> None:
 
         if not os.path.exists(targetDir):
             os.mkdir(targetDir)  # The parent must exist
@@ -347,7 +349,8 @@ class FrontendBuilderABC(metaclass=ABCMeta):
             self.fileSync.addSyncMapping(srcDir, linkPath,
                                          keepExtraDstJsAndMapFiles=keepExtraDstJsAndMapFiles,
                                          preSyncCallback=preSyncCallback,
-                                         postSyncCallback=postSyncCallback)
+                                         postSyncCallback=postSyncCallback,
+                                         excludeFilesRegex=excludeFilesRegex)
 
         # Delete the items that we didn't create
         for item in currentItems - createdItems:

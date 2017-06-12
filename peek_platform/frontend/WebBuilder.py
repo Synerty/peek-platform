@@ -1,11 +1,10 @@
 import logging
-import os
-
-from peek_platform.frontend.FrontendOsCmd import runNgBuild
 from typing import List
 
+import os
+
 from peek_platform.frontend.FrontendBuilderABC import FrontendBuilderABC
-from peek_platform.util.PtyUtil import PtyOutParser, spawnPty, logSpawnException
+from peek_platform.frontend.FrontendOsCmd import runNgBuild
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +19,8 @@ class WebBuilder(FrontendBuilderABC):
         if not self._jsonCfg.feWebBuildPrepareEnabled:
             logger.info("SKIPPING, Web build prepare is disabled in config")
             return
+
+        excludeRegexp = (r'.*[.]ns[.]ts$', r'.*__pycache__.*')
 
         self._dirSyncMap = list()
 
@@ -47,7 +48,8 @@ class WebBuilder(FrontendBuilderABC):
         # --------------------
         # Prepare the common frontend application
 
-        self.fileSync.addSyncMapping(feSrcAppDir, os.path.join(feBuildSrcDir, 'app'))
+        self.fileSync.addSyncMapping(feSrcAppDir, os.path.join(feBuildSrcDir, 'app'),
+                                     excludeFilesRegex=excludeRegexp)
 
         # --------------------
         # Prepare the home and title bar configuration for the plugins
@@ -57,11 +59,13 @@ class WebBuilder(FrontendBuilderABC):
         # --------------------
         # Prepare the plugin lazy loaded part of the application
         self._writePluginRouteLazyLoads(feBuildSrcDir, pluginDetails)
-        self._syncPluginFiles(feBuildSrcDir, pluginDetails, "appDir")
+        self._syncPluginFiles(feBuildSrcDir, pluginDetails, "appDir",
+                              excludeFilesRegex=excludeRegexp)
 
         # --------------------
         # Prepare the plugin assets
-        self._syncPluginFiles(feBuildAssetsDir, pluginDetails, "assetDir")
+        self._syncPluginFiles(feBuildAssetsDir, pluginDetails, "assetDir",
+                              excludeFilesRegex=excludeRegexp)
 
         # --------------------
         # Prepare the shared / global parts of the plugins
@@ -69,19 +73,19 @@ class WebBuilder(FrontendBuilderABC):
         self._writePluginRootModules(feBuildSrcDir, pluginDetails)
         self._writePluginRootServices(feBuildSrcDir, pluginDetails)
 
-
         for feModDir, jsonAttr, in feModuleDirs:
             # Link the shared code, this allows plugins
             # * to import code from each other.
             # * provide global services.
-            self._syncPluginFiles(feModDir, pluginDetails,jsonAttr)
-
+            self._syncPluginFiles(feModDir, pluginDetails, jsonAttr,
+                                  excludeFilesRegex=excludeRegexp)
 
         # Lastly, Allow the clients to override any frontend files they wish.
         self.fileSync.addSyncMapping(self._jsonCfg.feFrontendCustomisationsDir,
                                      feBuildSrcDir,
                                      parentMustExist=True,
-                                     deleteExtraDstFiles=False)
+                                     deleteExtraDstFiles=False,
+                                     excludeFilesRegex=excludeRegexp)
 
         self.fileSync.syncFiles()
 

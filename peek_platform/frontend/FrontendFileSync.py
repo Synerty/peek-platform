@@ -1,7 +1,8 @@
 import logging
-from typing import Callable, Optional
+from typing import Callable, Optional, List
 
 import os
+import re
 import shutil
 from collections import namedtuple
 from twisted.internet import reactor
@@ -20,7 +21,8 @@ FileSyncCfg = namedtuple('FileSyncCfg',
                          ['srcDir', 'dstDir', 'parentMustExist',
                           'deleteExtraDstFiles',
                           'keepExtraDstJsAndMapFiles',
-                          'preSyncCallback', 'postSyncCallback'])
+                          'preSyncCallback', 'postSyncCallback',
+                          'excludeFilesRegex'])
 
 
 class FrontendFileSync:
@@ -41,7 +43,8 @@ class FrontendFileSync:
                        deleteExtraDstFiles=True,
                        preSyncCallback: Optional[Callable[[], None]] = None,
                        postSyncCallback: Optional[Callable[[], None]] = None,
-                       keepExtraDstJsAndMapFiles=True):
+                       keepExtraDstJsAndMapFiles=True,
+                       excludeFilesRegex: List[str] = ()):
         """ Add Sync Mapping
         
         :param srcDir: The source dir to sync files from
@@ -66,13 +69,17 @@ class FrontendFileSync:
                 
         :param postSyncCallback: This will be called after syncing occurs.
                 This includes any incremental syncing.
+
+        :param excludeFilesRegex: If the relative path+filename match this regexp then
+                            the file is not incldued in the syncing.
         
         """
         self._dirSyncMap.append(
             FileSyncCfg(srcDir, dstDir, parentMustExist,
                         deleteExtraDstFiles,
                         keepExtraDstJsAndMapFiles,
-                        preSyncCallback, postSyncCallback)
+                        preSyncCallback, postSyncCallback,
+                        excludeFilesRegex)
         )
 
     def startFileSyncWatcher(self):
@@ -109,6 +116,10 @@ class FrontendFileSync:
             existingFiles = set(self._listFiles(cfg.dstDir))
             srcFiles = set(self._listFiles(cfg.srcDir))
             jsAndJsMapFiles = set()
+
+            for regexp in cfg.excludeFilesRegex:
+                rexp = re.compile(regexp)
+                srcFiles = set(filter(lambda l: not rexp.match(l), srcFiles))
 
             for srcFile in srcFiles:
                 srcFilePath = os.path.join(cfg.srcDir, srcFile)
@@ -191,10 +202,21 @@ class _FileChangeHandler(FileSystemEventHandler):
         self._dstDir = cfg.dstDir
         self._cfg = cfg
 
+        self._rexp = [re.compile(r) for r in cfg.excludeFilesRegex]
+
+    def _makeSrcFileRelPath(self, srcFilePath: str) -> str:
+        return srcFilePath[len(self._srcDir):]
+
     def _makeDestPath(self, srcFilePath: str) -> str:
-        return self._dstDir + srcFilePath[len(self._srcDir):]
+        return self._dstDir + self._makeSrcFileRelPath(srcFilePath)
 
     def _updateFileContents(self, srcFilePath):
+
+        relativeSrcFilePath = self._makeSrcFileRelPath(srcFilePath)
+        for r in self._rexp:
+            if r.match(relativeSrcFilePath):
+                return
+
         parentDstDir = os.path.dirname(self._dstDir)
         if self._cfg.parentMustExist and not os.path.isdir(parentDstDir):
             logger.debug("Skipping sink, parent doesn't exist. dstDir=%s", self._dstDir)
@@ -217,7 +239,6 @@ class _FileChangeHandler(FileSystemEventHandler):
 
         with open(srcFilePath, 'rb') as f:
             contents = f.read()
-
 
         contents = self._syncFileHook(dstFilePath, contents)
 
