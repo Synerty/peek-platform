@@ -309,9 +309,11 @@ class NativescriptBuilder(FrontendBuilderABC):
 
             elif inComponentHeader:
                 line = (line
+                        .replace(b'.mweb.ts', b'.ns.ts')
                         .replace(b'.mweb.html', b'.ns.html')
                         .replace(b'.mweb.css', b'.ns.css')
                         .replace(b'.mweb.scss', b'.ns.scss')
+                        .replace(b'.web.ts', b'.ns.ts')
                         .replace(b'.web.html', b'.ns.html')
                         .replace(b'.web.css', b'.ns.css')
                         .replace(b'.web.scss', b'.ns.scss')
