@@ -20,7 +20,11 @@ class WebBuilder(FrontendBuilderABC):
             logger.info("SKIPPING, Web build prepare is disabled in config")
             return
 
-        excludeRegexp = (r'.*[.]ns[.]ts$', r'.*__pycache__.*')
+        excludeRegexp = (
+            r'.*[.]ns[.]ts$',
+            r'.*[.]ns[.]html$',
+            r'.*__pycache__.*'
+        )
 
         self._dirSyncMap = list()
 

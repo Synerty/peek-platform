@@ -146,7 +146,15 @@ class NativescriptBuilder(FrontendBuilderABC):
             logger.info("SKIPPING, Nativescript build prepare is disabled in config")
             return
 
-        excludeRegexp = (r'.*[.]web[.]ts$', r'.*[.]mweb[.]ts$', r'.*__pycache__.*')
+        excludeRegexp = (
+            r'.*[.]web[.]ts$',
+            r'.*[.]mweb[.]ts$',
+            r'.*[.]dweb[.]ts$',
+            r'.*[.]web[.]html$',
+            r'.*[.]mweb[.]html$',
+            r'.*[.]dweb[.]html$',
+            r'.*__pycache__.*'
+        )
 
         self._dirSyncMap = list()
 
