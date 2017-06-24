@@ -59,9 +59,12 @@ class PeekFileConfigPlatformMixin(metaclass=ABCMeta):
 
     # --- Plugin Data Path
     def pluginDataPath(self, pluginName):
-        default = os.path.join(self._homePath, 'plugin_data', pluginName)
+        default = os.path.join(self._homePath, 'plugin_data')
+
         with self._cfg as c:
-            return self._chkDir(c.plugin.dataPath(default, require_string))
+            pluginData = c.plugin.dataPath(default, require_string)
+
+        return self._chkDir(os.path.join(pluginData, pluginName))
 
     # --- Plugin Software Version
     def pluginVersion(self, pluginName):
