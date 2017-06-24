@@ -15,6 +15,10 @@ class WebBuilder(FrontendBuilderABC):
         FrontendBuilderABC.__init__(self, frontendProjectDir, platformService,
                                     jsonCfg, loadedPlugins)
 
+        self.isMobile = "mobile" in platformService
+        self.isDesktop = "desktop" in platformService
+        self.isAdmin = "admin" in platformService
+
     def build(self) -> None:
         if not self._jsonCfg.feWebBuildPrepareEnabled:
             logger.info("SKIPPING, Web build prepare is disabled in config")
@@ -23,8 +27,27 @@ class WebBuilder(FrontendBuilderABC):
         excludeRegexp = (
             r'.*[.]ns[.]ts$',
             r'.*[.]ns[.]html$',
-            r'.*__pycache__.*'
+            r'.*__pycache__.*',
+            r'.*[.]py$'
         )
+
+        if self.isMobile:
+            excludeRegexp += (
+                r'.*[.]dweb[.]ts$',
+                r'.*[.]dweb[.]html$',
+            )
+
+        elif self.isDesktop:
+            excludeRegexp += (
+                r'.*[.]mweb[.]ts$',
+                r'.*[.]mweb[.]html$',
+            )
+
+        elif self.isAdmin:
+            pass
+
+        else:
+            raise NotImplementedError("This is neither mobile or desktop web")
 
         self._dirSyncMap = list()
 
@@ -102,6 +125,22 @@ class WebBuilder(FrontendBuilderABC):
             self._compileFrontend(feBuildDir)
 
     def _syncFileHook(self, fileName: str, contents: bytes) -> bytes:
+        # replace imports that end with .dweb or .mweb to the appropriate
+        # value
+        # Otherwise just .web should be used if no replacing is required.
+
+        if self.isMobile:
+            contents = contents.replace(b'.dweb";', b'.mweb";')
+
+        elif self.isDesktop:
+            contents = contents.replace(b'.mweb";', b'.dweb";')
+
+        elif self.isAdmin:
+            pass
+
+        else:
+            raise NotImplementedError("This is neither mobile or desktop web")
+
         return contents
 
     def _compileFrontend(self, feBuildDir: str) -> None:

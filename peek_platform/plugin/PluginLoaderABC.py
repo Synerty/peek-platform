@@ -1,21 +1,21 @@
+import gc
 import logging
-import os
 import sys
+from typing import Type, Tuple, Optional
+
+import os
 from abc import ABCMeta, abstractmethod, abstractproperty
 from collections import defaultdict
 from importlib.util import find_spec
-from typing import Type, Tuple, Optional
-
-import gc
 from jsoncfg.value_mappers import require_string, require_array
-from vortex.PayloadIO import PayloadIO
-from vortex.Tuple import removeTuplesForTupleNames, registeredTupleNames, \
-    tupleForTupleName
-from vortex.TupleAction import TupleActionABC, TupleGenericAction, TupleUpdateAction
 
 from peek_platform import PeekPlatformConfig
 from peek_plugin_base.PluginCommonEntryHookABC import PluginCommonEntryHookABC
 from peek_plugin_base.PluginPackageFileConfig import PluginPackageFileConfig
+from vortex.PayloadIO import PayloadIO
+from vortex.Tuple import removeTuplesForTupleNames, registeredTupleNames, \
+    tupleForTupleName
+from vortex.TupleAction import TupleGenericAction, TupleUpdateAction
 from vortex.TupleSelector import TupleSelector
 from vortex.rpc.RPC import _VortexRPCResultTuple, _VortexRPCArgTuple
 
@@ -27,6 +27,11 @@ TupleUpdateAction()
 TupleGenericAction()
 _VortexRPCResultTuple()
 _VortexRPCArgTuple()
+
+corePlugins = [
+    "peek_core_device"
+]
+
 
 class PluginLoaderABC(metaclass=ABCMeta):
     _instance = None
@@ -66,7 +71,7 @@ class PluginLoaderABC(metaclass=ABCMeta):
 
         """
 
-    def pluginEntryHook(self, pluginName ) -> Optional[PluginCommonEntryHookABC]:
+    def pluginEntryHook(self, pluginName) -> Optional[PluginCommonEntryHookABC]:
         """ Plugin Entry Hook
 
         Returns the loaded plugin entry hook for the plugin name.
@@ -77,7 +82,6 @@ class PluginLoaderABC(metaclass=ABCMeta):
 
         """
         return self._loadedPlugins.get(pluginName)
-
 
     def loadPlugin(self, pluginName):
         try:
@@ -177,7 +181,6 @@ class PluginLoaderABC(metaclass=ABCMeta):
 
         self._unloadPluginPackage(pluginName)
 
-
     def listPlugins(self):
         def pluginTest(name):
             if not name.startswith("plugin_"):
@@ -188,13 +191,25 @@ class PluginLoaderABC(metaclass=ABCMeta):
         plugins = list(filter(pluginTest, plugins))
         return plugins
 
-    def loadAllPlugins(self):
-        for pluginName in PeekPlatformConfig.config.pluginsEnabled:
+    def loadCorePlugins(self):
+        for pluginName in corePlugins:
             self.loadPlugin(pluginName)
 
-    def unloadAllPlugins(self):
-        while self._loadedPlugins:
-            self.unloadPlugin(list(self._loadedPlugins.keys())[0])
+    def unloadCorePlugins(self):
+        for pluginName in corePlugins:
+            if pluginName in self._loadedPlugins:
+                self.unloadPlugin(pluginName)
+
+    def loadOptionalPlugins(self):
+        for pluginName in PeekPlatformConfig.config.pluginsEnabled:
+            if pluginName.startswith("peek_core"):
+                raise Exception("Core plugins can not be configured")
+            self.loadPlugin(pluginName)
+
+    def unloadOptionalPlugins(self):
+        names = filter(lambda n: not n.startswith("peek_core"), self._loadedPlugins)
+        for pluginName in list(names):
+            self.unloadPlugin(pluginName)
 
     def _unloadPluginPackage(self, pluginName):
 

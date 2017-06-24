@@ -153,7 +153,8 @@ class NativescriptBuilder(FrontendBuilderABC):
             r'.*[.]web[.]html$',
             r'.*[.]mweb[.]html$',
             r'.*[.]dweb[.]html$',
-            r'.*__pycache__.*'
+            r'.*__pycache__.*',
+            r'.*[.]py$'
         )
 
         self._dirSyncMap = list()
@@ -284,10 +285,10 @@ class NativescriptBuilder(FrontendBuilderABC):
 
     def _syncFileHook(self, fileName: str, contents: bytes) -> bytes:
         if fileName.endswith(".ts"):
-            contents = contents.replace(b'@synerty/peek-mobile-util/index.web',
-                                        b'@synerty/peek-mobile-util/index.nativescript')
-            contents = contents.replace(b'@synerty/peek-mobile-util/index.mweb',
-                                        b'@synerty/peek-mobile-util/index.nativescript')
+            contents = contents.replace(b'@synerty/peek-util/index.web',
+                                        b'@synerty/peek-util/index.ns')
+            contents = contents.replace(b'@synerty/peek-util/index.mweb',
+                                        b'@synerty/peek-util/index.ns')
 
             # replace imports that end with .web/.mweb with .ns
             # This will allow platform dependent typescript modules,
