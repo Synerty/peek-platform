@@ -171,7 +171,7 @@ class NativescriptBuilder(FrontendBuilderABC):
         self._moduleCompileLoopingCall = None
 
         self._feModuleDirs = [
-            (os.path.join(feNodeModulesDir, '@peek'), "moduleDir"),
+            (os.path.join(feAppDir, '@peek'), "moduleDir"),
         ]
 
         fePackageJson = os.path.join(feBuildDir, 'package.json')
@@ -181,9 +181,9 @@ class NativescriptBuilder(FrontendBuilderABC):
         # --------------------
         # Check if node_modules exists
 
-        if not os.path.exists(os.path.join(feBuildDir, 'node_modules')):
-            raise NotADirectoryError("node_modules doesn't exist, ensure you've run "
-                                     "`npm install` in dir %s" % feBuildDir)
+        # if not os.path.exists(os.path.join(feBuildDir, 'node_modules')):
+        #     raise NotADirectoryError("node_modules doesn't exist, ensure you've run "
+        #                              "`npm install` in dir %s" % feBuildDir)
 
         # --------------------
         # Prepare the common frontend application
@@ -223,17 +223,17 @@ class NativescriptBuilder(FrontendBuilderABC):
             # * provide global services.
             self._syncPluginFiles(feModDir, pluginDetails, jsonAttr,
                                   keepExtraDstJsAndMapFiles=True,
-                                  postSyncCallback=self._scheduleModuleCompile,
+                                  # postSyncCallback=self._scheduleModuleCompile,
                                   excludeFilesRegex=excludeRegexp)
 
-            self._writeFileIfRequired(feModDir, 'tsconfig.json', nodeModuleTsConfig)
-            self._writeFileIfRequired(feModDir, 'typings.d.ts', nodeModuleTypingsD)
-            self._writeFileIfRequired(feModDir, 'references.d.ts', nodeReferencesD)
+            # self._writeFileIfRequired(feModDir, 'tsconfig.json', nodeModuleTsConfig)
+            # self._writeFileIfRequired(feModDir, 'typings.d.ts', nodeModuleTypingsD)
+            # self._writeFileIfRequired(feModDir, 'references.d.ts', nodeReferencesD)
 
             # Update the package.json in the peek_client_fe project so that it includes
             # references to the plugins linked under node_modules.
             # Otherwise nativescript doesn't include them in it's build.
-            self._updatePackageJson(fePackageJson, pluginDetails)
+            # self._updatePackageJson(fePackageJson, pluginDetails)
 
             # Now sync those node_modules/@peek-xxx packages into the
             # "platforms" build dirs
@@ -269,7 +269,7 @@ class NativescriptBuilder(FrontendBuilderABC):
                                      excludeFilesRegex=excludeRegexp)
 
         self.fileSync.syncFiles()
-        self._compilePluginModules(True)
+        # self._compilePluginModules(True)
 
         if self._jsonCfg.feSyncFilesForDebugEnabled:
             logger.info("Starting frontend development file sync")
@@ -295,6 +295,9 @@ class NativescriptBuilder(FrontendBuilderABC):
             # EG photo taking modules
             contents = contents.replace(b'.mweb";', b'.ns";')
             contents = contents.replace(b'.web";', b'.ns";')
+
+            # Update the @peek import to use the /app path
+            contents = contents.replace(b'from "@peek/', b'from "~/@peek/')
 
             # if b'@NgModule' in contents:
             #     return self._patchModule(fileName, contents)

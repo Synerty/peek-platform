@@ -301,6 +301,9 @@ class FrontendBuilderABC(metaclass=ABCMeta):
     def _writeFileIfRequired(self, dir, fileName, contents):
         fullFilePath = os.path.join(dir, fileName)
 
+        # Apply any changes to these files using the transform code
+        contents = self._syncFileHook(fileName, contents.encode()).decode()
+
         # Since writing the file again changes the date/time,
         # this messes with the self._recompileRequiredCheck
         if os.path.isfile(fullFilePath):
