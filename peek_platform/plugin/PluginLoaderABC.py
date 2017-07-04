@@ -8,6 +8,7 @@ from abc import ABCMeta, abstractmethod, abstractproperty
 from collections import defaultdict
 from importlib.util import find_spec
 from jsoncfg.value_mappers import require_string, require_array
+from twisted.internet.defer import inlineCallbacks
 
 from peek_platform import PeekPlatformConfig
 from peek_plugin_base.PluginCommonEntryHookABC import PluginCommonEntryHookABC
@@ -83,6 +84,7 @@ class PluginLoaderABC(metaclass=ABCMeta):
         """
         return self._loadedPlugins.get(pluginName)
 
+    @inlineCallbacks
     def loadPlugin(self, pluginName):
         try:
             self.unloadPlugin(pluginName)
@@ -127,7 +129,7 @@ class PluginLoaderABC(metaclass=ABCMeta):
                                 % (pluginName, self._entryHookClassType, EntryHookClass))
 
             ### Perform the loading of the plugin
-            self._loadPluginThrows(pluginName, EntryHookClass,
+            yield self._loadPluginThrows(pluginName, EntryHookClass,
                                    pluginRootDir, tuple(pluginRequiresService))
 
             # Make sure the version we have recorded is correct
@@ -191,20 +193,22 @@ class PluginLoaderABC(metaclass=ABCMeta):
         plugins = list(filter(pluginTest, plugins))
         return plugins
 
+    @inlineCallbacks
     def loadCorePlugins(self):
         for pluginName in corePlugins:
-            self.loadPlugin(pluginName)
+            yield self.loadPlugin(pluginName)
 
     def unloadCorePlugins(self):
         for pluginName in corePlugins:
             if pluginName in self._loadedPlugins:
                 self.unloadPlugin(pluginName)
 
+    @inlineCallbacks
     def loadOptionalPlugins(self):
         for pluginName in PeekPlatformConfig.config.pluginsEnabled:
             if pluginName.startswith("peek_core"):
                 raise Exception("Core plugins can not be configured")
-            self.loadPlugin(pluginName)
+            yield self.loadPlugin(pluginName)
 
     def unloadOptionalPlugins(self):
         names = filter(lambda n: not n.startswith("peek_core"), self._loadedPlugins)
