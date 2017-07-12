@@ -130,7 +130,7 @@ class PluginLoaderABC(metaclass=ABCMeta):
 
             ### Perform the loading of the plugin
             yield self._loadPluginThrows(pluginName, EntryHookClass,
-                                   pluginRootDir, tuple(pluginRequiresService))
+                                         pluginRootDir, tuple(pluginRequiresService))
 
             # Make sure the version we have recorded is correct
             PeekPlatformConfig.config.setPluginVersion(pluginName, pluginVersion)
@@ -211,9 +211,16 @@ class PluginLoaderABC(metaclass=ABCMeta):
             yield self.loadPlugin(pluginName)
 
     def unloadOptionalPlugins(self):
-        names = filter(lambda n: not n.startswith("peek_core"), self._loadedPlugins)
-        for pluginName in list(names):
-            self.unloadPlugin(pluginName)
+        for pluginName in reversed(PeekPlatformConfig.config.pluginsEnabled):
+            if pluginName in self._loadedPlugins:
+                self.unloadPlugin(pluginName)
+
+        remainingOptionalPlugins = list(filter(lambda n: not n.startswith("peek_core"),
+                                               self._loadedPlugins))
+
+        if remainingOptionalPlugins:
+            logger.debug(remainingOptionalPlugins)
+            raise Exception("Some plugins are still loaded")
 
     def _unloadPluginPackage(self, pluginName):
 
