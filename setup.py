@@ -48,7 +48,6 @@ requirements = [
     # Celery packages
     "flower",
     # "amqp >= 1.4.9",  # DEPENDENCY LINK BELOW
-    "celery[redis,auth]",
     "redis >= 2.10.5",
 
     # Potentially useful packages
@@ -67,6 +66,9 @@ lin_dependencies = [
 
     # We still require pymssql on windows, but we need to manually download the win wheel
     "pymssql",
+
+    # Celery 4 is not supported on windows
+    "celery[redis,auth]",
 ]
 
 win_dependencies = [
@@ -78,6 +80,9 @@ win_dependencies = [
     "pypiwin32",
     "wheel >= 0.30.0a0",
     "virtualenv >= 15.1.0",
+
+    # Celery 4 is not supported on windows
+    "celery[redis,auth]<=4.0.0",
 ]
 
 if isWindows:
