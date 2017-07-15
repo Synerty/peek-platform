@@ -17,6 +17,9 @@ if os.path.isdir(egg_info):
 if os.path.isfile('MANIFEST'):
     os.remove('MANIFEST')
 
+# pip install flower==0.7.3 tornado==3.2.2
+
+
 requirements = [
     # packages used for the platform to test and upgrade it's self
     "pip >= 9.0.0",
@@ -82,7 +85,7 @@ win_dependencies = [
     "virtualenv >= 15.1.0",
 
     # Celery 4 is not supported on windows
-    "celery[redis,auth]<=4.0.0",
+    "celery[redis,auth]<4.0.0",
 ]
 
 if isWindows:

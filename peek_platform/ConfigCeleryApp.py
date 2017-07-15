@@ -2,7 +2,7 @@ import logging
 import typing
 
 from kombu import serialization
-
+from peek_platform.file_config.PeekFileConfigWorkerMixin import PeekFileConfigWorkerMixin
 from vortex.Payload import Payload
 
 logger = logging.getLogger(__name__)
@@ -31,18 +31,19 @@ serialization.register(
 )
 
 
-def configureCeleryApp(app):
+def configureCeleryApp(app, workerConfig: PeekFileConfigWorkerMixin):
     # Optional configuration, see the application user guide.
     app.conf.update(
-        BROKER_URL='amqp://',
-        CELERY_RESULT_BACKEND='redis://localhost',
+        BROKER_URL=workerConfig.celeryBrokerUrl,
+        CELERY_RESULT_BACKEND=workerConfig.celeryResultUrl,
 
         # Leave the logging to us
         CELERYD_HIJACK_ROOT_LOGGER=False,
 
         CELERY_TASK_RESULT_EXPIRES=3600,
-        CELERY_TASK_SERIALIZER='vortex',
-        CELERY_ACCEPT_CONTENT=['vortex'],  # Ignore other content
-        CELERY_RESULT_SERIALIZER='vortex',
-        CELERY_ENABLE_UTC=True
+        # CELERY_TASK_SERIALIZER='vortex',
+        # CELERY_ACCEPT_CONTENT=['vortex'],  # Ignore other content
+        CELERY_ACCEPT_CONTENT=['pickle', 'json', 'msgpack', 'yaml', 'vortex'],
+        # CELERY_RESULT_SERIALIZER='vortex',
+        CELERY_ENABLE_UTC=True,
     )
