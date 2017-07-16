@@ -80,7 +80,6 @@ win_dependencies = [
     "cffi >= 1.9.1",
     "cryptography >= 1.7.1",
     "pytest >= 3.0.5",
-    "pypiwin32",
     "wheel >= 0.30.0a0",
     "virtualenv >= 15.1.0",
 
@@ -88,7 +87,7 @@ win_dependencies = [
     "celery[redis,auth]<4.0.0",
 
     # Service support for windows
-    "pywin32"
+    "pypiwin32"
 ]
 
 if isWindows:
