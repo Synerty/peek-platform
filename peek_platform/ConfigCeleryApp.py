@@ -40,10 +40,25 @@ def configureCeleryApp(app, workerConfig: PeekFileConfigWorkerMixin):
         # Leave the logging to us
         CELERYD_HIJACK_ROOT_LOGGER=False,
 
+        # The time results will stay in redis before expiring.
+        # I believe they are cleared when the results are obtained
+        # from txcelery._DeferredTask
         CELERY_TASK_RESULT_EXPIRES=3600,
-        # CELERY_TASK_SERIALIZER='vortex',
+
+        # The number of tasks each worker will prefetch.
+        # CELERYD_PREFETCH_MULTIPLIER=2,
+
+        # The number of workers to have at one time
+        # CELERYD_CONCURRENCY=2,
+
+        # The maximum number or results to keep for the client
+        # We could have backlog of 1000 results waiting for the client to pick up
+        # This would be a mega performance issue.
+        CELERY_MAX_CACHED_RESULTS=1000, # Default is 100
+
+        CELERY_TASK_SERIALIZER='vortex',
         # CELERY_ACCEPT_CONTENT=['vortex'],  # Ignore other content
         CELERY_ACCEPT_CONTENT=['pickle', 'json', 'msgpack', 'yaml', 'vortex'],
-        # CELERY_RESULT_SERIALIZER='vortex',
+        CELERY_RESULT_SERIALIZER='vortex',
         CELERY_ENABLE_UTC=True,
     )
