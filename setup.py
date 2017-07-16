@@ -86,6 +86,9 @@ win_dependencies = [
 
     # Celery 4 is not supported on windows
     "celery[redis,auth]<4.0.0",
+
+    # Service support for windows
+    "pywin32"
 ]
 
 if isWindows:
