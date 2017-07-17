@@ -1,29 +1,39 @@
 import logging
 import typing
+from datetime import datetime
 
 import celery
 from kombu import serialization
 
 from peek_platform.file_config.PeekFileConfigWorkerMixin import PeekFileConfigWorkerMixin
+from vortex.DeferUtil import noMainThread
 from vortex.Payload import Payload
 
 logger = logging.getLogger(__name__)
 
 
 def vortexDumps(arg: typing.Tuple) -> str:
+    noMainThread()
+    # startTime = datetime.utcnow()
     try:
         return Payload(tuples=[arg])._toJson()
     except Exception as e:
         logger.exception(e)
         raise
+    # finally:
+    #     logger.debug("vortexDumps took %s", (datetime.utcnow() - startTime))
 
 
 def vortexLoads(jsonStr: str) -> typing.Tuple:
+    noMainThread()
+    # startTime = datetime.utcnow()
     try:
         return Payload()._fromJson(jsonStr).tuples[0]
     except Exception as e:
         logger.exception(e)
         raise
+    # finally:
+    #     logger.debug("vortexLoads took %s", (datetime.utcnow() - startTime))
 
 
 serialization.register(
