@@ -1,7 +1,9 @@
 import logging
 import typing
 
+import celery
 from kombu import serialization
+
 from peek_platform.file_config.PeekFileConfigWorkerMixin import PeekFileConfigWorkerMixin
 from vortex.Payload import Payload
 
@@ -46,15 +48,15 @@ def configureCeleryApp(app, workerConfig: PeekFileConfigWorkerMixin):
         CELERY_TASK_RESULT_EXPIRES=3600,
 
         # The number of tasks each worker will prefetch.
-        # CELERYD_PREFETCH_MULTIPLIER=2,
+        CELERYD_PREFETCH_MULTIPLIER=workerConfig.celeryTaskPrefetch,
 
         # The number of workers to have at one time
-        # CELERYD_CONCURRENCY=2,
+        CELERYD_CONCURRENCY=workerConfig.celeryWorkerCount,
 
         # The maximum number or results to keep for the client
         # We could have backlog of 1000 results waiting for the client to pick up
         # This would be a mega performance issue.
-        CELERY_MAX_CACHED_RESULTS=1000, # Default is 100
+        CELERY_MAX_CACHED_RESULTS=1000,  # Default is 100
 
         CELERY_TASK_SERIALIZER='vortex',
         # CELERY_ACCEPT_CONTENT=['vortex'],  # Ignore other content
@@ -62,3 +64,14 @@ def configureCeleryApp(app, workerConfig: PeekFileConfigWorkerMixin):
         CELERY_RESULT_SERIALIZER='vortex',
         CELERY_ENABLE_UTC=True,
     )
+
+
+@celery.signals.after_setup_logger.connect
+def configureCeleryLogging(*args, **kwargs):
+    from peek_platform import PeekPlatformConfig
+    # Set default logging level
+    logging.root.setLevel(PeekPlatformConfig.config.loggingLevel)
+
+    if PeekPlatformConfig.config.loggingLevel != "DEBUG":
+        for name in ("celery.worker.strategy", "celery.app.trace", "celery.worker.job"):
+            logging.getLogger(name).setLevel(logging.WARNING)
