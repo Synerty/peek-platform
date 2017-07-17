@@ -76,12 +76,25 @@ def configureCeleryApp(app, workerConfig: PeekFileConfigWorkerMixin):
     )
 
 
+
+from peek_platform.file_config.PeekFileConfigABC import PeekFileConfigABC
+from peek_platform.file_config.PeekFileConfigPlatformMixin import PeekFileConfigPlatformMixin
+
+class _WorkerTaskConfigMixin(PeekFileConfigABC,
+                        PeekFileConfigPlatformMixin):
+    pass
+
 @celery.signals.after_setup_logger.connect
 def configureCeleryLogging(*args, **kwargs):
+    # Fix the loading problems windows has
+    from peek_plugin_base.PeekVortexUtil import peekWorkerName
     from peek_platform import PeekPlatformConfig
-    # Set default logging level
-    logging.root.setLevel(PeekPlatformConfig.config.loggingLevel)
+    PeekPlatformConfig.componentName = peekWorkerName
+    config = _WorkerTaskConfigMixin()
 
-    if PeekPlatformConfig.config.loggingLevel != "DEBUG":
+    # Set default logging level
+    logging.root.setLevel(config.loggingLevel)
+
+    if config.loggingLevel != "DEBUG":
         for name in ("celery.worker.strategy", "celery.app.trace", "celery.worker.job"):
             logging.getLogger(name).setLevel(logging.WARNING)
