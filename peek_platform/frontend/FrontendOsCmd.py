@@ -25,8 +25,8 @@ def __runNodeCmdWin(feBuildDir: str, cmds: List[str]):
                             stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                             shell=True)
 
-    logger.info("Wating up to 120s for command to finish")
-    outs, errs = proc.communicate(timeout=120)
+    logger.info("Wating up to 5m for command to finish")
+    outs, errs = proc.communicate(timeout=300)
 
     if proc.returncode in (0,):
         logger.info("%s finished successfully" % ' '.join(cmds))
