@@ -1,7 +1,8 @@
 import logging
-from typing import List
+from datetime import datetime
 
 import os
+from typing import List
 
 from peek_platform.frontend.FrontendBuilderABC import FrontendBuilderABC
 from peek_platform.frontend.FrontendOsCmd import runNgBuild
@@ -21,7 +22,8 @@ class WebBuilder(FrontendBuilderABC):
 
     def build(self) -> None:
         if not self._jsonCfg.feWebBuildPrepareEnabled:
-            logger.info("SKIPPING, Web build prepare is disabled in config")
+            logger.info("%s SKIPPING, Web build prepare is disabled in config",
+                        self._platformService)
             return
 
         excludeRegexp = (
@@ -47,7 +49,7 @@ class WebBuilder(FrontendBuilderABC):
             pass
 
         else:
-            raise NotImplementedError("This is neither mobile or desktop web")
+            raise NotImplementedError("This is neither admin, mobile or desktop web")
 
         self._dirSyncMap = list()
 
@@ -67,8 +69,10 @@ class WebBuilder(FrontendBuilderABC):
         # Check if node_modules exists
 
         if not os.path.exists(os.path.join(feBuildDir, 'node_modules')):
-            raise NotADirectoryError("node_modules doesn't exist, ensure you've run "
-                                     "`npm install` in dir %s" % feBuildDir)
+            raise NotADirectoryError(
+                "%s node_modules doesn't exist, ensure you've run "
+                "`npm install` in dir %s",
+                self._platformService, feBuildDir)
 
         # --------------------
         # Prepare the common frontend application
@@ -115,11 +119,12 @@ class WebBuilder(FrontendBuilderABC):
         self.fileSync.syncFiles()
 
         if self._jsonCfg.feSyncFilesForDebugEnabled:
-            logger.info("Starting frontend development file sync")
+            logger.info("%s starting frontend development file sync",
+                        self._platformService)
             self.fileSync.startFileSyncWatcher()
 
         if self._jsonCfg.feWebBuildEnabled:
-            logger.info("Starting frontend web build")
+            logger.info("%s starting frontend web build", self._platformService)
             self._compileFrontend(feBuildDir)
 
     def _syncFileHook(self, fileName: str, contents: bytes) -> bytes:
@@ -149,14 +154,15 @@ class WebBuilder(FrontendBuilderABC):
         We need to use a pty otherwise webpack doesn't run.
 
         """
-
+        startDate = datetime.now()
         hashFileName = os.path.join(feBuildDir, ".lastHash")
 
         if not self._recompileRequiredCheck(feBuildDir, hashFileName):
-            logger.info("Frondend has not changed, recompile not required.")
+            logger.info("%s Frontend has not changed, recompile not required.",
+                        self._platformService)
             return
 
-        logger.info("Rebuilding frontend distribution")
+        logger.info("%s Rebuilding frontend distribution", self._platformService)
 
         try:
             runNgBuild(feBuildDir)
@@ -166,5 +172,8 @@ class WebBuilder(FrontendBuilderABC):
                 os.remove(hashFileName)
 
             # Update the detail of the exception and raise it
-            e.message = "The angular frontend failed to build."
+            e.message = "%s angular frontend failed to build." % self._platformService
             raise
+
+        logger.info("%s frontend rebuild completed in %s",
+                    self._platformService, datetime.now() - startDate)
