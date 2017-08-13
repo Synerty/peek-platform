@@ -46,6 +46,10 @@ serialization.register(
 def configureCeleryApp(app, workerConfig: PeekFileConfigWorkerMixin):
     # Optional configuration, see the application user guide.
     app.conf.update(
+        # On peek_server, the thread limit is set to 10, these should be configurable.
+        BROKER_POOL_LIMIT=15,
+
+        # Set the broker and backend URLs
         BROKER_URL=workerConfig.celeryBrokerUrl,
         CELERY_RESULT_BACKEND=workerConfig.celeryResultUrl,
 
