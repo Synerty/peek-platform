@@ -4,7 +4,7 @@ from typing import List
 import os
 from twisted.internet.task import LoopingCall
 
-from peek_platform.frontend.FrontendBuilderABC import FrontendBuilderABC
+from peek_platform.frontend.FrontendBuilderABC import FrontendBuilderABC, BuildTypeEnum
 from peek_platform.frontend.FrontendOsCmd import runTsc
 
 logger = logging.getLogger(__name__)
@@ -14,6 +14,7 @@ class NativescriptBuilder(FrontendBuilderABC):
     def __init__(self, frontendProjectDir: str, platformService: str,
                  jsonCfg, loadedPlugins: List):
         FrontendBuilderABC.__init__(self, frontendProjectDir, platformService,
+                                    BuildTypeEnum.NATIVE_SCRIPT,
                                     jsonCfg, loadedPlugins)
 
     def build(self) -> None:

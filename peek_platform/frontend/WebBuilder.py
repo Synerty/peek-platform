@@ -4,21 +4,32 @@ from datetime import datetime
 import os
 from typing import List
 
-from peek_platform.frontend.FrontendBuilderABC import FrontendBuilderABC
+from peek_platform.frontend.FrontendBuilderABC import FrontendBuilderABC, BuildTypeEnum
 from peek_platform.frontend.FrontendOsCmd import runNgBuild
 
 logger = logging.getLogger(__name__)
 
 
 class WebBuilder(FrontendBuilderABC):
+
     def __init__(self, frontendProjectDir: str, platformService: str,
                  jsonCfg, loadedPlugins: List):
         FrontendBuilderABC.__init__(self, frontendProjectDir, platformService,
+                                    self._buildType(platformService),
                                     jsonCfg, loadedPlugins)
 
         self.isMobile = "mobile" in platformService
         self.isDesktop = "desktop" in platformService
         self.isAdmin = "admin" in platformService
+
+    @staticmethod
+    def _buildType(platformService:str):
+        if "mobile" in platformService: return BuildTypeEnum.WEB_MOBILE
+        if "desktop" in platformService: return BuildTypeEnum.WEB_DESKTOP
+        if "admin" in platformService: return BuildTypeEnum.WEB_ADMIN
+
+        raise NotImplementedError("Unknown build type")
+
 
     def build(self) -> None:
         if not self._jsonCfg.feWebBuildPrepareEnabled:

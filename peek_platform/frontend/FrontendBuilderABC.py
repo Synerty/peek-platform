@@ -42,6 +42,14 @@ _routesTemplate = """
     }"""
 
 
+class BuildTypeEnum:
+    ELECTRON = "ELECTRON"
+    WEB_DESKTOP = "WEB_DESKTOP"
+    WEB_MOBILE = "WEB_MOBILE"
+    WEB_ADMIN = "WEB_ADMIN"
+    NATIVE_SCRIPT = "NATIVE_SCRIPT"
+
+
 class FrontendBuilderABC(metaclass=ABCMeta):
     """ Peek App Frontend Installer Mixin
 
@@ -56,12 +64,22 @@ class FrontendBuilderABC(metaclass=ABCMeta):
 
     """
 
-    def __init__(self, frontendProjectDir: str, platformService: str, jsonCfg,
+    _CFG_KEYS = {
+        BuildTypeEnum.ELECTRON: ["desktop-electron", "desktop"],
+        BuildTypeEnum.WEB_DESKTOP: ["desktop-web", "desktop"],
+        BuildTypeEnum.WEB_MOBILE: ["mobile-web", "mobile"],
+        BuildTypeEnum.NATIVE_SCRIPT: ["mobile-ns", "mobile"],
+        BuildTypeEnum.WEB_ADMIN: ["admin"]
+    }
+
+    def __init__(self, frontendProjectDir: str, platformService: str,
+                 buildType: BuildTypeEnum, jsonCfg,
                  loadedPlugins: List):
         assert platformService in ("peek-mobile", "peek-admin", "peek-desktop"), (
             "Unexpected service %s" % platformService)
 
         self._platformService = platformService
+        self._buildType = buildType
         self._jsonCfg = jsonCfg
         self._frontendProjectDir = frontendProjectDir
         self._loadedPlugins = loadedPlugins
@@ -87,8 +105,18 @@ class FrontendBuilderABC(metaclass=ABCMeta):
         for plugin in self._loadedPlugins:
             assert isinstance(plugin.packageCfg, PluginPackageFileConfig)
             pluginPackageConfig = plugin.packageCfg.config
+            jsonCfgNode = None
 
-            jsonCfgNode = pluginPackageConfig[self._platformService.replace('peek-', '')]
+            for configKey in self._CFG_KEYS[self._buildType]:
+                if configKey in pluginPackageConfig:
+                    jsonCfgNode = pluginPackageConfig[configKey]
+                    break
+
+            if not jsonCfgNode:
+                logger.info("Skipping frontend build for %s,"
+                            "missing config section for %s",
+                            plugin.name, self._buildType)
+                continue
 
             enabled = (jsonCfgNode.enableAngularFrontend(True, require_bool))
 
