@@ -6,6 +6,7 @@ from twisted.internet.task import LoopingCall
 
 from peek_platform.frontend.FrontendBuilderABC import FrontendBuilderABC, BuildTypeEnum
 from peek_platform.frontend.FrontendOsCmd import runTsc
+from vortex.DeferUtil import deferToThreadWrapWithLogger
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +18,7 @@ class NativescriptBuilder(FrontendBuilderABC):
                                     BuildTypeEnum.NATIVE_SCRIPT,
                                     jsonCfg, loadedPlugins)
 
+    @deferToThreadWrapWithLogger(logger)
     def build(self) -> None:
         if not self._jsonCfg.feNativescriptBuildPrepareEnabled:
             logger.info("SKIPPING, Nativescript build prepare is disabled in config")

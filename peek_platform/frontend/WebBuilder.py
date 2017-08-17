@@ -6,6 +6,7 @@ from typing import List
 
 from peek_platform.frontend.FrontendBuilderABC import FrontendBuilderABC, BuildTypeEnum
 from peek_platform.frontend.FrontendOsCmd import runNgBuild
+from vortex.DeferUtil import deferToThreadWrapWithLogger
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +32,7 @@ class WebBuilder(FrontendBuilderABC):
         raise NotImplementedError("Unknown build type")
 
 
+    @deferToThreadWrapWithLogger(logger)
     def build(self) -> None:
         if not self._jsonCfg.feWebBuildPrepareEnabled:
             logger.info("%s SKIPPING, Web build prepare is disabled in config",

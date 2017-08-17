@@ -198,6 +198,8 @@ class PluginLoaderABC(metaclass=ABCMeta):
         for pluginName in corePlugins:
             yield self.loadPlugin(pluginName)
 
+    @inlineCallbacks
+    def startCorePlugins(self):
         # Start the Plugin
         for pluginName in corePlugins:
             if pluginName not in self._loadedPlugins:
@@ -217,6 +219,8 @@ class PluginLoaderABC(metaclass=ABCMeta):
                 raise Exception("Core plugins can not be configured")
             yield self.loadPlugin(pluginName)
 
+    @inlineCallbacks
+    def startOptionalPlugins(self):
         # Start the Plugin
         for pluginName in PeekPlatformConfig.config.pluginsEnabled:
             if pluginName not in self._loadedPlugins:
