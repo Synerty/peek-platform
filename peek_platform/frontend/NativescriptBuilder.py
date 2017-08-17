@@ -18,7 +18,7 @@ class NativescriptBuilder(FrontendBuilderABC):
                                     BuildTypeEnum.NATIVE_SCRIPT,
                                     jsonCfg, loadedPlugins)
 
-    @deferToThreadWrapWithLogger(logger)
+    @deferToThreadWrapWithLogger(logger, checkMainThread=False)
     def build(self) -> None:
         if not self._jsonCfg.feNativescriptBuildPrepareEnabled:
             logger.info("SKIPPING, Nativescript build prepare is disabled in config")

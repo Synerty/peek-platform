@@ -32,7 +32,7 @@ class WebBuilder(FrontendBuilderABC):
         raise NotImplementedError("Unknown build type")
 
 
-    @deferToThreadWrapWithLogger(logger)
+    @deferToThreadWrapWithLogger(logger, checkMainThread=False)
     def build(self) -> None:
         if not self._jsonCfg.feWebBuildPrepareEnabled:
             logger.info("%s SKIPPING, Web build prepare is disabled in config",
