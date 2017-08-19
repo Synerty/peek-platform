@@ -124,6 +124,11 @@ class NativescriptBuilder(FrontendBuilderABC):
             contents = contents.replace(b'@synerty/peek-util/index.mweb',
                                         b'@synerty/peek-util/index.ns')
 
+            # Replace .scss with .css for NativeScript
+            # NativeScript has compiled the SCSS to CSS before the app runs, so it's css
+            contents = contents.replace(b".component.scss'", b".component.css'")
+            contents = contents.replace(b'.component.scss"', b'.component.css"')
+
             # replace imports that end with .web/.mweb with .ns
             # This will allow platform dependent typescript modules,
             # EG photo taking modules
