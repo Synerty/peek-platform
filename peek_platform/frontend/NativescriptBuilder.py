@@ -126,8 +126,8 @@ class NativescriptBuilder(FrontendBuilderABC):
 
             # Replace .scss with .css for NativeScript
             # NativeScript has compiled the SCSS to CSS before the app runs, so it's css
-            contents = contents.replace(b".component.scss'", b".component.css'")
-            contents = contents.replace(b'.component.scss"', b'.component.css"')
+            contents = contents.replace(b".component.ns.scss'", b".component.ns.css'")
+            contents = contents.replace(b'.component.ns.scss"', b'.component.ns.css"')
 
             # replace imports that end with .web/.mweb with .ns
             # This will allow platform dependent typescript modules,
