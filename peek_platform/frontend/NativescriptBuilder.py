@@ -137,6 +137,7 @@ class NativescriptBuilder(FrontendBuilderABC):
 
             # Update the @peek import to use the /app path
             contents = contents.replace(b'from "@peek/', b'from "~/@peek/')
+            contents = contents.replace(b"from '@peek/", b"from '~/@peek/")
 
             # if b'@NgModule' in contents:
             #     return self._patchModule(fileName, contents)
