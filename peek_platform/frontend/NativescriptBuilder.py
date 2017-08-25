@@ -131,6 +131,12 @@ class NativescriptBuilder(FrontendBuilderABC):
             contents = contents.replace(b'from "@peek/', b'from "~/@peek/')
             contents = contents.replace(b"from '@peek/", b"from '~/@peek/")
 
+            # Occasionally @peek/peek_plugin_... will need to import from the lazy loaded
+            # UI part of the module, This makes that possible
+            # Update the @peek import to use the /app path
+            contents = contents.replace(b'from "peek_plugin_', b'from "~/peek_plugin_')
+            contents = contents.replace(b"from 'peek_plugin_", b"from '~/peek_plugin_")
+
             # if b'@NgModule' in contents:
             #     return self._patchModule(fileName, contents)
 
