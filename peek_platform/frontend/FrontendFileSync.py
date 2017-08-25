@@ -8,7 +8,6 @@ from collections import namedtuple
 from twisted.internet import reactor
 from watchdog.events import FileSystemEventHandler, FileMovedEvent, FileModifiedEvent, \
     FileDeletedEvent, FileCreatedEvent
-from watchdog.observers import Observer as WatchdogObserver
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +22,30 @@ FileSyncCfg = namedtuple('FileSyncCfg',
                           'keepExtraDstJsAndMapFiles',
                           'preSyncCallback', 'postSyncCallback',
                           'excludeFilesRegex'])
+
+from watchdog.utils import platform
+
+if platform.is_darwin():
+    """
+    Don't use fsevents as it only monitors a file once.
+    This caused problems when syncing one directory to multiple targets, 
+    such as from a peek plugin to build-web and build-ns
+    
+    # from watchdog.observers.fsevents import FSEventsObserver as WatchdogObserver
+    """
+
+    # FIXME: catching too broad. Error prone
+    try:
+        from watchdog.observers.kqueue import KqueueObserver as WatchdogObserver
+
+        logger.debug("We're on macOS, Forcing kqueue")
+
+    except:
+        logger.warning("Failed to import kqueue. Fall back to Watchdogs default.")
+        from watchdog.observers import Observer as WatchdogObserver
+
+else:
+    from watchdog.observers import Observer as WatchdogObserver
 
 
 class FrontendFileSync:
