@@ -296,6 +296,10 @@ class _FileChangeHandler(FileSystemEventHandler):
         if not isinstance(event, FileDeletedEvent) or event.src_path.endswith("__"):
             return
 
+        # If the file still exists, then do nothing. This can occur on macOS
+        if os.path.exists(event.src_path):
+            return
+
         dstFilePath = self._makeDestPath(event.src_path)
 
         if os.path.exists(dstFilePath):
