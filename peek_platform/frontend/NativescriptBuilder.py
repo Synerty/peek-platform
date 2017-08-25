@@ -2,10 +2,8 @@ import logging
 from typing import List
 
 import os
-from twisted.internet.task import LoopingCall
 
 from peek_platform.frontend.FrontendBuilderABC import FrontendBuilderABC, BuildTypeEnum
-from peek_platform.frontend.FrontendOsCmd import runTsc
 from vortex.DeferUtil import deferToThreadWrapWithLogger
 
 logger = logging.getLogger(__name__)
@@ -99,7 +97,6 @@ class NativescriptBuilder(FrontendBuilderABC):
                                   keepExtraDstJsAndMapFiles=True,
                                   excludeFilesRegex=excludeRegexp)
 
-
         # Lastly, Allow the clients to override any frontend files they wish.
         self.fileSync.addSyncMapping(self._jsonCfg.feFrontendCustomisationsDir,
                                      feAppDir,
@@ -123,11 +120,6 @@ class NativescriptBuilder(FrontendBuilderABC):
                                         b'@synerty/peek-util/index.ns')
             contents = contents.replace(b'@synerty/peek-util/index.mweb',
                                         b'@synerty/peek-util/index.ns')
-
-            # Replace .scss with .css for NativeScript
-            # NativeScript has compiled the SCSS to CSS before the app runs, so it's css
-            contents = contents.replace(b".component.ns.scss'", b".component.ns.css'")
-            contents = contents.replace(b'.component.ns.scss"', b'.component.ns.css"')
 
             # replace imports that end with .web/.mweb with .ns
             # This will allow platform dependent typescript modules,
@@ -184,6 +176,10 @@ class NativescriptBuilder(FrontendBuilderABC):
                         .replace(b'.web.html', b'.ns.html')
                         .replace(b'.web.css', b'.ns.css')
                         .replace(b'.web.scss', b'.ns.scss')
+
+                        # Replace .scss with .css for NativeScript
+                        # NativeScript has compiled the SCSS to CSS before the app runs, so it's css
+                        .replace(b".scss", b".css")
                         .replace(b"'./", b"'")
                         )
 

@@ -157,7 +157,40 @@ class WebBuilder(FrontendBuilderABC):
         else:
             raise NotImplementedError("This is neither mobile or desktop web")
 
+        if b'@Component' in contents:
+            return self._patchComponent(fileName, contents)
+
         return contents
+
+    def _patchComponent(self, fileName: str, contents: bytes) -> bytes:
+        """ Patch Component
+
+        Apply patches to the WEB file to convert it to the NativeScript version
+
+        :param fileName: The name of the file
+        :param contents: The original contents of the file
+        :return: The new contents of the file
+        """
+        inComponentHeader = False
+
+        newContents = b''
+        for line in contents.splitlines(True):
+            if line.startswith(b"@Component"):
+                inComponentHeader = True
+
+            elif line.startswith(b"export"):
+                inComponentHeader = False
+
+            elif inComponentHeader:
+                line = (line
+
+                        # Take out the function call for .web
+                        .replace(b"switchStyleUrls", b"")
+                        )
+
+            newContents += line
+
+        return newContents
 
     def _compileFrontend(self, feBuildDir: str) -> None:
         """ Compile the frontend
