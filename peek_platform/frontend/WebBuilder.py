@@ -42,6 +42,7 @@ class WebBuilder(FrontendBuilderABC):
         excludeRegexp = (
             r'.*[.]ns[.]ts$',
             r'.*[.]ns[.]html$',
+            r'.*[.]ns[.]scss$',
             r'.*__pycache__.*',
             r'.*[.]py$'
         )

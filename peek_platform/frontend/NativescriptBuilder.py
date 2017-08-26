@@ -29,6 +29,9 @@ class NativescriptBuilder(FrontendBuilderABC):
             r'.*[.]web[.]html$',
             r'.*[.]mweb[.]html$',
             r'.*[.]dweb[.]html$',
+            r'.*[.]web[.]scss',
+            r'.*[.]mweb[.]scss',
+            r'.*[.]dweb[.]scss',
             r'.*__pycache__.*',
             r'.*[.]py$'
         )
