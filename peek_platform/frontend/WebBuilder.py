@@ -43,6 +43,7 @@ class WebBuilder(FrontendBuilderABC):
             r'.*[.]ns[.]ts$',
             r'.*[.]ns[.]html$',
             r'.*[.]ns[.]scss$',
+            r'.*[.]ns[.].*[.]scss$',
             r'.*__pycache__.*',
             r'.*[.]py$'
         )
