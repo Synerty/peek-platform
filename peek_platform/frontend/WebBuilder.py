@@ -4,6 +4,8 @@ from datetime import datetime
 import os
 from typing import List
 
+from twisted.internet.defer import inlineCallbacks
+
 from peek_platform.frontend.FrontendBuilderABC import FrontendBuilderABC, BuildTypeEnum
 from peek_platform.frontend.FrontendOsCmd import runNgBuild
 from vortex.DeferUtil import deferToThreadWrapWithLogger
@@ -31,9 +33,18 @@ class WebBuilder(FrontendBuilderABC):
 
         raise NotImplementedError("Unknown build type")
 
+    @inlineCallbacks
+    def build(self):
+        yield self._buildInThread()
+
+        if self._jsonCfg.feSyncFilesForDebugEnabled:
+            logger.info("%s starting frontend development file sync",
+                        self._platformService)
+            self.fileSync.startFileSyncWatcher()
+
 
     @deferToThreadWrapWithLogger(logger, checkMainThread=False)
-    def build(self) -> None:
+    def _buildInThread(self) -> None:
         if not self._jsonCfg.feWebBuildPrepareEnabled:
             logger.info("%s SKIPPING, Web build prepare is disabled in config",
                         self._platformService)
@@ -130,11 +141,6 @@ class WebBuilder(FrontendBuilderABC):
                                      excludeFilesRegex=excludeRegexp)
 
         self.fileSync.syncFiles()
-
-        if self._jsonCfg.feSyncFilesForDebugEnabled:
-            logger.info("%s starting frontend development file sync",
-                        self._platformService)
-            self.fileSync.startFileSyncWatcher()
 
         if self._jsonCfg.feWebBuildEnabled:
             logger.info("%s starting frontend web build", self._platformService)

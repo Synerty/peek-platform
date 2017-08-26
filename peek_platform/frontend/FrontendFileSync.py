@@ -36,7 +36,7 @@ if platform.is_darwin():
 
     # FIXME: catching too broad. Error prone
     try:
-        from watchdog.observers.polling import PollingObserver as WatchdogObserver
+        from watchdog.observers.kqueue import KqueueObserver as WatchdogObserver
 
         logger.debug("We're on macOS, Forcing kqueue")
 
