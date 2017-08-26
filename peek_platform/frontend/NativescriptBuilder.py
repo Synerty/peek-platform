@@ -2,7 +2,6 @@ import logging
 from typing import List
 
 import os
-from twisted.internet.defer import inlineCallbacks
 
 from peek_platform.frontend.FrontendBuilderABC import FrontendBuilderABC, BuildTypeEnum
 from vortex.DeferUtil import deferToThreadWrapWithLogger
@@ -17,18 +16,8 @@ class NativescriptBuilder(FrontendBuilderABC):
                                     BuildTypeEnum.NATIVE_SCRIPT,
                                     jsonCfg, loadedPlugins)
 
-    @inlineCallbacks
-    def build(self):
-        yield self._buildInThread()
-
-        # Start the file sync watchers from the main thread
-        if self._jsonCfg.feSyncFilesForDebugEnabled:
-            logger.info("Starting frontend development file sync")
-            self.fileSync.startFileSyncWatcher()
-
-
     @deferToThreadWrapWithLogger(logger, checkMainThread=False)
-    def _buildInThread(self) -> None:
+    def build(self) -> None:
         if not self._jsonCfg.feNativescriptBuildPrepareEnabled:
             logger.info("SKIPPING, Nativescript build prepare is disabled in config")
             return
@@ -116,6 +105,10 @@ class NativescriptBuilder(FrontendBuilderABC):
                                      excludeFilesRegex=excludeRegexp)
 
         self.fileSync.syncFiles()
+
+        if self._jsonCfg.feSyncFilesForDebugEnabled:
+            logger.info("Starting frontend development file sync")
+            self.fileSync.startFileSyncWatcher()
 
     def stopDebugWatchers(self):
         logger.info("Stoping frontend development file sync")
