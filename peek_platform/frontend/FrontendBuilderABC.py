@@ -142,6 +142,9 @@ class FrontendBuilderABC(metaclass=ABCMeta):
                 if not data.get("persistent"):
                     data["persistent"] = False
 
+                data["useClassFile"] = data.get("useClassFile")
+                data["useClassClass"] = data.get("useClassClass")
+
             # Root Modules
             rootModules = jsonCfgNode.rootModules([])
             for rootModule in rootModules:
@@ -300,7 +303,20 @@ class FrontendBuilderABC(metaclass=ABCMeta):
                                % (rootService["class"],
                                   pluginDetail.pluginName,
                                   rootService["file"]))
-                services.append(rootService["class"])
+
+                if rootService["useClassFile"] and rootService["useClassClass"]:
+                    imports.append('import {%s} from "@peek/%s/%s";'
+                                   % (rootService["useClassClass"],
+                                      pluginDetail.pluginName,
+                                      rootService["useClassFile"]))
+                    services.append(
+                        '{provide:"%s", useClass:"%s"}'
+                        % (rootService["class"], rootService["useClassClass"])
+                    )
+
+                else:
+                    services.append(rootService["class"])
+
                 if rootService["persistent"]:
                     persistentServices.append(rootService["class"])
 
