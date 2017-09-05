@@ -310,7 +310,7 @@ class FrontendBuilderABC(metaclass=ABCMeta):
                                       pluginDetail.pluginName,
                                       rootService["useClassFile"]))
                     services.append(
-                        '{provide:"%s", useClass:"%s"}'
+                        '{provide:%s, useClass:%s}'
                         % (rootService["class"], rootService["useClassClass"])
                     )
 
