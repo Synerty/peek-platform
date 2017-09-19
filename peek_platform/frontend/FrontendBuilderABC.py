@@ -33,7 +33,8 @@ PluginDetail = namedtuple("PluginDetail",
                            "showHomeLink",
                            "showInTitleBar",
                            "titleBarLeft",
-                           "titleBarText"])
+                           "titleBarText",
+                           "configLinkPath"])
 
 _routesTemplate = """
     {
@@ -132,6 +133,7 @@ class FrontendBuilderABC(metaclass=ABCMeta):
             showInTitleBar = jsonCfgNode.showInTitleBar(False)
             titleBarLeft = jsonCfgNode.titleBarLeft(False)
             titleBarText = jsonCfgNode.titleBarText(None)
+            configLinkPath = jsonCfgNode.configLinkPath(None)
 
             def checkThing(name, data):
                 sub = (name, plugin.name)
@@ -171,7 +173,8 @@ class FrontendBuilderABC(metaclass=ABCMeta):
                              showHomeLink=showHomeLink,
                              showInTitleBar=showInTitleBar,
                              titleBarLeft=titleBarLeft,
-                             titleBarText=titleBarText)
+                             titleBarText=titleBarText,
+                             configLinkPath=configLinkPath)
             )
 
         pluginDetails.sort(key=lambda x: x.pluginName)
@@ -240,6 +243,40 @@ class FrontendBuilderABC(metaclass=ABCMeta):
             links, sort_keys=True, indent=4, separators=(', ', ': '))
 
         self._writeFileIfRequired(feAppDir, 'plugin-title-bar-links.ts', contents)
+
+    def _writePluginFooterBarConfigLinks(self, feAppDir: str,
+                                         pluginDetails: [PluginDetail]) -> None:
+        """
+
+        import {ConfigLink} from "@synerty/peek-util";
+
+        export const footerBarLinks :ConfigLink = [
+            {
+                plugin : "peek_plugin_noop",
+                text: "Noop",
+                route: "/peek_plugin_noop/config"
+            }
+        ];
+        """
+
+        links = []
+        for pluginDetail in pluginDetails:
+            if not (pluginDetail.appModule and pluginDetail.configLinkPath):
+                continue
+
+            links.append(dict(
+                plugin=pluginDetail.pluginName,
+                text=pluginDetail.titleBarText,
+                resourcePath="/%s%s" % (pluginDetail.pluginName,
+                                        pluginDetail.configLinkPath)
+            ))
+
+        contents = "// This file is auto generated, the git version is blank and .gitignored\n\n"
+        contents += "import {ConfigLink} from '@synerty/peek-util';\n\n"
+        contents += "export const footerBarLinks :ConfigLink[] = %s;\n" % json.dumps(
+            links, sort_keys=True, indent=4, separators=(', ', ': '))
+
+        self._writeFileIfRequired(feAppDir, 'plugin-footer-bar-links.ts', contents)
 
     def _writePluginRouteLazyLoads(self, feAppDir: str,
                                    pluginDetails: [PluginDetail]) -> None:

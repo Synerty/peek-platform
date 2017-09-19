@@ -72,6 +72,7 @@ class NativescriptBuilder(FrontendBuilderABC):
         # Prepare the home and title bar configuration for the plugins
         self._writePluginHomeLinks(feAppDir, pluginDetails)
         self._writePluginTitleBarLinks(feAppDir, pluginDetails)
+        self._writePluginFooterBarConfigLinks(feAppDir, pluginDetails)
 
         # --------------------
         # Prepare the plugin lazy loaded part of the application

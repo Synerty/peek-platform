@@ -99,6 +99,7 @@ class WebBuilder(FrontendBuilderABC):
         # Prepare the home and title bar configuration for the plugins
         self._writePluginHomeLinks(feBuildSrcDir, pluginDetails)
         self._writePluginTitleBarLinks(feBuildSrcDir, pluginDetails)
+        self._writePluginFooterBarConfigLinks(feBuildSrcDir, pluginDetails)
 
         # --------------------
         # Prepare the plugin lazy loaded part of the application
