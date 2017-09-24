@@ -52,12 +52,14 @@ class WebBuilder(FrontendBuilderABC):
             excludeRegexp += (
                 r'.*[.]dweb[.]ts$',
                 r'.*[.]dweb[.]html$',
+                r'.*[.]dweb[.]scss',
             )
 
         elif self.isDesktop:
             excludeRegexp += (
                 r'.*[.]mweb[.]ts$',
                 r'.*[.]mweb[.]html$',
+                r'.*[.]mweb[.]scss',
             )
 
         elif self.isAdmin:
@@ -186,10 +188,24 @@ class WebBuilder(FrontendBuilderABC):
 
             elif inComponentHeader:
                 line = (line
-
                         # Take out the function call for .web
                         .replace(b"switchStyleUrls", b"")
+                        # Update mweb to dweb, and visa versa
                         )
+
+                if self.isDesktop:
+                    line = (line
+                            .replace(b'.mweb.html', b'.dweb.html')
+                            .replace(b'.mweb.css', b'.dweb.css')
+                            .replace(b'.mweb.scss', b'.dweb.scss')
+                            )
+
+                if self.isMobile:
+                    line = (line
+                            .replace(b'.dweb.html', b'.mweb.html')
+                            .replace(b'.dweb.css', b'.mweb.css')
+                            .replace(b'.dweb.scss', b'.mweb.scss')
+                            )
 
             newContents += line
 
