@@ -36,6 +36,11 @@ class NativescriptBuilder(FrontendBuilderABC):
             r'.*[.]py$'
         )
 
+        keepCompiledFilePatterns = {
+            'ts': ['js.map', 'js'],
+            'scss': ['css']
+        }
+
         self._dirSyncMap = list()
 
         feBuildDir = os.path.join(self._frontendProjectDir, 'build-ns')
@@ -65,7 +70,7 @@ class NativescriptBuilder(FrontendBuilderABC):
 
         self.fileSync.addSyncMapping(feSrcAppDir,
                                      os.path.join(feAppDir, 'app'),
-                                     keepExtraDstJsAndMapFiles=True,
+                                     keepCompiledFilePatterns=keepCompiledFilePatterns,
                                      excludeFilesRegex=excludeRegexp)
 
         # --------------------
@@ -78,7 +83,7 @@ class NativescriptBuilder(FrontendBuilderABC):
         # Prepare the plugin lazy loaded part of the application
         self._writePluginRouteLazyLoads(feAppDir, pluginDetails)
         self._syncPluginFiles(feAppDir, pluginDetails, "appDir",
-                              keepExtraDstJsAndMapFiles=True,
+                              keepCompiledFilePatterns=keepCompiledFilePatterns,
                               excludeFilesRegex=excludeRegexp)
 
         # --------------------
@@ -98,7 +103,7 @@ class NativescriptBuilder(FrontendBuilderABC):
             # * to import code from each other.
             # * provide global services.
             self._syncPluginFiles(feModDir, pluginDetails, jsonAttr,
-                                  keepExtraDstJsAndMapFiles=True,
+                                  keepCompiledFilePatterns=keepCompiledFilePatterns,
                                   excludeFilesRegex=excludeRegexp)
 
         # Lastly, Allow the clients to override any frontend files they wish.

@@ -1,5 +1,5 @@
 import logging
-from typing import Callable, Optional, List
+from typing import Callable, Optional, List, Dict
 
 import os
 import re
@@ -19,7 +19,7 @@ SyncFileHookCallable = Callable[[str, bytes], bytes]
 FileSyncCfg = namedtuple('FileSyncCfg',
                          ['srcDir', 'dstDir', 'parentMustExist',
                           'deleteExtraDstFiles',
-                          'keepExtraDstJsAndMapFiles',
+                          'keepCompiledFilePatterns',
                           'preSyncCallback', 'postSyncCallback',
                           'excludeFilesRegex'])
 
@@ -66,7 +66,7 @@ class FrontendFileSync:
                        deleteExtraDstFiles=True,
                        preSyncCallback: Optional[Callable[[], None]] = None,
                        postSyncCallback: Optional[Callable[[], None]] = None,
-                       keepExtraDstJsAndMapFiles=True,
+                       keepCompiledFilePatterns: Optional[Dict[str, List[str]]] = None,
                        excludeFilesRegex: List[str] = ()):
         """ Add Sync Mapping
         
@@ -80,9 +80,19 @@ class FrontendFileSync:
         :param deleteExtraDstFiles: If there are additional files in the dest directory
                 that are not in the source directory, then delete them.
                 
-        :param keepExtraDstJsAndMapFiles:  
+        :param keepCompiledFilePatterns:
+                A dict of key = src file extension, val = an array of extensions to keep
+                for this src file extension.
+
+                EG {'ts', ['js.map', 'js']}
+                A list of extensions to keep if we are syncing over a file with that name.
+                For example, if we're syncing over thing.ts and another process compiles
+                thing.ts into thing.js in the same directory, we should not delete
+                thing.js next time we start.
+
                 If this is a TS file and we want to keep dest .js and .js.map files
                  then add them to our srcFiles list, this
+
                 The reason being, the JS files will be deleted because they don't
                  exist in the source, which causes nativescript to rebuild FOR EVERY
                 .js file delete
@@ -97,10 +107,13 @@ class FrontendFileSync:
                             the file is not incldued in the syncing.
         
         """
+        if not keepCompiledFilePatterns:
+            keepCompiledFilePatterns = {}
+
         self._dirSyncMap.append(
             FileSyncCfg(srcDir, dstDir, parentMustExist,
                         deleteExtraDstFiles,
-                        keepExtraDstJsAndMapFiles,
+                        keepCompiledFilePatterns,
                         preSyncCallback, postSyncCallback,
                         excludeFilesRegex)
         )
@@ -138,7 +151,7 @@ class FrontendFileSync:
             # Create lists of files relative to the dstDir and srcDir
             existingFiles = set(self._listFiles(cfg.dstDir))
             srcFiles = set(self._listFiles(cfg.srcDir))
-            jsAndJsMapFiles = set()
+            destCompiledFiles = set()
 
             for regexp in cfg.excludeFilesRegex:
                 rexp = re.compile(regexp)
@@ -150,16 +163,19 @@ class FrontendFileSync:
 
                 # If this is a TS file and we want to keep dest .js and .js.map files
                 # then add them to our srcFiles list, this
-                if cfg.keepExtraDstJsAndMapFiles and srcFile.endswith(".ts"):
-                    jsAndJsMapFiles.add(srcFile[:-3] + ".js")
-                    jsAndJsMapFiles.add(srcFile[:-3] + ".js.map")
+
+                srcFileNoExt, srcFileExt = srcFile.rsplit('.', 1)
+
+                if srcFileExt in cfg.keepCompiledFilePatterns:
+                    for ext in cfg.keepCompiledFilePatterns[srcFileExt]:
+                        destCompiledFiles.add("%s.%s" % (srcFileNoExt, ext))
 
                 dstFileDir = os.path.dirname(dstFilePath)
                 os.makedirs(dstFileDir, exist_ok=True)
                 self._fileCopier(srcFilePath, dstFilePath)
 
             if cfg.deleteExtraDstFiles:
-                for obsoleteFile in existingFiles - srcFiles - jsAndJsMapFiles:
+                for obsoleteFile in existingFiles - srcFiles - destCompiledFiles:
                     obsoleteFile = os.path.join(cfg.dstDir, obsoleteFile)
 
                     if os.path.islink(obsoleteFile):
@@ -242,7 +258,7 @@ class _FileChangeHandler(FileSystemEventHandler):
 
         parentDstDir = os.path.dirname(self._dstDir)
         if self._cfg.parentMustExist and not os.path.isdir(parentDstDir):
-            logger.debug("Skipping sink, parent doesn't exist. dstDir=%s", self._dstDir)
+            logger.debug("Skipping sync, parent doesn't exist. dstDir=%s", self._dstDir)
             return
 
         if self._cfg.preSyncCallback:

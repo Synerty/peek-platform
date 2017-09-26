@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import List, Callable, Optional
+from typing import List, Callable, Optional, Dict
 
 import os
 import shutil
@@ -403,7 +403,7 @@ class FrontendBuilderABC(metaclass=ABCMeta):
                          attrName: str,
                          preSyncCallback: Optional[Callable[[], None]] = None,
                          postSyncCallback: Optional[Callable[[], None]] = None,
-                         keepExtraDstJsAndMapFiles=False,
+                         keepCompiledFilePatterns: Optional[Dict[str, List[str]]] = None,
                          excludeFilesRegex=()) -> None:
 
         if not os.path.exists(targetDir):
@@ -431,7 +431,7 @@ class FrontendBuilderABC(metaclass=ABCMeta):
 
             linkPath = os.path.join(targetDir, pluginDetail.pluginName)
             self.fileSync.addSyncMapping(srcDir, linkPath,
-                                         keepExtraDstJsAndMapFiles=keepExtraDstJsAndMapFiles,
+                                         keepCompiledFilePatterns=keepCompiledFilePatterns,
                                          preSyncCallback=preSyncCallback,
                                          postSyncCallback=postSyncCallback,
                                          excludeFilesRegex=excludeFilesRegex)
