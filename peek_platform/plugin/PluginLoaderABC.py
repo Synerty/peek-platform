@@ -193,6 +193,9 @@ class PluginLoaderABC(metaclass=ABCMeta):
         plugins = list(filter(pluginTest, plugins))
         return plugins
 
+    # ---------------
+    # Core Plugins
+
     @inlineCallbacks
     def loadCorePlugins(self):
         for pluginName in corePlugins:
@@ -205,12 +208,24 @@ class PluginLoaderABC(metaclass=ABCMeta):
             if pluginName not in self._loadedPlugins:
                 continue
 
-            yield self._loadedPlugins[pluginName].start()
+            yield self._tryStart(pluginName)
+
+    @inlineCallbacks
+    def stopCorePlugins(self):
+        # Start the Plugin
+        for pluginName in corePlugins:
+            if pluginName not in self._loadedPlugins:
+                continue
+
+            yield self._tryStop(pluginName)
 
     def unloadCorePlugins(self):
         for pluginName in corePlugins:
             if pluginName in self._loadedPlugins:
                 self.unloadPlugin(pluginName)
+
+    # ---------------
+    # Optional Plugins
 
     @inlineCallbacks
     def loadOptionalPlugins(self):
@@ -226,7 +241,16 @@ class PluginLoaderABC(metaclass=ABCMeta):
             if pluginName not in self._loadedPlugins:
                 continue
 
-            yield self._loadedPlugins[pluginName].start()
+            yield self._tryStart(pluginName)
+
+    @inlineCallbacks
+    def stopOptionalPlugins(self):
+        # Start the Plugin
+        for pluginName in PeekPlatformConfig.config.pluginsEnabled:
+            if pluginName not in self._loadedPlugins:
+                continue
+
+            yield self._tryStop(pluginName)
 
     def unloadOptionalPlugins(self):
         for pluginName in reversed(PeekPlatformConfig.config.pluginsEnabled):
@@ -240,6 +264,29 @@ class PluginLoaderABC(metaclass=ABCMeta):
             logger.debug(remainingOptionalPlugins)
             raise Exception("Some plugins are still loaded")
 
+    # ---------------
+    # Util methods Plugins
+
+    def _tryStart(self, pluginName):
+        plugin = self._loadedPlugins[pluginName]
+        try:
+            return plugin.start()
+
+        except Exception as e:
+            logger.error("An exception occured while starting plugin %s,"
+                         " starting continues" % pluginName)
+            logger.exception(e)
+
+    def _tryStop(self, pluginName):
+        plugin = self._loadedPlugins[pluginName]
+        try:
+            return plugin.stop()
+
+        except Exception as e:
+            logger.error("An exception occured while stopping plugin %s,"
+                         " stopping continues" % pluginName)
+            logger.exception(e)
+
     def _unloadPluginPackage(self, pluginName):
 
         oldLoadedPlugin = self._loadedPlugins.get(pluginName)
@@ -248,7 +295,6 @@ class PluginLoaderABC(metaclass=ABCMeta):
         del self._loadedPlugins[pluginName]
 
         try:
-            oldLoadedPlugin.stop()
             oldLoadedPlugin.unload()
 
         except Exception as e:
