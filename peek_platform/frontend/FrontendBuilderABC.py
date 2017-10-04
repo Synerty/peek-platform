@@ -203,6 +203,8 @@ class FrontendBuilderABC(metaclass=ABCMeta):
                               resourcePath="/%s" % pluginDetail.pluginName,
                               pluginIconPath=pluginDetail.icon))
 
+        links.sort(key=lambda item: item["title"])
+
         contents = "// This file is auto generated, the git version is blank and .gitignored\n"
         contents += "export const homeLinks = %s;\n" % json.dumps(
             links, sort_keys=True, indent=4, separators=(', ', ': '))
@@ -270,6 +272,8 @@ class FrontendBuilderABC(metaclass=ABCMeta):
                 resourcePath="/%s%s" % (pluginDetail.pluginName,
                                         pluginDetail.configLinkPath)
             ))
+
+        links.sort(key=lambda item: item["text"])
 
         contents = "// This file is auto generated, the git version is blank and .gitignored\n\n"
         contents += "import {ConfigLink} from '@synerty/peek-util';\n\n"
