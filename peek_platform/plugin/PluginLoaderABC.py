@@ -246,7 +246,7 @@ class PluginLoaderABC(metaclass=ABCMeta):
     @inlineCallbacks
     def stopOptionalPlugins(self):
         # Start the Plugin
-        for pluginName in PeekPlatformConfig.config.pluginsEnabled:
+        for pluginName in reversed(PeekPlatformConfig.config.pluginsEnabled):
             if pluginName not in self._loadedPlugins:
                 continue
 
