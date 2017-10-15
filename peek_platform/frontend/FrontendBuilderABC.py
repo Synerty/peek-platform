@@ -30,6 +30,7 @@ PluginDetail = namedtuple("PluginDetail",
                            "rootModules",
                            "rootServices",
                            "icon",
+                           "homeLinkText",
                            "showHomeLink",
                            "showInTitleBar",
                            "titleBarLeft",
@@ -130,6 +131,7 @@ class FrontendBuilderABC(metaclass=ABCMeta):
             appModule = jsonCfgNode.appModule(None)
 
             showHomeLink = jsonCfgNode.showHomeLink(True)
+            homeLinkText = jsonCfgNode.homeLinkText(plugin.title)
             showInTitleBar = jsonCfgNode.showInTitleBar(False)
             titleBarLeft = jsonCfgNode.titleBarLeft(False)
             titleBarText = jsonCfgNode.titleBarText(None)
@@ -170,6 +172,7 @@ class FrontendBuilderABC(metaclass=ABCMeta):
                              rootModules=rootModules,
                              rootServices=rootServices,
                              icon=icon,
+                             homeLinkText=homeLinkText,
                              showHomeLink=showHomeLink,
                              showInTitleBar=showInTitleBar,
                              titleBarLeft=titleBarLeft,
@@ -199,7 +202,7 @@ class FrontendBuilderABC(metaclass=ABCMeta):
                 continue
 
             links.append(dict(name=pluginDetail.pluginName,
-                              title=pluginDetail.pluginTitle,
+                              title=pluginDetail.homeLinkText,
                               resourcePath="/%s" % pluginDetail.pluginName,
                               pluginIconPath=pluginDetail.icon))
 
