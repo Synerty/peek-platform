@@ -30,6 +30,7 @@ _VortexRPCResultTuple()
 _VortexRPCArgTuple()
 
 corePlugins = [
+    "peek_core_email",
     "peek_core_device"
 ]
 
