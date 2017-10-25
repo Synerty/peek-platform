@@ -60,7 +60,8 @@ requirements = [
 
     # Peek platform dependencies, all must match
     "peek-plugin-base",  ##==%s" % py_package_name,
-    "peek-core-device"  ##==%s" % py_package_name,
+    "peek-core-device",  ##==%s" % py_package_name,
+    "peek-core-email"  ##==%s" % py_package_name,
 ]
 
 lin_dependencies = [
