@@ -14,26 +14,26 @@ logger = logging.getLogger(__name__)
 
 def vortexDumps(arg: typing.Tuple) -> str:
     noMainThread()
-    # startTime = datetime.utcnow()
+    # startTime = datetime.now(pytz.utc)
     try:
         return Payload(tuples=[arg])._toJson()
     except Exception as e:
         logger.exception(e)
         raise
     # finally:
-    #     logger.debug("vortexDumps took %s", (datetime.utcnow() - startTime))
+    #     logger.debug("vortexDumps took %s", (datetime.now(pytz.utc) - startTime))
 
 
 def vortexLoads(jsonStr: str) -> typing.Tuple:
     noMainThread()
-    # startTime = datetime.utcnow()
+    # startTime = datetime.now(pytz.utc)
     try:
         return Payload()._fromJson(jsonStr).tuples[0]
     except Exception as e:
         logger.exception(e)
         raise
     # finally:
-    #     logger.debug("vortexLoads took %s", (datetime.utcnow() - startTime))
+    #     logger.debug("vortexLoads took %s", (datetime.now(pytz.utc) - startTime))
 
 
 serialization.register(
