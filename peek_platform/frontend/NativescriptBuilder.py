@@ -50,7 +50,6 @@ class NativescriptBuilder(FrontendBuilderABC):
         feAssetsDir = os.path.join(feBuildDir, 'app', 'assets')
         feNodeModDir = os.path.join(feBuildDir, 'node_modules')
 
-
         self._moduleCompileRequired = False
         self._moduleCompileLoopingCall = None
 
@@ -79,12 +78,20 @@ class NativescriptBuilder(FrontendBuilderABC):
         # Prepare the home and title bar configuration for the plugins
         self._writePluginHomeLinks(feAppDir, pluginDetails)
         self._writePluginTitleBarLinks(feAppDir, pluginDetails)
-        self._writePluginFooterBarConfigLinks(feAppDir, pluginDetails)
+        self._writePluginConfigLinks(feAppDir, pluginDetails)
 
         # --------------------
         # Prepare the plugin lazy loaded part of the application
-        self._writePluginRouteLazyLoads(feAppDir, pluginDetails)
+        self._writePluginAppRouteLazyLoads(feAppDir, pluginDetails)
         self._syncPluginFiles(feAppDir, pluginDetails, "appDir",
+                              keepCompiledFilePatterns=keepCompiledFilePatterns,
+                              excludeFilesRegex=excludeRegexp)
+
+        # --------------------
+        # Prepare the plugin lazy loaded part of the application
+        self._writePluginCfgRouteLazyLoads(feAppDir, pluginDetails)
+        self._syncPluginFiles(feAppDir, pluginDetails, "cfgDir",
+                              destDirPostfix="_cfg",
                               keepCompiledFilePatterns=keepCompiledFilePatterns,
                               excludeFilesRegex=excludeRegexp)
 
@@ -193,18 +200,18 @@ class NativescriptBuilder(FrontendBuilderABC):
 
             elif inComponentHeader:
                 line = (line
-                        .replace(b'.mweb.html', b'.ns.html')
-                        .replace(b'.mweb.css', b'.ns.css')
-                        .replace(b'.mweb.scss', b'.ns.scss')
-                        .replace(b'.web.html', b'.ns.html')
-                        .replace(b'.web.css', b'.ns.css')
-                        .replace(b'.web.scss', b'.ns.scss')
+                    .replace(b'.mweb.html', b'.ns.html')
+                    .replace(b'.mweb.css', b'.ns.css')
+                    .replace(b'.mweb.scss', b'.ns.scss')
+                    .replace(b'.web.html', b'.ns.html')
+                    .replace(b'.web.css', b'.ns.css')
+                    .replace(b'.web.scss', b'.ns.scss')
 
-                        # Replace .scss with .css for NativeScript
-                        # NativeScript has compiled the SCSS to CSS before the app runs, so it's css
-                        .replace(b".scss", b".css")
-                        .replace(b"'./", b"'")
-                        )
+                    # Replace .scss with .css for NativeScript
+                    # NativeScript has compiled the SCSS to CSS before the app runs, so it's css
+                    .replace(b".scss", b".css")
+                    .replace(b"'./", b"'")
+                    )
 
             newContents += line
 

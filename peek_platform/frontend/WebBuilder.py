@@ -103,12 +103,19 @@ class WebBuilder(FrontendBuilderABC):
         # Prepare the home and title bar configuration for the plugins
         self._writePluginHomeLinks(feBuildSrcDir, pluginDetails)
         self._writePluginTitleBarLinks(feBuildSrcDir, pluginDetails)
-        self._writePluginFooterBarConfigLinks(feBuildSrcDir, pluginDetails)
+        self._writePluginConfigLinks(feBuildSrcDir, pluginDetails)
 
         # --------------------
         # Prepare the plugin lazy loaded part of the application
-        self._writePluginRouteLazyLoads(feBuildSrcDir, pluginDetails)
+        self._writePluginAppRouteLazyLoads(feBuildSrcDir, pluginDetails)
         self._syncPluginFiles(feBuildSrcDir, pluginDetails, "appDir",
+                              excludeFilesRegex=excludeRegexp)
+
+        # --------------------
+        # Prepare the plugin lazy loaded part of the application
+        self._writePluginCfgRouteLazyLoads(feBuildSrcDir, pluginDetails)
+        self._syncPluginFiles(feBuildSrcDir, pluginDetails, "cfgDir",
+                              destDirPostfix="_cfg",
                               excludeFilesRegex=excludeRegexp)
 
         # --------------------

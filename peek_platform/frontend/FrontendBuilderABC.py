@@ -1,5 +1,6 @@
 import json
 import logging
+from textwrap import dedent
 from typing import List, Callable, Optional, Dict
 
 import os
@@ -25,6 +26,8 @@ PluginDetail = namedtuple("PluginDetail",
                            "pluginTitle",
                            "appDir",
                            "appModule",
+                           "cfgDir",
+                           "cfgModule",
                            "moduleDir",
                            "assetDir",
                            "rootModules",
@@ -36,12 +39,6 @@ PluginDetail = namedtuple("PluginDetail",
                            "titleBarLeft",
                            "titleBarText",
                            "configLinkPath"])
-
-_routesTemplate = """
-    {
-        path: '%s',
-        loadChildren: "%s/%s"
-    }"""
 
 
 class BuildTypeEnum:
@@ -78,7 +75,7 @@ class FrontendBuilderABC(metaclass=ABCMeta):
                  buildType: BuildTypeEnum, jsonCfg,
                  loadedPlugins: List):
         assert platformService in ("peek-mobile", "peek-admin", "peek-desktop"), (
-            "Unexpected service %s" % platformService)
+                "Unexpected service %s" % platformService)
 
         self._platformService = platformService
         self._buildType = buildType
@@ -126,9 +123,13 @@ class FrontendBuilderABC(metaclass=ABCMeta):
                 continue
 
             appDir = jsonCfgNode.appDir(None)
+            appModule = jsonCfgNode.appModule(None)
+
+            cfgDir = jsonCfgNode.cfgDir(None)
+            cfgModule = jsonCfgNode.cfgModule(None)
+
             moduleDir = jsonCfgNode.moduleDir(None)
             assetDir = jsonCfgNode.assetDir(None)
-            appModule = jsonCfgNode.appModule(None)
 
             showHomeLink = jsonCfgNode.showHomeLink(True)
             homeLinkText = jsonCfgNode.homeLinkText(plugin.title)
@@ -166,9 +167,11 @@ class FrontendBuilderABC(metaclass=ABCMeta):
                              pluginName=plugin.name,
                              pluginTitle=plugin.title,
                              appDir=appDir,
+                             appModule=appModule,
+                             cfgDir=cfgDir,
+                             cfgModule=cfgModule,
                              moduleDir=moduleDir,
                              assetDir=assetDir,
-                             appModule=appModule,
                              rootModules=rootModules,
                              rootServices=rootServices,
                              icon=icon,
@@ -214,6 +217,37 @@ class FrontendBuilderABC(metaclass=ABCMeta):
 
         self._writeFileIfRequired(feAppDir, 'plugin-home-links.ts', contents)
 
+    def _writePluginConfigLinks(self, feAppDir: str,
+                                pluginDetails: [PluginDetail]) -> None:
+        """
+        export const configLinks = [
+            {
+                name: 'plugin_noop',
+                title: "Noop",
+                resourcePath: "/peek_plugin_noop_cfg",
+                pluginIconPath: "/assets/peek_plugin_noop/home_icon.png"
+            }
+        ];
+        """
+
+        links = []
+        for pluginDetail in pluginDetails:
+            if not (pluginDetail.cfgModule and pluginDetail.showHomeLink):
+                continue
+
+            links.append(dict(name=pluginDetail.pluginName,
+                              title=pluginDetail.homeLinkText,
+                              resourcePath="/%s_cfg/" % pluginDetail.pluginName,
+                              pluginIconPath=pluginDetail.icon))
+
+        links.sort(key=lambda item: item["title"])
+
+        contents = "// This file is auto generated, the git version is blank and .gitignored\n"
+        contents += "export const configLinks = %s;\n" % json.dumps(
+            links, sort_keys=True, indent=4, separators=(', ', ': '))
+
+        self._writeFileIfRequired(feAppDir, 'plugin-config-links.ts', contents)
+
     def _writePluginTitleBarLinks(self, feAppDir: str,
                                   pluginDetails: [PluginDetail]) -> None:
         """
@@ -249,67 +283,51 @@ class FrontendBuilderABC(metaclass=ABCMeta):
 
         self._writeFileIfRequired(feAppDir, 'plugin-title-bar-links.ts', contents)
 
-    def _writePluginFooterBarConfigLinks(self, feAppDir: str,
-                                         pluginDetails: [PluginDetail]) -> None:
-        """
-
-        import {ConfigLink} from "@synerty/peek-util";
-
-        export const footerBarLinks :ConfigLink = [
+    def _writePluginAppRouteLazyLoads(self, feAppDir: str,
+                                      pluginDetails: [PluginDetail]) -> None:
+        _appRoutesTemplate = dedent("""
             {
-                plugin : "peek_plugin_noop",
-                text: "Noop",
-                route: "/peek_plugin_noop/config"
-            }
-        ];
-        """
+                path: '%s',
+                loadChildren: "%s/%s"
+            }""")
 
-        links = []
-        for pluginDetail in pluginDetails:
-            if not (pluginDetail.appModule and pluginDetail.configLinkPath):
-                continue
-
-            links.append(dict(
-                plugin=pluginDetail.pluginName,
-                text=pluginDetail.titleBarText,
-                resourcePath="/%s%s" % (pluginDetail.pluginName,
-                                        pluginDetail.configLinkPath)
-            ))
-
-        links.sort(key=lambda item: item["text"])
-
-        contents = "// This file is auto generated, the git version is blank and .gitignored\n\n"
-        contents += "import {ConfigLink} from '@synerty/peek-util';\n\n"
-        contents += "export const footerBarLinks :ConfigLink[] = %s;\n" % json.dumps(
-            links, sort_keys=True, indent=4, separators=(', ', ': '))
-
-        self._writeFileIfRequired(feAppDir, 'plugin-footer-bar-links.ts', contents)
-
-    def _writePluginRouteLazyLoads(self, feAppDir: str,
-                                   pluginDetails: [PluginDetail]) -> None:
-        """
-        export const pluginRoutes = [
-            {
-                path: 'plugin_noop',
-                loadChildren: "plugin-noop/plugin-noop.module#default"
-            }
-        ];
-        """
         routes = []
         for pluginDetail in pluginDetails:
-            if not pluginDetail.appModule:
-                continue
-            routes.append(_routesTemplate
-                          % (pluginDetail.pluginName,
-                             pluginDetail.pluginName,
-                             pluginDetail.appModule))
+            if pluginDetail.appModule:
+                routes.append(_appRoutesTemplate
+                              % (pluginDetail.pluginName,
+                                 pluginDetail.pluginName,
+                                 pluginDetail.appModule))
 
         routeData = "// This file is auto generated, the git version is blank and .gitignored\n"
-        routeData += "export const pluginRoutes = ["
+        routeData += "export const pluginAppRoutes = ["
         routeData += ",".join(routes)
         routeData += "\n];\n"
 
-        self._writeFileIfRequired(feAppDir, 'plugin-routes.ts', routeData)
+        self._writeFileIfRequired(feAppDir, 'plugin-app-routes.ts', routeData)
+
+    def _writePluginCfgRouteLazyLoads(self, feAppDir: str,
+                                      pluginDetails: [PluginDetail]) -> None:
+        _cfgRoutesTemplate = dedent("""
+            {
+                path: '%s_cfg',
+                loadChildren: "/%s_cfg/%s"
+            }""")
+
+        routes = []
+        for pluginDetail in pluginDetails:
+            if pluginDetail.cfgModule:
+                routes.append(_cfgRoutesTemplate
+                              % (pluginDetail.pluginName,
+                                 pluginDetail.pluginName,
+                                 pluginDetail.cfgModule))
+
+        routeData = "// This file is auto generated, the git version is blank and .gitignored\n"
+        routeData += "export const pluginCfgRoutes = ["
+        routeData += ",".join(routes)
+        routeData += "\n];\n"
+
+        self._writeFileIfRequired(feAppDir, 'plugin-cfg-routes.ts', routeData)
 
     def _writePluginRootModules(self, feAppDir: str,
                                 pluginDetails: [PluginDetail]) -> None:
@@ -411,7 +429,8 @@ class FrontendBuilderABC(metaclass=ABCMeta):
                          preSyncCallback: Optional[Callable[[], None]] = None,
                          postSyncCallback: Optional[Callable[[], None]] = None,
                          keepCompiledFilePatterns: Optional[Dict[str, List[str]]] = None,
-                         excludeFilesRegex=()) -> None:
+                         excludeFilesRegex=(),
+                         destDirPostfix='') -> None:
 
         if not os.path.exists(targetDir):
             os.mkdir(targetDir)  # The parent must exist
@@ -436,7 +455,7 @@ class FrontendBuilderABC(metaclass=ABCMeta):
 
             createdItems.add(pluginDetail.pluginName)
 
-            linkPath = os.path.join(targetDir, pluginDetail.pluginName)
+            linkPath = os.path.join(targetDir, pluginDetail.pluginName + destDirPostfix)
             self.fileSync.addSyncMapping(srcDir, linkPath,
                                          keepCompiledFilePatterns=keepCompiledFilePatterns,
                                          preSyncCallback=preSyncCallback,
