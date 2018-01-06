@@ -21,16 +21,28 @@ class PeekFileConfigFrontendDirMixin:
             return c.frontend.nativescriptBuildPrepareEnabled(False, require_bool)
 
     @property
-    def feFrontendCustomisationsDir(self) -> bool:
-        """ Frontend Customisations Directory
+    def feFrontendSrcOverlayDir(self) -> bool:
+        """ Frontend Src Overlay Directory
 
-        :return The path of the directory that will override any frontend file with 
-            customers customisations.
+        :return The path of the directory that will override any frontend SRC
+            file with customers customisations.
 
         """
-        default = os.path.join(self._homePath, 'frontendCustomisations')
+        default = os.path.join(self._homePath, 'frontendSrcOverlayDir')
         with self._cfg as c:
-            return self._chkDir(c.frontend.frontendCustomisations(default, require_string))
+            return self._chkDir(c.frontend.frontendSrcOverlayDir(default, require_string))
+
+    @property
+    def feFrontendNodeModuleOverlayDir(self) -> bool:
+        """ Frontend node_modules Overlay Directory
+
+        :return The path of the directory that will override any frontend node_module
+            file with customers customisations.
+
+        """
+        default = os.path.join(self._homePath, 'frontendNodeModuleOverlayDir')
+        with self._cfg as c:
+            return self._chkDir(c.frontend.frontendNodeModuleOverlayDir(default, require_string))
 
     @property
     def feSyncFilesForDebugEnabled(self) -> bool:

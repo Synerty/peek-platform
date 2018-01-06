@@ -48,6 +48,8 @@ class NativescriptBuilder(FrontendBuilderABC):
 
         feAppDir = os.path.join(feBuildDir, 'app')
         feAssetsDir = os.path.join(feBuildDir, 'app', 'assets')
+        feNodeModDir = os.path.join(feBuildDir, 'node_modules')
+
 
         self._moduleCompileRequired = False
         self._moduleCompileLoopingCall = None
@@ -107,8 +109,16 @@ class NativescriptBuilder(FrontendBuilderABC):
                                   excludeFilesRegex=excludeRegexp)
 
         # Lastly, Allow the clients to override any frontend files they wish.
-        self.fileSync.addSyncMapping(self._jsonCfg.feFrontendCustomisationsDir,
+        # overlay src
+        self.fileSync.addSyncMapping(self._jsonCfg.feFrontendSrcOverlayDir,
                                      feAppDir,
+                                     parentMustExist=True,
+                                     deleteExtraDstFiles=False,
+                                     excludeFilesRegex=excludeRegexp)
+
+        # overlay node_modules
+        self.fileSync.addSyncMapping(self._jsonCfg.feFrontendNodeModuleOverlayDir,
+                                     feNodeModDir,
                                      parentMustExist=True,
                                      deleteExtraDstFiles=False,
                                      excludeFilesRegex=excludeRegexp)

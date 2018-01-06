@@ -26,13 +26,12 @@ class WebBuilder(FrontendBuilderABC):
         self.isAdmin = "admin" in platformService
 
     @staticmethod
-    def _buildType(platformService:str):
+    def _buildType(platformService: str):
         if "mobile" in platformService: return BuildTypeEnum.WEB_MOBILE
         if "desktop" in platformService: return BuildTypeEnum.WEB_DESKTOP
         if "admin" in platformService: return BuildTypeEnum.WEB_ADMIN
 
         raise NotImplementedError("Unknown build type")
-
 
     @deferToThreadWrapWithLogger(logger, checkMainThread=False)
     def build(self) -> None:
@@ -77,6 +76,7 @@ class WebBuilder(FrontendBuilderABC):
 
         feBuildSrcDir = os.path.join(feBuildDir, 'src')
         feBuildAssetsDir = os.path.join(feBuildDir, 'src', 'assets')
+        feNodeModDir = os.path.join(feBuildDir, 'node_modules')
 
         feModuleDirs = [
             (os.path.join(feBuildSrcDir, '@peek'), "moduleDir"),
@@ -130,8 +130,16 @@ class WebBuilder(FrontendBuilderABC):
                                   excludeFilesRegex=excludeRegexp)
 
         # Lastly, Allow the clients to override any frontend files they wish.
-        self.fileSync.addSyncMapping(self._jsonCfg.feFrontendCustomisationsDir,
+        # Src Directory
+        self.fileSync.addSyncMapping(self._jsonCfg.feFrontendSrcOverlayDir,
                                      feBuildSrcDir,
+                                     parentMustExist=True,
+                                     deleteExtraDstFiles=False,
+                                     excludeFilesRegex=excludeRegexp)
+
+        # node_modules Directory
+        self.fileSync.addSyncMapping(self._jsonCfg.feFrontendNodeModuleOverlayDir,
+                                     feNodeModDir,
                                      parentMustExist=True,
                                      deleteExtraDstFiles=False,
                                      excludeFilesRegex=excludeRegexp)
@@ -190,24 +198,24 @@ class WebBuilder(FrontendBuilderABC):
 
             elif inComponentHeader:
                 line = (line
-                        # Take out the function call for .web
-                        .replace(b"switchStyleUrls", b"")
-                        # Update mweb to dweb, and visa versa
-                        )
+                    # Take out the function call for .web
+                    .replace(b"switchStyleUrls", b"")
+                    # Update mweb to dweb, and visa versa
+                    )
 
                 if self.isDesktop:
                     line = (line
-                            .replace(b'.mweb.html', b'.dweb.html')
-                            .replace(b'.mweb.css', b'.dweb.css')
-                            .replace(b'.mweb.scss', b'.dweb.scss')
-                            )
+                        .replace(b'.mweb.html', b'.dweb.html')
+                        .replace(b'.mweb.css', b'.dweb.css')
+                        .replace(b'.mweb.scss', b'.dweb.scss')
+                        )
 
                 if self.isMobile:
                     line = (line
-                            .replace(b'.dweb.html', b'.mweb.html')
-                            .replace(b'.dweb.css', b'.mweb.css')
-                            .replace(b'.dweb.scss', b'.mweb.scss')
-                            )
+                        .replace(b'.dweb.html', b'.mweb.html')
+                        .replace(b'.dweb.css', b'.mweb.css')
+                        .replace(b'.dweb.scss', b'.mweb.scss')
+                        )
 
             newContents += line
 
