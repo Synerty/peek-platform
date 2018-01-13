@@ -6,8 +6,8 @@ from typing import List
 
 import pytz
 
-from peek_platform.frontend.FrontendBuilderABC import FrontendBuilderABC, BuildTypeEnum
-from peek_platform.frontend.FrontendOsCmd import runNgBuild
+from peek_platform.build_frontend.FrontendBuilderABC import FrontendBuilderABC, BuildTypeEnum
+from peek_platform.build_common.BuilderOsCmd import runNgBuild
 from vortex.DeferUtil import deferToThreadWrapWithLogger
 
 logger = logging.getLogger(__name__)

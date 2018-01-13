@@ -3,7 +3,7 @@ from typing import List
 
 import os
 
-from peek_platform.frontend.FrontendBuilderABC import FrontendBuilderABC, BuildTypeEnum
+from peek_platform.build_frontend.FrontendBuilderABC import FrontendBuilderABC, BuildTypeEnum
 from vortex.DeferUtil import deferToThreadWrapWithLogger
 
 logger = logging.getLogger(__name__)

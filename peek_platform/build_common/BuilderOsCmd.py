@@ -1,17 +1,24 @@
 import logging
 import subprocess
 
-from peek_platform.WindowsPatch import isWindows
+from peek_platform.WindowsPatch import isWindows, isMacOS
 from peek_platform.util.PtyUtil import PtyOutParser, spawnPty, logSpawnException
 from typing import List
 
 logger = logging.getLogger(__name__)
 
 
+def runDocBuild(feBuildDir: str):
+    if isWindows:
+        return __runNodeCmdWin(feBuildDir, ["bash", "./build_docs.sh"])
+    return __runNodeCmdLin(feBuildDir, ["bash", "./build_docs.sh"])
+
+
 def runNgBuild(feBuildDir: str):
     if isWindows:
         return __runNodeCmdWin(feBuildDir, ["ng", "build"])
     return __runNodeCmdLin(feBuildDir, ["ng", "build"])
+
 
 def runTsc(feDir: str):
     if isWindows:
@@ -37,6 +44,8 @@ def __runNodeCmdWin(feBuildDir: str, cmds: List[str]):
             print(line)
 
         raise Exception("%s in %s failed" % (' '.join(cmds), feBuildDir))
+
+    logger.info("Command complete")
 
 
 def __runNodeCmdLin(feBuildDir: str, cmds: List[str]):

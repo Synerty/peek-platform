@@ -4,7 +4,9 @@ import platform
 
 logger = logging.getLogger(__name__)
 
-isWindows = platform.system() is "Windows"
+isWindows = platform.system() == "Windows"
+isMacOS = platform.system() == "Darwin"
+
 
 
 def createHardLink(src, dst):
