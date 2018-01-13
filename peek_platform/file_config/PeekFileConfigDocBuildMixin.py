@@ -35,4 +35,4 @@ class PeekFileConfigDocBuildMixin:
 
         """
         with self._cfg as c:
-            return c.frontend.docBuildPrepareEnabled(True, require_bool)
+            return c.frontend.docBuildEnabled(True, require_bool)

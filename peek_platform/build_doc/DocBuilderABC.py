@@ -131,9 +131,9 @@ class DocBuilderABC(BuilderABC):
                 continue
 
             title = pluginDetail.pluginTitle + "\n"
-            title += "+" * len(pluginDetail.pluginTitle) + "\n\n"
+            title += "+" * len(pluginDetail.pluginTitle)
 
-            contents += title + contentsSection
+            contents += title + contentsSection + "\n\n"
 
         self._writeFileIfRequired(docDir, 'plugin_toc.rst', contents)
 

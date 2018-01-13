@@ -134,7 +134,8 @@ class PluginLoaderABC(metaclass=ABCMeta):
                                          pluginRootDir, tuple(pluginRequiresService))
 
             # Make sure the version we have recorded is correct
-            PeekPlatformConfig.config.setPluginVersion(pluginName, pluginVersion)
+            # JJC Disabled, this is just spamming the config file at the moment
+            # PeekPlatformConfig.config.setPluginVersion(pluginName, pluginVersion)
 
             # Make note of the final registrations for this plugin
             self._vortexEndpointInstancesByPluginName[pluginName] = list(
