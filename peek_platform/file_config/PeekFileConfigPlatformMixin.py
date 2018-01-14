@@ -2,7 +2,8 @@ import logging
 import os
 from abc import ABCMeta
 
-from jsoncfg.value_mappers import require_string, RequireType, require_list, require_bool
+from jsoncfg.value_mappers import require_string, RequireType, require_list, require_bool, \
+    require_integer
 
 logger = logging.getLogger(__name__)
 
@@ -11,7 +12,7 @@ class PeekFileConfigPlatformMixin(metaclass=ABCMeta):
     # --- Platform Logging
 
     @property
-    def loggingLevel(self):
+    def loggingLevel(self) -> str:
         with self._cfg as c:
             lvl = c.logging.level("INFO", require_string)
             if lvl in logging._nameToLevel:
@@ -19,6 +20,11 @@ class PeekFileConfigPlatformMixin(metaclass=ABCMeta):
 
             logger.warning("Logging level %s is not valid, defauling to INFO", lvl)
             return "INFO"
+
+    @property
+    def twistedThreadPoolSize(self) -> int:
+        with self._cfg as c:
+            return c.twisted.threadPoolSize(10, require_integer)
 
     @property
     def autoPackageUpdate(self):
