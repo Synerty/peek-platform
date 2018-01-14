@@ -19,6 +19,15 @@ PluginDocDetail = namedtuple("PluginDocDetail",
                               "docRst",
                               "hasApi"])
 
+_mainTocTemplate = ''' 
+
+.. toctree::
+    :maxdepth: 3
+    :caption: Contents:
+
+
+'''
+
 _tocTemplate = ''' 
    
 .. toctree::
@@ -112,30 +121,47 @@ class DocBuilderABC(BuilderABC):
 
     def _writePluginsToc(self, docDir: str, pluginDetails: [PluginDocDetail]) -> None:
 
-        contents = ""
+        contents = _mainTocTemplate
 
         for pluginDetail in pluginDetails:
-            contentsSection = _tocTemplate
 
-            if pluginDetail.docDir and pluginDetail.docRst:
-                contentsSection += "    %s/%s\n" % (
+            hasIndex = pluginDetail.docDir and pluginDetail.docRst
+            hasApi = pluginDetail.hasApi
+
+            if not (hasIndex or hasApi):
+                continue
+            contents += "    %s_toc\n" % pluginDetail.pluginName
+
+        self._writeFileIfRequired(docDir, 'plugin_toc.rst', contents)
+
+    def _writePluginToc(self, docDir: str, pluginDetails: [PluginDocDetail]) -> None:
+
+        for pluginDetail in pluginDetails:
+            hasIndex = pluginDetail.docDir and pluginDetail.docRst
+            hasApi = pluginDetail.hasApi
+
+            if not (hasApi or hasIndex):
+                continue
+
+            contents = pluginDetail.pluginTitle + "\n"
+            contents += "+" * len(pluginDetail.pluginTitle) + "\n"
+
+            contents += _tocTemplate
+
+            if hasIndex:
+                contents += "    %s/%s\n" % (
                     pluginDetail.pluginName, pluginDetail.docRst.replace(".rst", "")
                 )
 
-            if pluginDetail.hasApi:
-                contentsSection += "    %s_api/%s\n" % (
+            if hasApi:
+                contents += "    %s_api/%s\n" % (
                     pluginDetail.pluginName, pluginDetail.pluginName
                 )
 
-            if contentsSection == _tocTemplate:
-                continue
+            contents += "\n\n"
 
-            title = pluginDetail.pluginTitle + "\n"
-            title += "+" * len(pluginDetail.pluginTitle)
-
-            contents += title + contentsSection + "\n\n"
-
-        self._writeFileIfRequired(docDir, 'plugin_toc.rst', contents)
+            self._writeFileIfRequired(docDir, '%s_toc.rst' % pluginDetail.pluginName,
+                                      contents)
 
     def _writePluginsApiConf(self, docDir: str, pluginDetails: [PluginDocDetail]) -> None:
 

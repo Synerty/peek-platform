@@ -48,6 +48,7 @@ class DocBuilder(DocBuilderABC):
         # --------------------
         # Prepare the table of contents link ins
         self._writePluginsToc(docLinkDir, pluginDetails)
+        self._writePluginToc(docLinkDir, pluginDetails)
 
         # --------------------
         # Prepare the API document loads
