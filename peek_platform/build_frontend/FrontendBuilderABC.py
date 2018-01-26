@@ -232,7 +232,7 @@ class FrontendBuilderABC(BuilderABC):
 
         links = []
         for pluginDetail in pluginDetails:
-            if not (pluginDetail.cfgModule and pluginDetail.showHomeLink):
+            if not pluginDetail.cfgModule:
                 continue
 
             links.append(dict(name=pluginDetail.pluginName,
@@ -311,7 +311,7 @@ class FrontendBuilderABC(BuilderABC):
         _cfgRoutesTemplate = dedent("""
             {
                 path: '%s_cfg',
-                loadChildren: "/%s_cfg/%s"
+                loadChildren: "%s_cfg/%s"
             }""")
 
         routes = []
