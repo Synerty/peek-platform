@@ -411,7 +411,8 @@ class FrontendBuilderABC(BuilderABC):
                          postSyncCallback: Optional[Callable[[], None]] = None,
                          keepCompiledFilePatterns: Optional[Dict[str, List[str]]] = None,
                          excludeFilesRegex=(),
-                         destDirPostfix='') -> None:
+                         isCfgDir=False) -> None:
+        cfgPostfix = "_cfg"
 
         if not os.path.exists(targetDir):
             os.mkdir(targetDir)  # The parent must exist
@@ -420,8 +421,15 @@ class FrontendBuilderABC(BuilderABC):
         currentItems = set()
         createdItems = set()
         for item in os.listdir(targetDir):
-            if item.startswith("peek_plugin_") or item.startswith("peek_core_"):
-                currentItems.add(item)
+            if not item.startswith("peek_plugin_") or item.startswith("peek_core_"):
+                continue
+
+            if isCfgDir:
+                if item.endswith(cfgPostfix):
+                    currentItems.add(item)
+            else:
+                if not item.endswith(cfgPostfix):
+                    currentItems.add(item)
 
         for pluginDetail in pluginDetails:
             frontendDir = getattr(pluginDetail, attrName, None)
@@ -434,9 +442,13 @@ class FrontendBuilderABC(BuilderABC):
                                pluginDetail.pluginName, frontendDir)
                 continue
 
-            createdItems.add(pluginDetail.pluginName)
+            if isCfgDir:
+                createdItems.add(pluginDetail.pluginName + cfgPostfix)
+                linkPath = os.path.join(targetDir, pluginDetail.pluginName + cfgPostfix)
+            else:
+                createdItems.add(pluginDetail.pluginName)
+                linkPath = os.path.join(targetDir, pluginDetail.pluginName)
 
-            linkPath = os.path.join(targetDir, pluginDetail.pluginName + destDirPostfix)
             self.fileSync.addSyncMapping(srcDir, linkPath,
                                          keepCompiledFilePatterns=keepCompiledFilePatterns,
                                          preSyncCallback=preSyncCallback,

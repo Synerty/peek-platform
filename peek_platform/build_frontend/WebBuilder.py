@@ -115,7 +115,7 @@ class WebBuilder(FrontendBuilderABC):
         # Prepare the plugin lazy loaded part of the application
         self._writePluginCfgRouteLazyLoads(feBuildSrcDir, pluginDetails)
         self._syncPluginFiles(feBuildSrcDir, pluginDetails, "cfgDir",
-                              destDirPostfix="_cfg",
+                              isCfgDir=True,
                               excludeFilesRegex=excludeRegexp)
 
         # --------------------

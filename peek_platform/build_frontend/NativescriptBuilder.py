@@ -91,7 +91,7 @@ class NativescriptBuilder(FrontendBuilderABC):
         # Prepare the plugin lazy loaded part of the application
         self._writePluginCfgRouteLazyLoads(feAppDir, pluginDetails)
         self._syncPluginFiles(feAppDir, pluginDetails, "cfgDir",
-                              destDirPostfix="_cfg",
+                              isCfgDir=True,
                               keepCompiledFilePatterns=keepCompiledFilePatterns,
                               excludeFilesRegex=excludeRegexp)
 
