@@ -1,9 +1,9 @@
 import logging
+import os
 from typing import List
 
-import os
-
-from peek_platform.build_frontend.FrontendBuilderABC import FrontendBuilderABC, BuildTypeEnum
+from peek_platform.build_frontend.FrontendBuilderABC import FrontendBuilderABC, \
+    BuildTypeEnum
 from vortex.DeferUtil import deferToThreadWrapWithLogger
 
 logger = logging.getLogger(__name__)
@@ -65,6 +65,26 @@ class NativescriptBuilder(FrontendBuilderABC):
         # if not os.path.exists(os.path.join(feBuildDir, 'node_modules')):
         #     raise NotADirectoryError("node_modules doesn't exist, ensure you've run "
         #                              "`npm install` in dir %s" % feBuildDir)
+
+        # --------------------
+        # Angular5 needs the @synerty modules within the app to work.
+        # JJC These @synerty packages need to be repackaged at some point
+
+        for module in ('ng2-balloon-msg', 'peek-util'):
+            self.fileSync.addSyncMapping(
+                os.path.join(feNodeModDir, '@synerty', module),
+                os.path.join(feAppDir, '@synerty', module),
+                excludeFilesRegex=excludeRegexp + (
+                    r'.*peek-theme',
+                    r'.*browser',
+                    r'.*web',
+                    r'.*Web[.].*',
+                    r'.*[.]d[.]ts$',
+                    r'.*[.]js$',
+                    r'.*[.]js[.]map$',
+                    r'.*node_modules.*',
+                )
+            )
 
         # --------------------
         # Prepare the common frontend application
@@ -160,8 +180,18 @@ class NativescriptBuilder(FrontendBuilderABC):
             # Occasionally @peek/peek_plugin_... will need to import from the lazy loaded
             # UI part of the module, This makes that possible
             # Update the @peek import to use the /app path
-            contents = contents.replace(b'from "peek_plugin_', b'from "~/peek_plugin_')
-            contents = contents.replace(b"from 'peek_plugin_", b"from '~/peek_plugin_")
+            contents = contents.replace(b'from "peek_', b'from "~/peek_')
+            contents = contents.replace(b"from 'peek_", b"from '~/peek_")
+            contents = contents.replace(b'from "@synerty/ng2', b'from "~/@synerty/ng2')
+            contents = contents.replace(b"from '@synerty/ng2", b"from '~/@synerty/ng2")
+            contents = contents.replace(b'from "@synerty/peek', b'from "~/@synerty/peek')
+            contents = contents.replace(b"from '@synerty/peek", b"from '~/@synerty/peek")
+
+            contents = contents.replace(b"loadChildren: 'peek_",
+                                        b"loadChildren: '~/peek_")
+            contents = contents.replace(b'loadChildren: "peek_',
+                                        b'loadChildren: "~/peek_')
+
 
             # if b'@NgModule' in contents:
             #     return self._patchModule(fileName, contents)
@@ -199,19 +229,32 @@ class NativescriptBuilder(FrontendBuilderABC):
                 inComponentHeader = False
 
             elif inComponentHeader:
-                line = (line
-                    .replace(b'.mweb.html', b'.ns.html')
-                    .replace(b'.mweb.css', b'.ns.css')
-                    .replace(b'.mweb.scss', b'.ns.scss')
-                    .replace(b'.web.html', b'.ns.html')
-                    .replace(b'.web.css', b'.ns.css')
-                    .replace(b'.web.scss', b'.ns.scss')
-
-                    # Replace .scss with .css for NativeScript
-                    # NativeScript has compiled the SCSS to CSS before the app runs, so it's css
-                    .replace(b".scss", b".css")
-                    .replace(b"'./", b"'")
+                # This doesn't work for webpack, FIXME
+                # Delete all this stuff and figure out a new way
+                if b'switchStyleUrls' in line:
+                    line = (
+                        line
+                            # Take out the function call for .web
+                            .replace(b"switchStyleUrls(", b"")
+                            .replace(b'")', b'"')
+                            .replace(b"')", b"'")
+                        # Update mweb to dweb, and visa versa
                     )
+
+                line = (
+                    line
+                        .replace(b'.mweb.html', b'.ns.html')
+                        .replace(b'.mweb.css', b'.ns.css')
+                        .replace(b'.mweb.scss', b'.ns.scss')
+                        .replace(b'.web.html', b'.ns.html')
+                        .replace(b'.web.css', b'.ns.css')
+                        .replace(b'.web.scss', b'.ns.scss')
+
+                        # Replace .scss with .css for NativeScript
+                        # NativeScript has compiled the SCSS to CSS before the app runs, so it's css
+                        .replace(b".scss", b".css")
+                        .replace(b"'./", b"'")
+                )
 
             newContents += line
 
