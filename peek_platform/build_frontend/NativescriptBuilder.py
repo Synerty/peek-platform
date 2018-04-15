@@ -160,8 +160,21 @@ class NativescriptBuilder(FrontendBuilderABC):
             # Occasionally @peek/peek_plugin_... will need to import from the lazy loaded
             # UI part of the module, This makes that possible
             # Update the @peek import to use the /app path
-            contents = contents.replace(b'from "peek_plugin_', b'from "~/peek_plugin_')
-            contents = contents.replace(b"from 'peek_plugin_", b"from '~/peek_plugin_")
+            contents = contents.replace(b'from "peek_', b'from "~/peek_')
+            contents = contents.replace(b"from 'peek_", b"from '~/peek_")
+
+            # Change the web peek-util references to NS peek util references
+            contents = contents.replace(b'from "@synerty/peek-util-web',
+                                        b'from "@synerty/peek-util-ns')
+            contents = contents.replace(b"from '@synerty/peek-util-web",
+                                        b"from '@synerty/peek-util-ns")
+
+            # Fix up references to the lazy load routes
+            contents = contents.replace(b"loadChildren: 'peek_",
+                                        b"loadChildren: '~/peek_")
+            contents = contents.replace(b'loadChildren: "peek_',
+                                        b'loadChildren: "~/peek_')
+
 
             # if b'@NgModule' in contents:
             #     return self._patchModule(fileName, contents)

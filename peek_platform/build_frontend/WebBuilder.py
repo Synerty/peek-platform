@@ -204,11 +204,6 @@ class WebBuilder(FrontendBuilderABC):
                 inComponentHeader = False
 
             elif inComponentHeader:
-                line = (line
-                    # Take out the function call for .web
-                    .replace(b"switchStyleUrls", b"")
-                    # Update mweb to dweb, and visa versa
-                    )
 
                 if self.isDesktop:
                     line = (line

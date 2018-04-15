@@ -164,7 +164,10 @@ class FrontendFileSync:
                 # If this is a TS file and we want to keep dest .js and .js.map files
                 # then add them to our srcFiles list, this
 
-                srcFileNoExt, srcFileExt = srcFile.rsplit('.', 1)
+                if '.' in srcFile:
+                    srcFileNoExt, srcFileExt = srcFile.rsplit('.', 1)
+                else:
+                    srcFileNoExt, srcFileExt = srcFile, ''
 
                 if srcFileExt in cfg.keepCompiledFilePatterns:
                     for ext in cfg.keepCompiledFilePatterns[srcFileExt]:
