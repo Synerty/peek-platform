@@ -164,10 +164,7 @@ class FrontendFileSync:
                 # If this is a TS file and we want to keep dest .js and .js.map files
                 # then add them to our srcFiles list, this
 
-                if '.' in srcFile:
-                    srcFileNoExt, srcFileExt = srcFile.rsplit('.', 1)
-                else:
-                    srcFileNoExt, srcFileExt = srcFile, ''
+                srcFileNoExt, srcFileExt = srcFile.rsplit('.', 1)
 
                 if srcFileExt in cfg.keepCompiledFilePatterns:
                     for ext in cfg.keepCompiledFilePatterns[srcFileExt]:
@@ -346,8 +343,8 @@ class _FileChangeHandler(FileSystemEventHandler):
 
     def on_moved(self, event):
         if (not isinstance(event, FileMovedEvent)
-                or event.src_path.endswith("__")
-                or event.dest_path.endswith("__")):
+            or event.src_path.endswith("__")
+            or event.dest_path.endswith("__")):
             return
 
         self._updateFileContents(event.dest_path)

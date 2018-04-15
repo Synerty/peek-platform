@@ -1,12 +1,13 @@
 import logging
-import os
 from datetime import datetime
+
+import os
 from typing import List
 
 import pytz
+
+from peek_platform.build_frontend.FrontendBuilderABC import FrontendBuilderABC, BuildTypeEnum
 from peek_platform.build_common.BuilderOsCmd import runNgBuild
-from peek_platform.build_frontend.FrontendBuilderABC import FrontendBuilderABC, \
-    BuildTypeEnum
 from vortex.DeferUtil import deferToThreadWrapWithLogger
 
 logger = logging.getLogger(__name__)
@@ -91,26 +92,6 @@ class WebBuilder(FrontendBuilderABC):
                 "%s node_modules doesn't exist, ensure you've run "
                 "`npm install` in dir %s",
                 self._platformService, feBuildDir)
-
-        # --------------------
-        # Angular5 needs the @synerty modules within the app to work.
-        # JJC These @synerty packages need to be repackaged at some point
-
-        for module in ('ng2-balloon-msg', 'peek-util'):
-            self.fileSync.addSyncMapping(
-                os.path.join(feNodeModDir, '@synerty', module),
-                os.path.join(feBuildSrcDir, '@synerty', module),
-                excludeFilesRegex=excludeRegexp + (
-                    r'.*peek-theme',
-                    r'.*nativescript',
-                    r'.*ns',
-                    r'.*Ns[.].*',
-                    r'.*[.]d[.]ts$',
-                    r'.*[.]js$',
-                    r'.*[.]js[.]map$',
-                    r'.*node_modules.*',
-                )
-            )
 
         # --------------------
         # Prepare the common frontend application
@@ -223,31 +204,25 @@ class WebBuilder(FrontendBuilderABC):
                 inComponentHeader = False
 
             elif inComponentHeader:
-                if b'switchStyleUrls' in line:
-                    line = (
-                        line
-                            # Take out the function call for .web
-                            .replace(b"switchStyleUrls(", b"")
-                            .replace(b'")', b'"')
-                            .replace(b"')", b"'")
-                        # Update mweb to dweb, and visa versa
+                line = (line
+                    # Take out the function call for .web
+                    .replace(b"switchStyleUrls", b"")
+                    # Update mweb to dweb, and visa versa
                     )
 
                 if self.isDesktop:
-                    line = (
-                        line
-                            .replace(b'.mweb.html', b'.dweb.html')
-                            .replace(b'.mweb.css', b'.dweb.css')
-                            .replace(b'.mweb.scss', b'.dweb.scss')
-                    )
+                    line = (line
+                        .replace(b'.mweb.html', b'.dweb.html')
+                        .replace(b'.mweb.css', b'.dweb.css')
+                        .replace(b'.mweb.scss', b'.dweb.scss')
+                        )
 
                 if self.isMobile:
-                    line = (
-                        line
-                            .replace(b'.dweb.html', b'.mweb.html')
-                            .replace(b'.dweb.css', b'.mweb.css')
-                            .replace(b'.dweb.scss', b'.mweb.scss')
-                    )
+                    line = (line
+                        .replace(b'.dweb.html', b'.mweb.html')
+                        .replace(b'.dweb.css', b'.mweb.css')
+                        .replace(b'.dweb.scss', b'.mweb.scss')
+                        )
 
             newContents += line
 
