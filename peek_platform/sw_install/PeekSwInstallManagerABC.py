@@ -253,6 +253,9 @@ class PeekSwInstallManagerABC(metaclass=ABCMeta):
         Note: this function does not return.
         Any cleanup action (like saving data) must be done before calling this function.
 
+        Note: When peek is started by a windows service, this method is replaced with
+        one that just restarts the windows service.
+
         """
         python = sys.executable
         argv = list(sys.argv)
@@ -267,3 +270,5 @@ class PeekSwInstallManagerABC(metaclass=ABCMeta):
 
         argv = map(addExe, argv)
         os.execl(python, python, *argv)
+
+
