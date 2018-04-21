@@ -117,6 +117,11 @@ setup(
     name=pip_package_name,
     packages=find_packages(exclude=["*.tests", "*.tests.*", "tests.*", "tests"]),
     install_requires=requirements,
+    entry_points={
+        'console_scripts': [
+            '_restart_peek_winsvc = peek_platform.restart_peek_winsvc:main',
+        ],
+    },
     dependency_links=dependency_links,
     process_dependency_links=True,
     zip_safe=False,version=package_version,
