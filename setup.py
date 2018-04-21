@@ -119,7 +119,7 @@ setup(
     install_requires=requirements,
     entry_points={
         'console_scripts': [
-            '_restart_peek_winsvc = peek_platform.restart_peek_winsvc:main',
+            'winsvc_peek_restarter = peek_platform.winsvc_peek_restarter:main',
         ],
     },
     dependency_links=dependency_links,
