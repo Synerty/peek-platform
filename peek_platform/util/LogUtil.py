@@ -1,4 +1,5 @@
 import logging
+from logging.handlers import RotatingFileHandler
 
 from pathlib import Path
 
@@ -11,6 +12,6 @@ def setupServiceLogOutput(serviceName):
     logFormatter = logging.Formatter(LOG_FORMAT, DATE_FORMAT)
     rootLogger = logging.getLogger()
 
-    fileHandler = logging.FileHandler(fileName)
-    fileHandler.setFormatter(logFormatter)
-    rootLogger.addHandler(fileHandler)
+    fh = RotatingFileHandler(fileName, maxBytes=(1024*1024*20), backupCount=2)
+    fh.setFormatter(logFormatter)
+    rootLogger.addHandler(fh)
