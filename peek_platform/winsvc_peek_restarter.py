@@ -43,8 +43,10 @@ class PeekSvc(win32serviceutil.ServiceFramework):
                     break
 
                 for service in ("peek-agent", "peek-worker", "peek-client"):
-                    (_, status, _, errCode, _, _,
-                     _) = win32serviceutil.QueryServiceStatus(service)
+                    (_, status, _, errCode, _, _, _) = (
+                        win32serviceutil.QueryServiceStatus(service)
+                    )
+
                     if status != win32service.SERVICE_STOPPED:
                         continue
 
