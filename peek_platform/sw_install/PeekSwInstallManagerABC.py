@@ -37,6 +37,7 @@ PEEK_PLATFORM_STAMP_FILE = 'stamp'
 
 IS_WIN_SVC = "isWinSvc"
 
+
 class PeekSwInstallManagerABC(metaclass=ABCMeta):
     """ Peek Software Install Manager ABC
 
@@ -246,7 +247,10 @@ class PeekSwInstallManagerABC(metaclass=ABCMeta):
     #         pass
     #     os.symlink(newPath, symLink)
 
-    def restartProcess(self) -> None:
+    def _restartProcessWinSvc(self) -> None:
+        reactor.callFromThread(reactor.stop)
+
+    def _restartProcessNormal(self) -> None:
         """Restart Process
 
         Restarts the current program.
@@ -261,8 +265,8 @@ class PeekSwInstallManagerABC(metaclass=ABCMeta):
 
         if IS_WIN_SVC in sys.argv:
             reactor.callFromThread(reactor.stop)
-            return 
-            
+            return
+
         python = sys.executable
         argv = list(sys.argv)
         argv.insert(0, "-u")
@@ -277,4 +281,10 @@ class PeekSwInstallManagerABC(metaclass=ABCMeta):
         argv = map(addExe, argv)
         os.execl(python, python, *argv)
 
+    restartProcess = (_restartProcessWinSvc
+                      if IS_WIN_SVC in sys.argv else
+                      _restartProcessNormal)
 
+# run_peek_worker WILL NOT START if there are extra args
+if IS_WIN_SVC in sys.argv:
+    sys.argv.remove(IS_WIN_SVC)

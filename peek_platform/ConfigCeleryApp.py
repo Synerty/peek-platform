@@ -3,6 +3,7 @@ import typing
 from datetime import datetime
 
 import celery
+from celery import signals as celery_signals
 from kombu import serialization
 
 from peek_platform.file_config.PeekFileConfigWorkerMixin import PeekFileConfigWorkerMixin
@@ -88,10 +89,14 @@ class _WorkerTaskConfigMixin(PeekFileConfigABC,
                         PeekFileConfigPlatformMixin):
     pass
 
-@celery.signals.after_setup_logger.connect
+@celery_signals.after_setup_logger.connect
 def configureCeleryLogging(*args, **kwargs):
-    # Fix the loading problems windows has
     from peek_plugin_base.PeekVortexUtil import peekWorkerName
+
+    # Fix the loading problems windows has
+    # from peek_platform.util.LogUtil import setupPeekLogger
+    # setupPeekLogger(peekWorkerName)
+            
     from peek_platform import PeekPlatformConfig
     PeekPlatformConfig.componentName = peekWorkerName
     config = _WorkerTaskConfigMixin()
