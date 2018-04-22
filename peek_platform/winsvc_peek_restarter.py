@@ -14,7 +14,7 @@ from twisted.internet import reactor
 import time
 
 import peek_platform
-from peek_platform.util.LogUtil import setupServiceLogOutput
+from peek_platform.util.LogUtil import setupPeekLogger
 import logging
 logger = logging.getLogger(__name__)
 
@@ -66,7 +66,7 @@ class PeekSvc(win32serviceutil.ServiceFramework):
 
 
 def main():
-    setupServiceLogOutput(PeekSvc._svc_name_)
+    setupPeekLogger(PeekSvc._svc_name_)
     win32serviceutil.HandleCommandLine(PeekSvc)
 
 
