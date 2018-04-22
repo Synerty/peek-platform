@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 class PeekSvc(win32serviceutil.ServiceFramework):
-    _svc_name_ = "peek_restarter"
+    _svc_name_ = "peek-restarter"
     _svc_display_name_ = "Peek Restarter " + peek_platform.__version__
 
     def __init__(self, args):
@@ -41,7 +41,7 @@ class PeekSvc(win32serviceutil.ServiceFramework):
                 if retval != win32event.WAIT_TIMEOUT:
                     break
 
-                for service in ("peek_agent", "peek_worker", "peek_client"):
+                for service in ("peek-agent", "peek-worker", "peek-client"):
                     (_, status, _, errCode, _, _,
                      _) = win32serviceutil.QueryServiceStatus(service)
                     if status != win32service.SERVICE_STOPPED:
