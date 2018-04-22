@@ -14,7 +14,6 @@ from twisted.internet import reactor
 import time
 
 import peek_platform
-from peek_platform.util.LogUtil import setupPeekLogger
 import logging
 logger = logging.getLogger(__name__)
 
@@ -33,40 +32,37 @@ class PeekSvc(win32serviceutil.ServiceFramework):
 
     def SvcDoRun(self):
         self.ReportServiceStatus(win32service.SERVICE_RUNNING)
-        with open(r"c:\Users\peek\my.log", 'w') as f:
-            f.write("Started\n")
-            
+        try:
+            from peek_platform.util.LogUtil import setupPeekLogger
+            setupPeekLogger(self._svc_name_)
+
             while True:
                 retval = win32event.WaitForSingleObject(self.hWaitStop, 2000)
                 if retval != win32event.WAIT_TIMEOUT:
                     break
 
-                f.write("Tick\n")
-                try:
-                    for service in ("peek_agent", "peek_worker", "peek_client"):
-                        (_, status, _, errCode, _, _, _) = win32serviceutil.QueryServiceStatus(service)
-                        f.write("%s status is %s\n" %  (service,status))
-                        if status == win32service.SERVICE_STOPPED:
-                            logger.info("Starting service %s", service)
-                            f.write("Starting service %s" % service)
-                            win32serviceutil.StartService(service)
-                            win32serviceutil.WaitForServiceStatus(
-                                service,
-                                win32service.SERVICE_RUNNING,
-                                waitSecs=600
-                            )
-                            logger.info("Service %s started", service)
-                            f.write("Service %s started" % service)
+                for service in ("peek_agent", "peek_worker", "peek_client"):
+                    (_, status, _, errCode, _, _,
+                     _) = win32serviceutil.QueryServiceStatus(service)
+                    if status != win32service.SERVICE_STOPPED:
+                        continue
 
-                except Exception as e:
-                    f.write(str(e) + '\n')
-                    logger.exception(e)
+                    logger.info("Starting service %s", service)
+                    win32serviceutil.StartService(service)
+                    win32serviceutil.WaitForServiceStatus(
+                        service,
+                        win32service.SERVICE_RUNNING,
+                        waitSecs=600
+                    )
+                    logger.info("Service %s started", service)
+
+        except Exception as e:
+            logger.exception(e)
 
         self.ReportServiceStatus(win32service.SERVICE_STOPPED)
 
 
 def main():
-    setupPeekLogger(PeekSvc._svc_name_)
     win32serviceutil.HandleCommandLine(PeekSvc)
 
 

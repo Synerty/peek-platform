@@ -35,6 +35,7 @@ logger = logging.getLogger(__name__)
 PEEK_PLATFORM_STAMP_FILE = 'stamp'
 """Peek Platform Stamp File, The file within the release that conatins the version"""
 
+IS_WIN_SVC = "isWinSvc"
 
 class PeekSwInstallManagerABC(metaclass=ABCMeta):
     """ Peek Software Install Manager ABC
@@ -257,6 +258,11 @@ class PeekSwInstallManagerABC(metaclass=ABCMeta):
         one that just restarts the windows service.
 
         """
+
+        if IS_WIN_SVC in sys.argv:
+            reactor.callFromThread(reactor.stop)
+            return 
+            
         python = sys.executable
         argv = list(sys.argv)
         argv.insert(0, "-u")
