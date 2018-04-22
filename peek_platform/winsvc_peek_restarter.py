@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 class PeekSvc(win32serviceutil.ServiceFramework):
     _svc_name_ = "peek-restarter"
     _svc_display_name_ = "Peek Restarter " + peek_platform.__version__
+    _svc_deps_ = ["RpcSs"]
 
     def __init__(self, args):
         win32serviceutil.ServiceFramework.__init__(self, args)
