@@ -29,6 +29,7 @@ from txhttputil.util.DeferUtil import deferToThreadWrap
 from peek_platform.WindowsPatch import isWindows
 from peek_platform.util.PtyUtil import spawnPty, \
     logSpawnException
+from vortex.DeferUtil import deferToThreadWrapWithLogger
 
 logger = logging.getLogger(__name__)
 
@@ -140,7 +141,7 @@ class PeekSwInstallManagerABC(metaclass=ABCMeta):
 
         yield self._installUpdate(targetVersion, newSoftwareTar)
 
-    @deferToThreadWrap
+    @deferToThreadWrapWithLogger(logger)
     def _installUpdate(self, targetVersion: str, fullTarPath: str) -> str:
         """ Install Update (Blocking)
 

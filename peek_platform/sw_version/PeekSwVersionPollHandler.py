@@ -8,6 +8,7 @@ from twisted.internet.defer import Deferred, DeferredList, succeed, inlineCallba
 from vortex.DeferUtil import vortexLogFailure
 from vortex.Payload import Payload
 from vortex.PayloadEndpoint import PayloadEndpoint
+from vortex.PayloadEnvelope import PayloadEnvelope
 from vortex.VortexFactory import VortexFactory
 
 from peek_plugin_base.PeekVortexUtil import peekServerName
@@ -41,22 +42,22 @@ class PeekSwVersionPollHandler(object):
         self._ep = PayloadEndpoint(peekPlatformVersionFilt, self._process)
 
         d =  VortexFactory.sendVortexMsg(
-            vortexMsgs=Payload(filt=peekPlatformVersionFilt).toVortexMsg(),
+            vortexMsgs=Payload(filt=peekPlatformVersionFilt).makePayloadEnvelope().toVortexMsg(),
             destVortexName=peekServerName)
         d.addErrback(vortexLogFailure, logger, consumeError=True)
 
         return self._startupDeferred
 
-    def _process(self, payload, **kwargs):
-        logger.info(payload.result)
-        assert not payload.result  # result is None means success
+    def _process(self, payloadEnvelope:PayloadEnvelope, **kwargs):
+        logger.info(payloadEnvelope.result)
+        assert not payloadEnvelope.result  # result is None means success
 
         from peek_platform import PeekPlatformConfig
 
         platformUpdate = False
         deferredList = []
 
-        for swVersionInfo in payload.tuples:
+        for swVersionInfo in payloadEnvelope.tuples:
             if swVersionInfo.name == self.PEEK_PLATFORM:
                 if PeekPlatformConfig.config.platformVersion != swVersionInfo.version:
                     logger.info("Recieved platform update new version is %s, we're %s",
