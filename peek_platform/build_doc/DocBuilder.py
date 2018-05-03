@@ -45,6 +45,8 @@ class DocBuilder(DocBuilderABC):
 
         pluginDetails = self._loadPluginConfigs()
 
+        pluginDetails.sort(key=lambda item: item.pluginTitle)
+
         # --------------------
         # Prepare the table of contents link ins
         self._writePluginsToc(docLinkDir, pluginDetails)
