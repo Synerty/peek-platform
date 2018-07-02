@@ -167,24 +167,6 @@ class WebBuilder(FrontendBuilderABC):
         # value
         # Otherwise just .web should be used if no replacing is required.
 
-        if fileName.endswith(".ts"):
-
-            # Update the @peek import to use the /app path
-            contents = contents.replace(b'from "@peek/', b'from "~/@peek/')
-            contents = contents.replace(b"from '@peek/", b"from '~/@peek/")
-
-            # Occasionally @peek/peek_plugin_... will need to import from the lazy loaded
-            # UI part of the module, This makes that possible
-            # Update the @peek import to use the /app path
-            contents = contents.replace(b'from "peek_', b'from "~/peek_')
-            contents = contents.replace(b"from 'peek_", b"from '~/peek_")
-
-            # Fix up references to the lazy load routes
-            contents = contents.replace(b"loadChildren: 'peek_",
-                                        b"loadChildren: '~/peek_")
-            contents = contents.replace(b'loadChildren: "peek_',
-                                        b'loadChildren: "~/peek_')
-
         if self.isMobile:
             contents = contents.replace(b'.dweb";', b'.mweb";')
 
