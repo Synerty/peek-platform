@@ -219,10 +219,6 @@ class NativescriptBuilder(FrontendBuilderABC):
                     .replace(b'.web.html', b'.ns.html')
                     .replace(b'.web.css', b'.ns.css')
                     .replace(b'.web.scss', b'.ns.scss')
-
-                    # Replace .scss with .css for NativeScript
-                    # NativeScript has compiled the SCSS to CSS before the app runs, so it's css
-                    .replace(b".scss", b".css")
                     .replace(b"'./", b"'")
                     )
 
