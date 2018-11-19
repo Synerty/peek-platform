@@ -65,8 +65,8 @@ class PtyOutParser:
 
     def read(self, fd, size: Optional[int] = 1024):
         data = os.read(fd, size)
-        self.data += data.decode()
-        self.allData += data.decode()
+        self.data += data.decode(errors='ignore')
+        self.allData += data.decode(errors='ignore')
         self.splitData()
 
         # Silence all the output
