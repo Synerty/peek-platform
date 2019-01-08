@@ -59,8 +59,8 @@ class DocBuilderABC(BuilderABC):
     This class is used for the client and server.
 
     This class contains the logic for:
-        * Linking in the sphinx documentation into the peek-doc-user or peek-doc-admin
-            projects
+        * Linking in the sphinx documentation into the peek-doc-user, peek-doc-admin
+            or peek-doc-dev projects
         * Compiling the documentation
 
     """
@@ -69,7 +69,7 @@ class DocBuilderABC(BuilderABC):
                  platformService: str,
                  jsonCfg,
                  loadedPlugins: List):
-        assert platformService in ("peek-doc-user", "peek-doc-admin"), (
+        assert platformService in ("peek-doc-user", "peek-doc-admin", "peek-doc-dev"), (
                 "Unexpected service %s" % platformService)
 
         self._platformService = platformService

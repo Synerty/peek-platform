@@ -19,9 +19,6 @@ class DocBuilder(DocBuilderABC):
         DocBuilderABC.__init__(self, docProjectDir, platformService,
                                jsonCfg, loadedPlugins)
 
-        self.isUser = "doc-user" in platformService
-        self.isAdmin = "doc-admin" in platformService
-
     @deferToThreadWrapWithLogger(logger, checkMainThread=False)
     def build(self) -> None:
         if not self._jsonCfg.docBuildPrepareEnabled:
