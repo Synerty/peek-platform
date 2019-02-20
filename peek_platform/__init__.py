@@ -1,6 +1,6 @@
 from . import WindowsPatch
 
-__version__ = '1.1.8'
+__version__ = '1.1.9'
 
 class PeekPlatformConfig:
     """ Peek Platform Config
