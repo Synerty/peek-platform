@@ -1,11 +1,9 @@
 import logging
 import typing
-from datetime import datetime
 
 import celery
 from celery import signals as celery_signals
 from kombu import serialization
-
 from peek_platform.file_config.PeekFileConfigWorkerMixin import PeekFileConfigWorkerMixin
 from vortex.DeferUtil import noMainThread
 from vortex.Payload import Payload
@@ -42,6 +40,51 @@ serialization.register(
     content_type='application/x-vortex',
     content_encoding='utf-8',
 )
+
+
+class BackendMixin:
+
+    def exception_to_python(self, exc):
+        """Convert serialized exception to Python exception."""
+        import sys
+        from kombu.utils.encoding import from_utf8
+        from celery.utils.serialization import (create_exception_cls,
+                                                get_pickled_exception)
+
+        EXCEPTION_ABLE_CODECS = frozenset({'pickle'})
+
+        if not exc:
+            return exc
+
+        if not isinstance(exc, BaseException):
+            exc_module = exc.get('exc_module')
+            if exc_module is None:
+                cls = create_exception_cls(
+                    from_utf8(exc['exc_type']), __name__)
+            else:
+                exc_module = from_utf8(exc_module)
+                exc_type = from_utf8(exc['exc_type'])
+                try:
+                    cls = getattr(sys.modules[exc_module], exc_type)
+                except KeyError:
+                    cls = create_exception_cls(exc_type,
+                                               celery.exceptions.__name__)
+            exc_msg = exc['exc_message']
+            args = exc_msg if isinstance(exc_msg, tuple) else [exc_msg]
+            try:
+                exc = cls(*args)
+            except TypeError:
+                exc = Exception("%s\n%s" % (cls, args))
+
+            if self.serializer in EXCEPTION_ABLE_CODECS:
+                exc = get_pickled_exception(exc)
+
+        return exc
+
+
+from celery.backends.base import Backend
+
+Backend.exception_to_python = BackendMixin.exception_to_python
 
 
 def configureCeleryApp(app, workerConfig: PeekFileConfigWorkerMixin):
@@ -81,13 +124,15 @@ def configureCeleryApp(app, workerConfig: PeekFileConfigWorkerMixin):
     )
 
 
-
 from peek_platform.file_config.PeekFileConfigABC import PeekFileConfigABC
-from peek_platform.file_config.PeekFileConfigPlatformMixin import PeekFileConfigPlatformMixin
+from peek_platform.file_config.PeekFileConfigPlatformMixin import \
+    PeekFileConfigPlatformMixin
+
 
 class _WorkerTaskConfigMixin(PeekFileConfigABC,
-                        PeekFileConfigPlatformMixin):
+                             PeekFileConfigPlatformMixin):
     pass
+
 
 @celery_signals.after_setup_logger.connect
 def configureCeleryLogging(*args, **kwargs):
@@ -96,7 +141,7 @@ def configureCeleryLogging(*args, **kwargs):
     # Fix the loading problems windows has
     # from peek_platform.util.LogUtil import setupPeekLogger
     # setupPeekLogger(peekWorkerName)
-            
+
     from peek_platform import PeekPlatformConfig
     PeekPlatformConfig.componentName = peekWorkerName
     config = _WorkerTaskConfigMixin()
