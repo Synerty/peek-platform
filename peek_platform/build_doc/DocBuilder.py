@@ -77,7 +77,7 @@ class DocBuilder(DocBuilderABC):
     def _compileDocs(self, docLinkDir: str) -> None:
         """ Compile the docs
 
-        this runs `build_docs.sh`, after checking if any files have changed.
+        this runs `build_html_docs.sh`, after checking if any files have changed.
 
         """
         startDate = datetime.now(pytz.utc)

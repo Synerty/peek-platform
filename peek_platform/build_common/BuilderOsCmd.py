@@ -10,8 +10,8 @@ logger = logging.getLogger(__name__)
 
 def runDocBuild(feBuildDir: str):
     if isWindows:
-        return __runNodeCmdWin(feBuildDir, ["bash", "./build_docs.sh"])
-    return __runNodeCmdLin(feBuildDir, ["bash", "./build_docs.sh"])
+        return __runNodeCmdWin(feBuildDir, ["bash", "./build_html_docs.sh"])
+    return __runNodeCmdLin(feBuildDir, ["bash", "./build_html_docs.sh"])
 
 
 def runNgBuild(feBuildDir: str):

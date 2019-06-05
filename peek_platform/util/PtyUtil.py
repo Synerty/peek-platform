@@ -133,7 +133,7 @@ def __reallySpawnSubprocess(cmdAndArgs: str,
     logger.debug("Running command via subprocess : %s", cmdAndArgs)
 
     import pty
-    exitCode = pty.spawn([bashExec, "-l", "-c", cmdAndArgs], parser.read)
+    exitCode = pty.spawn([bashExec, "-l", "-c", cmdAndArgs], parser.read, parser.read)
 
     if exitCode:
         raise SpawnOsCommandException(
