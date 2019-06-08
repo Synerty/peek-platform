@@ -105,6 +105,7 @@ class NativescriptBuilder(FrontendBuilderABC):
 
         self._writePluginRootModules(feAppDir, pluginDetails)
         self._writePluginRootServices(feAppDir, pluginDetails)
+        self._writePluginRootComponents(feAppDir, pluginDetails)
 
         # There are two
         for feModDir, jsonAttr, in feModuleDirs:

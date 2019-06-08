@@ -1,18 +1,18 @@
 import json
 import logging
-from textwrap import dedent
-from typing import List, Callable, Optional, Dict
-
 import os
 import shutil
 from collections import namedtuple
+from textwrap import dedent
+from typing import List, Callable, Optional, Dict
+
 from jsoncfg.value_mappers import require_bool
 
 from peek_platform.build_common.BuilderABC import BuilderABC
+from peek_platform.build_frontend.FrontendFileSync import FrontendFileSync
 from peek_platform.file_config.PeekFileConfigFrontendDirMixin import \
     PeekFileConfigFrontendDirMixin
 from peek_platform.file_config.PeekFileConfigOsMixin import PeekFileConfigOsMixin
-from peek_platform.build_frontend.FrontendFileSync import FrontendFileSync
 from peek_plugin_base.PluginPackageFileConfig import PluginPackageFileConfig
 
 logger = logging.getLogger(__name__)
@@ -32,6 +32,7 @@ PluginDetail = namedtuple("PluginDetail",
                            "assetDir",
                            "rootModules",
                            "rootServices",
+                           "rootComponents",
                            "icon",
                            "homeLinkText",
                            "showHomeLink",
@@ -138,6 +139,9 @@ class FrontendBuilderABC(BuilderABC):
             titleBarText = jsonCfgNode.titleBarText(None)
             configLinkPath = jsonCfgNode.configLinkPath(None)
 
+            def checkRootComponents(rootComponent):
+                rootComponent["selector"] = rootComponent.get("selector")
+
             def checkThing(name, data):
                 sub = (name, plugin.name)
                 if data:
@@ -146,6 +150,9 @@ class FrontendBuilderABC(BuilderABC):
 
                 if not data.get("persistent"):
                     data["persistent"] = False
+
+                if not data.get("locatedInAppDir"):
+                    data["locatedInAppDir"] = False
 
                 data["useClassFile"] = data.get("useClassFile")
                 data["useClassClass"] = data.get("useClassClass")
@@ -159,6 +166,11 @@ class FrontendBuilderABC(BuilderABC):
             rootServices = jsonCfgNode.rootServices([])
             for rootService in rootServices:
                 checkThing("rootServices", rootService)
+
+            # Root Components
+            rootComponents = jsonCfgNode.rootComponents([])
+            for rootComponent in rootComponents:
+                checkRootComponents(rootComponent)
 
             icon = (jsonCfgNode.icon(None))
 
@@ -174,6 +186,7 @@ class FrontendBuilderABC(BuilderABC):
                              assetDir=assetDir,
                              rootModules=rootModules,
                              rootServices=rootServices,
+                             rootComponents=rootComponents,
                              icon=icon,
                              homeLinkText=homeLinkText,
                              showHomeLink=showHomeLink,
@@ -185,6 +198,12 @@ class FrontendBuilderABC(BuilderABC):
 
         pluginDetails.sort(key=lambda x: x.pluginName)
         return pluginDetails
+
+    def _makeModuleOrServicePath(self, pluginDetail, modOrService):
+        if modOrService["locatedInAppDir"]:
+            return "%s" % pluginDetail.pluginName
+
+        return "@peek/%s" % pluginDetail.pluginName
 
     def _writePluginHomeLinks(self, feAppDir: str,
                               pluginDetails: [PluginDetail]) -> None:
@@ -332,16 +351,17 @@ class FrontendBuilderABC(BuilderABC):
     def _writePluginRootModules(self, feAppDir: str,
                                 pluginDetails: [PluginDetail]) -> None:
 
-        # initiliase the arrays, and put in the persisten service module
+        # initialise the arrays, and put in the persisted service module
         imports = ['''import {PluginRootServicePersistentLoadModule} 
                         from "./plugin-root-services";''']
         modules = ['PluginRootServicePersistentLoadModule']
 
         for pluginDetail in pluginDetails:
             for rootModule in pluginDetail.rootModules:
-                imports.append('import {%s} from "@peek/%s/%s";'
+                filePath = self._makeModuleOrServicePath(pluginDetail, rootModule)
+                imports.append('import {%s} from "%s/%s";'
                                % (rootModule["class"],
-                                  pluginDetail.pluginName,
+                                  filePath,
                                   rootModule["file"]))
                 modules.append(rootModule["class"])
 
@@ -361,15 +381,16 @@ class FrontendBuilderABC(BuilderABC):
         persistentServices = []
         for pluginDetail in pluginDetails:
             for rootService in pluginDetail.rootServices:
-                imports.append('import {%s} from "@peek/%s/%s";'
+                filePath = self._makeModuleOrServicePath(pluginDetail, rootService)
+                imports.append('import {%s} from "%s/%s";'
                                % (rootService["class"],
-                                  pluginDetail.pluginName,
+                                  filePath,
                                   rootService["file"]))
 
                 if rootService["useClassFile"] and rootService["useClassClass"]:
-                    imports.append('import {%s} from "@peek/%s/%s";'
+                    imports.append('import {%s} from "%s/%s";'
                                    % (rootService["useClassClass"],
-                                      pluginDetail.pluginName,
+                                      filePath,
                                       rootService["useClassFile"]))
                     services.append(
                         '{provide:%s, useClass:%s}'
@@ -403,6 +424,24 @@ class FrontendBuilderABC(BuilderABC):
         ''' % ', '.join(['private _%s:%s' % (s, s) for s in persistentServices])
 
         self._writeFileIfRequired(feAppDir, 'plugin-root-services.ts', routeData)
+
+    def _writePluginRootComponents(self, feAppDir: str,
+                                   pluginDetails: [PluginDetail]) -> None:
+
+        # initialise the arrays, and put in the persistent service module
+        selectors = []
+
+        for pluginDetail in pluginDetails:
+            for comp in pluginDetail.rootComponents:
+                selectors.append('    <%(s)s></%(s)s>' % dict(s=comp["selector"]))
+
+        html = "<div>\n%s\n</div>\n" % '\n'.join(selectors)
+        nsXml = "<StackLayout>\n%s\n</StackLayout>\n" % '\n'.join(selectors)
+
+        if self._buildType == BuildTypeEnum.NATIVE_SCRIPT:
+            self._writeFileIfRequired(feAppDir, 'plugin-root.component.ns.html', nsXml)
+        else:
+            self._writeFileIfRequired(feAppDir, 'plugin-root.component.web.html', html)
 
     def _syncPluginFiles(self, targetDir: str,
                          pluginDetails: [PluginDetail],

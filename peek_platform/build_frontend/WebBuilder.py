@@ -128,6 +128,7 @@ class WebBuilder(FrontendBuilderABC):
 
         self._writePluginRootModules(feBuildSrcDir, pluginDetails)
         self._writePluginRootServices(feBuildSrcDir, pluginDetails)
+        self._writePluginRootComponents(feBuildSrcDir, pluginDetails)
 
         for feModDir, jsonAttr, in feModuleDirs:
             # Link the shared code, this allows plugins
