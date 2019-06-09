@@ -154,8 +154,10 @@ class FrontendBuilderABC(BuilderABC):
                 if not data.get("locatedInAppDir"):
                     data["locatedInAppDir"] = False
 
+                # For services
                 data["useClassFile"] = data.get("useClassFile")
                 data["useClassClass"] = data.get("useClassClass")
+                data["useExistingClass"] = data.get("useExistingClass")
 
             # Root Modules
             rootModules = jsonCfgNode.rootModules([])
@@ -395,6 +397,12 @@ class FrontendBuilderABC(BuilderABC):
                     services.append(
                         '{provide:%s, useClass:%s}'
                         % (rootService["class"], rootService["useClassClass"])
+                    )
+
+                elif rootService["useExistingClass"]:
+                    services.append(
+                        '{provide:%s, useExisting:%s}'
+                        % (rootService["class"], rootService["useExistingClass"])
                     )
 
                 else:
