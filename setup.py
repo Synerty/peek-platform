@@ -51,7 +51,7 @@ requirements = [
     # Celery packages
     "flower",
     # "amqp >= 1.4.9",  # DEPENDENCY LINK BELOW
-    "redis >= 2.10.5",
+    "redis >= 3.2.1",
 
     # Potentially useful packages
     # "GitPython >= 2.0.8",
