@@ -91,36 +91,40 @@ def configureCeleryApp(app, workerConfig: PeekFileConfigWorkerMixin):
     # Optional configuration, see the application user guide.
     app.conf.update(
         # On peek_server, the thread limit is set to 10, these should be configurable.
-        BROKER_POOL_LIMIT=15,
+        broker_pool_limit=15,
 
         # Set the broker and backend URLs
-        BROKER_URL=workerConfig.celeryBrokerUrl,
-        CELERY_RESULT_BACKEND=workerConfig.celeryResultUrl,
+        broker_url=workerConfig.celeryBrokerUrl,
+        result_backend=workerConfig.celeryResultUrl,
 
         # Leave the logging to us
-        CELERYD_HIJACK_ROOT_LOGGER=False,
+        worker_hijack_root_logger=False,
 
         # The time results will stay in redis before expiring.
         # I believe they are cleared when the results are obtained
         # from txcelery._DeferredTask
-        CELERY_TASK_RESULT_EXPIRES=3600,
+        result_expires=3600,
 
         # The number of tasks each worker will prefetch.
-        CELERYD_PREFETCH_MULTIPLIER=workerConfig.celeryTaskPrefetch,
+        worker_prefetch_multiplier=workerConfig.celeryTaskPrefetch,
 
         # The number of workers to have at one time
-        CELERYD_CONCURRENCY=workerConfig.celeryWorkerCount,
+        worker_concurrency=workerConfig.celeryWorkerCount,
 
         # The maximum number or results to keep for the client
         # We could have backlog of 1000 results waiting for the client to pick up
         # This would be a mega performance issue.
-        CELERY_MAX_CACHED_RESULTS=1000,  # Default is 100
+        result_cache_max=1000,  # Default is 100
 
-        CELERY_TASK_SERIALIZER='vortex',
-        # CELERY_ACCEPT_CONTENT=['vortex'],  # Ignore other content
-        CELERY_ACCEPT_CONTENT=['pickle', 'json', 'msgpack', 'yaml', 'vortex'],
-        CELERY_RESULT_SERIALIZER='vortex',
-        CELERY_ENABLE_UTC=True,
+        task_serializer='vortex',
+        # accept_content=['vortex'],  # Ignore other content
+        accept_content=['pickle', 'json', 'msgpack', 'yaml', 'vortex'],
+        result_serializer='vortex',
+        enable_utc=True,
+
+        # Default time in seconds before a retry of the task should be executed.
+        # 3 minutes by default.
+        default_retry_delay=2
     )
 
 
