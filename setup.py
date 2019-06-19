@@ -25,6 +25,7 @@ requirements = [
     "pip >= 9.0.0",
     "setuptools >= 18.0.0",
     "virtualenv >= 15.1.0",
+    "twine",
 
     # networking and async framework. Peek is based on Twisted.
     "Cython >= 0.21.1",
