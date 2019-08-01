@@ -1,11 +1,13 @@
 import logging
 import subprocess
-
-from peek_platform.WindowsPatch import isWindows, isMacOS
-from peek_platform.util.PtyUtil import PtyOutParser, spawnPty, logSpawnException
 from typing import List
 
+from peek_platform.WindowsPatch import isWindows
+from peek_platform.util.PtyUtil import PtyOutParser, spawnPty, logSpawnException
+
 logger = logging.getLogger(__name__)
+
+NG_BUILD_ARGS = 'ng build --prod --optimization  --common-chunk --vendor-chunk'.split()
 
 
 def runDocBuild(feBuildDir: str):
@@ -16,8 +18,8 @@ def runDocBuild(feBuildDir: str):
 
 def runNgBuild(feBuildDir: str):
     if isWindows:
-        return __runNodeCmdWin(feBuildDir, ["ng", "build"])
-    return __runNodeCmdLin(feBuildDir, ["ng", "build"])
+        return __runNodeCmdWin(feBuildDir, NG_BUILD_ARGS)
+    return __runNodeCmdLin(feBuildDir, NG_BUILD_ARGS)
 
 
 def runTsc(feDir: str):
