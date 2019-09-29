@@ -41,6 +41,7 @@ serialization.register(
     content_encoding='utf-8',
 )
 
+# -----------------------------------------------------------------------------
 
 class BackendMixin:
 
@@ -89,6 +90,42 @@ from celery.backends.base import Backend
 
 Backend.exception_to_python = BackendMixin.exception_to_python
 
+# -----------------------------------------------------------------------------
+
+class ResultConsumerMixin:
+
+    def cancel_for(self, task_id):
+        import redis
+
+        if not self._pubsub:
+            return
+
+        key = self._get_key_for_task(task_id)
+        self.subscribed_to.discard(key)
+
+        while True:
+            try:
+                self._pubsub.unsubscribe(key)
+                break
+
+            except redis.exceptions.ConnectionError:
+                # redis.exceptions.ConnectionError: Error 32 while writing to socket. Broken pipe.
+                logger.debug("Retrying cancel_for due to redis error")
+
+            except RuntimeError:
+                # builtins.RuntimeError: dictionary changed size during iteration
+                logger.debug("Retrying cancel_for due to redis error")
+
+            except AttributeError:
+                # builtins.AttributeError: 'NoneType' object has no attribute 'sendall'
+                logger.debug("Retrying cancel_for due to redis error")
+
+
+from celery.backends.redis import ResultConsumer
+
+ResultConsumer.cancel_for = ResultConsumerMixin.cancel_for
+
+# -----------------------------------------------------------------------------
 
 def configureCeleryApp(app, workerConfig: PeekFileConfigWorkerMixin):
     # Optional configuration, see the application user guide.
