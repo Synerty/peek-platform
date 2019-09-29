@@ -71,10 +71,13 @@ class BackendMixin:
                                                celery.exceptions.__name__)
             exc_msg = exc['exc_message']
             args = exc_msg if isinstance(exc_msg, tuple) else [exc_msg]
+
+            ### BEGIN CODE ADDED TO PATCH METHOD
             try:
                 exc = cls(*args)
             except TypeError:
                 exc = Exception("%s\n%s" % (cls, args))
+            ### END CODE ADDED TO PATCH METHOD
 
             if self.serializer in EXCEPTION_ABLE_CODECS:
                 exc = get_pickled_exception(exc)
@@ -124,7 +127,10 @@ def configureCeleryApp(app, workerConfig: PeekFileConfigWorkerMixin):
 
         # Default time in seconds before a retry of the task should be executed.
         # 3 minutes by default.
-        default_retry_delay=2
+        default_retry_delay=2,
+
+        # The maximum number of times to retry a task
+        max_retries=5
     )
 
 
