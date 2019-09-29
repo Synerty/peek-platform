@@ -94,7 +94,7 @@ def configureCeleryApp(app, workerConfig: PeekFileConfigWorkerMixin):
     # Optional configuration, see the application user guide.
     app.conf.update(
         # On peek_server, the thread limit is set to 10, these should be configurable.
-        broker_pool_limit=15,
+        broker_pool_limit=20,
 
         # Set the broker and backend URLs
         broker_url=workerConfig.celeryBrokerUrl,
@@ -113,11 +113,6 @@ def configureCeleryApp(app, workerConfig: PeekFileConfigWorkerMixin):
 
         # The number of workers to have at one time
         worker_concurrency=workerConfig.celeryWorkerCount,
-
-        # The maximum number or results to keep for the client
-        # We could have backlog of 1000 results waiting for the client to pick up
-        # This would be a mega performance issue.
-        result_cache_max=1000,  # Default is 100
 
         task_serializer='vortex',
         # accept_content=['vortex'],  # Ignore other content
