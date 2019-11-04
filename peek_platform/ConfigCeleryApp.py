@@ -131,7 +131,7 @@ def configureCeleryApp(app, workerConfig: PeekFileConfigWorkerMixin):
     # Optional configuration, see the application user guide.
     app.conf.update(
         # On peek_server, the thread limit is set to 10, these should be configurable.
-        broker_pool_limit=20,
+        # broker_pool_limit=20,
 
         # Set the broker and backend URLs
         broker_url=workerConfig.celeryBrokerUrl,
@@ -143,7 +143,8 @@ def configureCeleryApp(app, workerConfig: PeekFileConfigWorkerMixin):
         # The time results will stay in redis before expiring.
         # I believe they are cleared when the results are obtained
         # from txcelery._DeferredTask
-        result_expires=3600,
+        # I assume the timer only starts once the task has finished.
+        result_expires=60,
 
         # The number of tasks each worker will prefetch.
         worker_prefetch_multiplier=workerConfig.celeryTaskPrefetch,

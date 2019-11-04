@@ -24,7 +24,16 @@ class PeekFileConfigPlatformMixin(metaclass=ABCMeta):
     @property
     def twistedThreadPoolSize(self) -> int:
         with self._cfg as c:
-            return c.twisted.threadPoolSize(10, require_integer)
+            count = c.twisted.threadPoolSize(500, require_integer)
+
+        # Ensure the thread count is high
+        if count < 50:
+            logger.info("Upgrading thread count from %s to %s", count, 500)
+            count = 500
+            with self._cfg as c:
+                c.twisted.threadPoolSize = count
+
+        return count
 
     @property
     def autoPackageUpdate(self):
