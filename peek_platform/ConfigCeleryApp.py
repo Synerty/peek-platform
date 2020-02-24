@@ -76,6 +76,7 @@ class BackendMixin:
             ### BEGIN CODE ADDED TO PATCH METHOD
             try:
                 exc = cls(*args)
+
             except TypeError:
                 exc = Exception("%s\n%s" % (cls, args))
             ### END CODE ADDED TO PATCH METHOD
@@ -103,22 +104,20 @@ class ResultConsumerMixin:
         key = self._get_key_for_task(task_id)
         self.subscribed_to.discard(key)
 
-        while True:
-            try:
-                self._pubsub.unsubscribe(key)
-                break
+        try:
+            self._pubsub.unsubscribe(key)
 
-            except redis.exceptions.ConnectionError:
-                # redis.exceptions.ConnectionError: Error 32 while writing to socket. Broken pipe.
-                logger.debug("Retrying cancel_for due to redis error")
+        except redis.exceptions.ConnectionError:
+            # redis.exceptions.ConnectionError: Error 32 while writing to socket. Broken pipe.
+            logger.debug("Cancel_for failed due to redis error")
 
-            except RuntimeError:
-                # builtins.RuntimeError: dictionary changed size during iteration
-                logger.debug("Retrying cancel_for due to redis error")
+        except RuntimeError:
+            # builtins.RuntimeError: dictionary changed size during iteration
+            logger.debug("Cancel_for failed due to redis error")
 
-            except AttributeError:
-                # builtins.AttributeError: 'NoneType' object has no attribute 'sendall'
-                logger.debug("Retrying cancel_for due to redis error")
+        except AttributeError:
+            # builtins.AttributeError: 'NoneType' object has no attribute 'sendall'
+            logger.debug("Cancel_for failed due to redis error")
 
 
 from celery.backends.redis import ResultConsumer

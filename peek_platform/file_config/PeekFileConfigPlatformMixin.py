@@ -36,6 +36,11 @@ class PeekFileConfigPlatformMixin(metaclass=ABCMeta):
         return count
 
     @property
+    def celeryCallThreadPoolSize(self) -> int:
+        with self._cfg as c:
+            return c.twisted.celeryCallPoolSize(50, require_integer)
+
+    @property
     def autoPackageUpdate(self):
         with self._cfg as c:
             return c.platform.autoPackageUpdate(True, require_bool)
