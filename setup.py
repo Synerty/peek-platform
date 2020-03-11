@@ -1,8 +1,8 @@
 import os
 import shutil
-from setuptools import setup
 
 from setuptools import find_packages
+from setuptools import setup
 
 from peek_platform.WindowsPatch import isWindows
 
@@ -44,7 +44,8 @@ requirements = [
     # Utilities
     "python-dateutil >= 2.6.0",
     "Pygments >= 2.0.1",  # Generate HTML for code that is syntax styled
-    "watchdog >= 0.8.3", # Used to detect file changes and re-copy them for frontend builds
+    "watchdog >= 0.8.3",
+    # Used to detect file changes and re-copy them for frontend builds
 
     # Licensing
     "pycryptodome",
@@ -61,7 +62,10 @@ requirements = [
     # Peek platform dependencies, all must match
     "peek-plugin-base",  ##==%s" % py_package_name,
     "peek-core-device",  ##==%s" % py_package_name,
-    "peek-core-email"  ##==%s" % py_package_name,
+    "peek-core-email",  ##==%s" % py_package_name,
+
+    # Install a memory logger.
+    "objgraph"
 ]
 
 lin_dependencies = [
@@ -124,7 +128,7 @@ setup(
     },
     dependency_links=dependency_links,
     process_dependency_links=True,
-    zip_safe=False,version=package_version,
+    zip_safe=False, version=package_version,
     description='Peek Platform Common Code',
     author='Synerty',
     author_email='contact@synerty.com',
