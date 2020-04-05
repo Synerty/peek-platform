@@ -39,3 +39,22 @@ class PeekFileConfigWorkerMixin:
 
         with self._cfg as c:
             return c.celery.taskPrefetch(default, require_integer)
+
+    @property
+    def celeryReplaceWorkerAfterTaskCount(self) -> str:
+        # for worker_max_tasks_per_child
+
+        default = 10
+
+        with self._cfg as c:
+            return c.celery.replaceWorkerAfterTaskCount(default, require_integer)
+
+    @property
+    def celeryReplaceWorkerAfterMemUsage(self) -> str:
+        # for worker_max_memory_per_child
+
+        # 1gb
+        default = 1*1024*1024
+
+        with self._cfg as c:
+            return c.celery.replaceWorkerAfterMemUsage(default, require_integer)

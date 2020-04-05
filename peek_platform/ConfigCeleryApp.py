@@ -148,6 +148,13 @@ def configureCeleryApp(app, workerConfig: PeekFileConfigWorkerMixin):
         # The number of tasks each worker will prefetch.
         worker_prefetch_multiplier=workerConfig.celeryTaskPrefetch,
 
+        # The number of tasks a worker will process before it's replaced
+        worker_max_tasks_per_child=workerConfig.celeryReplaceWorkerAfterTaskCount,
+
+        # If a worker uses more than this amount of memory, it will be replaced
+        # after the task completes.
+        worker_max_memory_per_child=workerConfig.celeryReplaceWorkerAfterMemUsage,
+
         # The number of workers to have at one time
         worker_concurrency=workerConfig.celeryWorkerCount,
 
