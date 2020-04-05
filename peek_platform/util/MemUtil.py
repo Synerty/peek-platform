@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+from typing import Optional
 
 import objgraph
 import pytz
