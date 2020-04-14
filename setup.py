@@ -64,8 +64,9 @@ requirements = [
     "peek-core-device",  ##==%s" % py_package_name,
     "peek-core-email",  ##==%s" % py_package_name,
 
-    # Install a memory logger.
-    "objgraph"
+    # Memory logging
+    "psutil",
+
 ]
 
 lin_dependencies = [
