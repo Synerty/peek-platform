@@ -29,7 +29,7 @@ requirements = [
 
     # networking and async framework. Peek is based on Twisted.
     "Cython >= 0.21.1",
-    "Twisted[tls,conch] < 19.0.0",
+    "Twisted[tls,conch]",
     "pyOpenSSL >= 16.2.0",
     "pyasn1 >= 0.1.9",
     "pyasn1-modules >= 0.0.8",
