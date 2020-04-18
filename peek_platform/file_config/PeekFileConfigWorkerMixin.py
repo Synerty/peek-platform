@@ -29,7 +29,7 @@ class PeekFileConfigWorkerMixin:
         # So leave half the CPU threads for the database
         default = int(multiprocessing.cpu_count() / 2)
         with self._cfg as c:
-            return c.celery.workerCount(default, require_integer)
+            return c.celery.worker.workerCount(default, require_integer)
 
     @property
     def celeryTaskPrefetch(self) -> str:
@@ -38,16 +38,16 @@ class PeekFileConfigWorkerMixin:
         default = 2
 
         with self._cfg as c:
-            return c.celery.taskPrefetch(default, require_integer)
+            return c.celery.worker.taskPrefetch(default, require_integer)
 
     @property
     def celeryReplaceWorkerAfterTaskCount(self) -> str:
         # for worker_max_tasks_per_child
 
-        default = 10
+        default = 1000
 
         with self._cfg as c:
-            return c.celery.replaceWorkerAfterTaskCount(default, require_integer)
+            return c.celery.worker.refreshAfterTaskCount(default, require_integer)
 
     @property
     def celeryReplaceWorkerAfterMemUsage(self) -> str:
@@ -57,4 +57,14 @@ class PeekFileConfigWorkerMixin:
         default = 1*1024*1024
 
         with self._cfg as c:
-            return c.celery.replaceWorkerAfterMemUsage(default, require_integer)
+            return c.celery.worker.refreshAfterMemUsage(default, require_integer)
+
+    @property
+    def celeryConnectionPoolSize(self) -> int:
+        with self._cfg as c:
+            return c.celery.caller.connectionPoolSize(50, require_integer)
+
+    @property
+    def celeryConnectionRecycleTime(self) -> int:
+        with self._cfg as c:
+            return c.celery.caller.connectionRecycleTime(600, require_integer)
