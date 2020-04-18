@@ -4,9 +4,10 @@ import typing
 import celery
 from celery import signals as celery_signals
 from kombu import serialization
-from peek_platform.file_config.PeekFileConfigWorkerMixin import PeekFileConfigWorkerMixin
 from vortex.DeferUtil import noMainThread
 from vortex.Payload import Payload
+
+from peek_platform.file_config.PeekFileConfigWorkerMixin import PeekFileConfigWorkerMixin
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +41,7 @@ serialization.register(
     content_type='application/x-vortex',
     content_encoding='utf-8',
 )
+
 
 # -----------------------------------------------------------------------------
 
@@ -91,6 +93,7 @@ from celery.backends.base import Backend
 
 Backend.exception_to_python = BackendMixin.exception_to_python
 
+
 # -----------------------------------------------------------------------------
 
 class ResultConsumerMixin:
@@ -124,9 +127,11 @@ from celery.backends.redis import ResultConsumer
 
 ResultConsumer.cancel_for = ResultConsumerMixin.cancel_for
 
+
 # -----------------------------------------------------------------------------
 
-def configureCeleryApp(app, workerConfig: PeekFileConfigWorkerMixin):
+def configureCeleryApp(app, workerConfig: PeekFileConfigWorkerMixin,
+                       forCaller: bool = False):
     # Optional configuration, see the application user guide.
     app.conf.update(
         # On peek_server, the thread limit is set to 10, these should be configurable.
@@ -145,19 +150,6 @@ def configureCeleryApp(app, workerConfig: PeekFileConfigWorkerMixin):
         # I assume the timer only starts once the task has finished.
         result_expires=60,
 
-        # The number of tasks each worker will prefetch.
-        worker_prefetch_multiplier=workerConfig.celeryTaskPrefetch,
-
-        # The number of tasks a worker will process before it's replaced
-        worker_max_tasks_per_child=workerConfig.celeryReplaceWorkerAfterTaskCount,
-
-        # If a worker uses more than this amount of memory, it will be replaced
-        # after the task completes.
-        worker_max_memory_per_child=workerConfig.celeryReplaceWorkerAfterMemUsage,
-
-        # The number of workers to have at one time
-        worker_concurrency=workerConfig.celeryWorkerCount,
-
         task_serializer='vortex',
         # accept_content=['vortex'],  # Ignore other content
         accept_content=['pickle', 'json', 'msgpack', 'yaml', 'vortex'],
@@ -171,6 +163,25 @@ def configureCeleryApp(app, workerConfig: PeekFileConfigWorkerMixin):
         # The maximum number of times to retry a task
         max_retries=5
     )
+
+    # Configure these only for the worker, this keeps the servers json clean.
+    if not forCaller:
+        # Optional configuration, see the application user guide.
+        app.conf.update(
+            # The number of tasks each worker will prefetch.
+            worker_prefetch_multiplier=workerConfig.celeryTaskPrefetch,
+
+            # The number of tasks a worker will process before it's replaced
+            worker_max_tasks_per_child=workerConfig.celeryReplaceWorkerAfterTaskCount,
+
+            # If a worker uses more than this amount of memory, it will be replaced
+            # after the task completes.
+            worker_max_memory_per_child=workerConfig.celeryReplaceWorkerAfterMemUsage,
+
+            # The number of workers to have at one time
+            worker_concurrency=workerConfig.celeryWorkerCount,
+        )
+
 
 
 from peek_platform.file_config.PeekFileConfigABC import PeekFileConfigABC
