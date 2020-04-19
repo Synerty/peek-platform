@@ -270,7 +270,6 @@ class PeekSwInstallManagerABC(metaclass=ABCMeta):
 
         python = sys.executable
         argv = list(sys.argv)
-        argv.insert(0, "-u")
 
         def addExe(val):
             if not "run_peek_" in val:
