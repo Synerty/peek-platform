@@ -1,6 +1,7 @@
 import logging
 import os
 from abc import ABCMeta
+from typing import Optional
 
 from jsoncfg.value_mappers import require_string, RequireType, require_list, require_bool, \
     require_integer
@@ -25,6 +26,31 @@ class PeekFileConfigPlatformMixin(metaclass=ABCMeta):
 
             logger.warning("Logging level %s is not valid, defauling to INFO", lvl)
             return "INFO"
+
+    @property
+    def loggingRotateSizeMb(self) -> int:
+        with self._cfg as c:
+            return c.logging.rotateSizeMb(20, require_integer)
+
+    @property
+    def loggingRotationsToKeep(self) -> int:
+        with self._cfg as c:
+            return c.logging.rotationsToKeep(2, require_integer)
+
+    @property
+    def loggingLogToSyslogHost(self) -> Optional[str]:
+        with self._cfg as c:
+            return c.logging.syslog.logToSysloyHost(None)
+
+    @property
+    def loggingLogToSyslogPort(self) -> int:
+        with self._cfg as c:
+            return c.logging.syslog.logToSysloyPort(514, require_integer)
+
+    @property
+    def loggingLogToSyslogFacility(self) -> str:
+        with self._cfg as c:
+            return c.logging.syslog.logToSysloyProtocol('user', require_string)
 
     @property
     def twistedThreadPoolSize(self) -> int:
