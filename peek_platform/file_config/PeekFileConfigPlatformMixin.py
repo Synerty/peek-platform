@@ -28,6 +28,11 @@ class PeekFileConfigPlatformMixin(metaclass=ABCMeta):
             return "INFO"
 
     @property
+    def logToStdout(self) -> str:
+        with self._cfg as c:
+            return c.logging.logToStdout(False, require_bool)
+
+    @property
     def loggingRotateSizeMb(self) -> int:
         with self._cfg as c:
             return c.logging.rotateSizeMb(20, require_integer)

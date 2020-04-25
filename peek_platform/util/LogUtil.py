@@ -21,7 +21,8 @@ def setupPeekLogger(serviceName: Optional[str] = None):
 
 def updatePeekLoggerHandlers(serviceName: Optional[str] = None,
                              rotateSizeMb=1024 * 1024,
-                             rotationsToKeep=2):
+                             rotationsToKeep=2,
+                             logToStdout=True):
     rootLogger = logging.getLogger()
     logFormatter = logging.Formatter(LOG_FORMAT, DATE_FORMAT)
 
@@ -30,8 +31,9 @@ def updatePeekLoggerHandlers(serviceName: Optional[str] = None,
             # Setup the file logging output
             rootLogger.removeHandler(handler)
 
-        elif not sys.stdout.isatty():
+        elif not sys.stdout.isatty() and not logToStdout:
             # Remove the stdout handler
+            logger.info("Logging to stdout disabled, see 'logToStdout' in config.json")
             rootLogger.removeHandler(handler)
 
     fileName = str(Path.home() / ('%s.log' % serviceName))
