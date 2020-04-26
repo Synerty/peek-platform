@@ -13,9 +13,9 @@ class PeekFileConfigPlatformMixin(metaclass=ABCMeta):
     # --- Platform Logging
 
     @property
-    def loggingDebugMemoryLevel(self) -> int:
+    def loggingDebugMemoryMask(self) -> int:
         with self._cfg as c:
-            return c.logging.debugMemoryLevel(0, require_integer)
+            return c.logging.debugMemoryMask(0, require_integer)
 
     @property
     def loggingLevel(self) -> str:
