@@ -245,6 +245,6 @@ def setupMemoryDebugging(serviceName: Optional[str] = None,
                     % str(datetime.now(pytz.utc) - startTime) + '\n')
             f.write("-" * 80 + '\n')
 
-        reactor.callLater(1, deferToThread, dump)
+        reactor.callLater(60, deferToThread, dump)
 
     dump()
