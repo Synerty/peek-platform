@@ -4,10 +4,9 @@ import typing
 import celery
 from celery import signals as celery_signals
 from kombu import serialization
+from peek_platform.file_config.PeekFileConfigWorkerMixin import PeekFileConfigWorkerMixin
 from vortex.DeferUtil import noMainThread
 from vortex.Payload import Payload
-
-from peek_platform.file_config.PeekFileConfigWorkerMixin import PeekFileConfigWorkerMixin
 
 logger = logging.getLogger(__name__)
 
@@ -171,17 +170,22 @@ def configureCeleryApp(app, workerConfig: PeekFileConfigWorkerMixin,
             # The number of tasks each worker will prefetch.
             worker_prefetch_multiplier=workerConfig.celeryTaskPrefetch,
 
-            # The number of tasks a worker will process before it's replaced
-            worker_max_tasks_per_child=workerConfig.celeryReplaceWorkerAfterTaskCount,
-
-            # If a worker uses more than this amount of memory, it will be replaced
-            # after the task completes.
-            worker_max_memory_per_child=workerConfig.celeryReplaceWorkerAfterMemUsage,
-
             # The number of workers to have at one time
             worker_concurrency=workerConfig.celeryWorkerCount,
         )
 
+        if workerConfig.celeryReplaceWorkerAfterTaskCount:
+            app.conf.update(
+                # The number of tasks a worker will process before it's replaced
+                worker_max_tasks_per_child=workerConfig.celeryReplaceWorkerAfterTaskCount,
+            )
+
+        if workerConfig.celeryReplaceWorkerAfterMemUsage:
+            app.conf.update(
+                # If a worker uses more than this amount of memory, it will be replaced
+                # after the task completes.
+                worker_max_memory_per_child=workerConfig.celeryReplaceWorkerAfterMemUsage,
+            )
 
 
 from peek_platform.file_config.PeekFileConfigABC import PeekFileConfigABC

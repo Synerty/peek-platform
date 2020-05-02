@@ -1,5 +1,6 @@
 import logging
 import multiprocessing
+from typing import Optional
 
 from jsoncfg.value_mappers import require_string, require_integer
 
@@ -41,23 +42,26 @@ class PeekFileConfigWorkerMixin:
             return c.celery.worker.taskPrefetch(default, require_integer)
 
     @property
-    def celeryReplaceWorkerAfterTaskCount(self) -> str:
+    def celeryReplaceWorkerAfterTaskCount(self) -> Optional[int]:
         # for worker_max_tasks_per_child
-
-        default = 1000
-
         with self._cfg as c:
-            return c.celery.worker.refreshAfterTaskCount(default, require_integer)
+            try:
+                return int(c.celery.worker.refreshAfterTaskCount(None))
+            except TypeError:
+                return None
+            except ValueError:
+                return None
 
     @property
-    def celeryReplaceWorkerAfterMemUsage(self) -> str:
+    def celeryReplaceWorkerAfterMemUsage(self) -> Optional[int]:
         # for worker_max_memory_per_child
-
-        # 1gb
-        default = 1*1024*1024
-
         with self._cfg as c:
-            return c.celery.worker.refreshAfterMemUsage(default, require_integer)
+            try:
+                return int(c.celery.worker.refreshAfterMemUsage(None))
+            except TypeError:
+                return None
+            except ValueError:
+                return None
 
     @property
     def celeryConnectionPoolSize(self) -> int:
