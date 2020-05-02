@@ -86,7 +86,7 @@ win_dependencies = [
     "cffi >= 1.9.1",
     "cryptography >= 1.7.1",
     "pytest >= 3.0.5",
-    "wheel >= 0.30.0a0",
+    "wheel >= 0.30.0.0",
     "virtualenv >= 15.1.0",
 
     # Celery 4 is not supported on windows
