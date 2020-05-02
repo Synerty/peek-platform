@@ -231,7 +231,7 @@ def setupMemoryDebugging(serviceName: Optional[str] = None,
                 # Write the dump of the cached vortex payloads
                 f.write("-" * 80 + '\n')
                 f.write(center("Vortex Observable Caches") + '\n')
-                f.write(_formatJsonableSummary(TOP, INDIVIDUAL_SIZE))
+                f.write(_formatObservableCacheSummary(TOP, INDIVIDUAL_SIZE))
 
             if debugMask & PEEK_MEM_DUMP_VORTEX_PUSH_PRODUCER:
                 # Write the dump of the cached vortex payloads
