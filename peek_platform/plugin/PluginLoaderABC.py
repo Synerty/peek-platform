@@ -89,6 +89,12 @@ class PluginLoaderABC(metaclass=ABCMeta):
 
     @inlineCallbacks
     def loadPlugin(self, pluginName):
+        # Until we implement dynamic loading and unloading of plugins
+        # make sure we don't load them twice, because we don't yet
+        # support it.
+        if pluginName in self._loadedPlugins:
+            raise Exception("Plugin %s is already loaded, check config.json" % pluginName)
+
         try:
             self.unloadPlugin(pluginName)
 
