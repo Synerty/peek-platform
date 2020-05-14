@@ -1,10 +1,10 @@
 import logging
-from typing import Callable, Optional, List, Dict
-
 import os
 import re
 import shutil
 from collections import namedtuple
+from typing import Callable, Optional, List, Dict, Set
+
 from twisted.internet import reactor
 from watchdog.events import FileSystemEventHandler, FileMovedEvent, FileModifiedEvent, \
     FileDeletedEvent, FileCreatedEvent
@@ -28,9 +28,9 @@ from watchdog.utils import platform
 if platform.is_darwin():
     """
     Don't use fsevents as it only monitors a file once.
-    This caused problems when syncing one directory to multiple targets, 
+    This caused problems when syncing one directory to multiple targets,
     such as from a peek plugin to build-web and build-ns
-    
+
     # from watchdog.observers.fsevents import FSEventsObserver as WatchdogObserver
     """
 
@@ -51,7 +51,7 @@ else:
 class FrontendFileSync:
     """ Peek App Frontend File Sync
 
-    This class is used to syncronise the frontend files from the plugins into the 
+    This class is used to syncronise the frontend files from the plugins into the
         frontend build dirs.
 
     """
@@ -69,17 +69,17 @@ class FrontendFileSync:
                        keepCompiledFilePatterns: Optional[Dict[str, List[str]]] = None,
                        excludeFilesRegex: List[str] = ()):
         """ Add Sync Mapping
-        
+
         :param srcDir: The source dir to sync files from
-        
+
         :param dstDir: The dest dir to sync files to
-        
+
         :param parentMustExist: The parent must exist for file syncing to happen.
                 If it doesn't syncing quitely doesn't occur.
-                
+
         :param deleteExtraDstFiles: If there are additional files in the dest directory
                 that are not in the source directory, then delete them.
-                
+
         :param keepCompiledFilePatterns:
                 A dict of key = src file extension, val = an array of extensions to keep
                 for this src file extension.
@@ -96,26 +96,26 @@ class FrontendFileSync:
                 The reason being, the JS files will be deleted because they don't
                  exist in the source, which causes nativescript to rebuild FOR EVERY
                 .js file delete
-                
+
         :param preSyncCallback: This will be called before syncing occurs.
                 This include any incremental syncing.
-                
+
         :param postSyncCallback: This will be called after syncing occurs.
                 This includes any incremental syncing.
 
         :param excludeFilesRegex: If the relative path+filename match this regexp then
                             the file is not incldued in the syncing.
-        
+
         """
         if not keepCompiledFilePatterns:
             keepCompiledFilePatterns = {}
 
         self._dirSyncMap.append(
             FileSyncCfg(srcDir, dstDir, parentMustExist,
-                        deleteExtraDstFiles,
-                        keepCompiledFilePatterns,
-                        preSyncCallback, postSyncCallback,
-                        excludeFilesRegex)
+                          deleteExtraDstFiles,
+                          keepCompiledFilePatterns,
+                          preSyncCallback, postSyncCallback,
+                          excludeFilesRegex)
         )
 
     def startFileSyncWatcher(self):
@@ -157,6 +157,10 @@ class FrontendFileSync:
                 rexp = re.compile(regexp)
                 srcFiles = set(filter(lambda l: not rexp.match(l), srcFiles))
 
+            # Remove any files that the next overlay on the same dst directory
+            # will write.
+            srcFiles -= self._loadFollowingOverlayFileSet(cfg)
+
             for srcFile in srcFiles:
                 srcFilePath = os.path.join(cfg.srcDir, srcFile)
                 dstFilePath = os.path.join(cfg.dstDir, srcFile)
@@ -193,6 +197,26 @@ class FrontendFileSync:
             if cfg.postSyncCallback:
                 cfg.postSyncCallback()
 
+    def _loadFollowingOverlayFileSet(self, cfg: FileSyncCfg) -> Set[str]:
+        results = set()
+        cfgs: List[FileSyncCfg] = self._dirSyncMap[self._dirSyncMap.index(cfg) + 1:]
+        for cfgIter in cfgs:
+            if cfg.dstDir == cfgIter.dstDir:
+                results.update(self._listFiles(cfg.srcDir))
+
+            elif cfg.dstDir in cfgIter.dstDir:
+                pathPart = cfgIter.dstDir[len(cfg.dstDir):]
+                results.update(self._listFiles(cfgIter.srcDir + pathPart))
+
+            elif cfgIter.dstDir in cfg.dstDir:
+                pathPart = cfg.dstDir[len(cfgIter.dstDir):]
+                results.update(self._listFiles(cfgIter.srcDir + pathPart))
+
+            else:
+                continue
+
+        return results
+
     def _writeFileIfRequired(self, dir, fileName, contents):
         fullFilePath = os.path.join(dir, fileName)
 
@@ -225,7 +249,7 @@ class FrontendFileSync:
             f.write(contents)
 
     def _listFiles(self, dir):
-        ignoreFiles = set('.lastHash')
+        ignoreFiles = {'.lastHash', '.DS_Store'}
         paths = []
         for (path, directories, filenames) in os.walk(dir):
 
