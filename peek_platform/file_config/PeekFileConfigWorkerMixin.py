@@ -2,7 +2,7 @@ import logging
 import multiprocessing
 from typing import Optional
 
-from jsoncfg.value_mappers import require_string, require_integer
+from jsoncfg.value_mappers import require_string, require_integer, require_bool
 
 logger = logging.getLogger(__name__)
 
@@ -72,3 +72,18 @@ class PeekFileConfigWorkerMixin:
     def celeryConnectionRecycleTime(self) -> int:
         with self._cfg as c:
             return c.celery.caller.connectionRecycleTime(600, require_integer)
+
+    @property
+    def celeryConnectionPoolSize(self) -> int:
+        with self._cfg as c:
+            return c.celery.caller.connectionPoolSize(50, require_integer)
+
+    @property
+    def celeryPlPythonEnablePatch(self) -> int:
+        with self._cfg as c:
+            return c.celery.plpython.enable(False, require_bool)
+
+    @property
+    def celeryPlPythonWorkerCount(self) -> int:
+        with self._cfg as c:
+            return c.celery.plpython.workerCount(6, require_integer)
