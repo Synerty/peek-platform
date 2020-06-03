@@ -77,6 +77,7 @@ lin_dependencies = [
     "pymssql",
 
     # Celery 4 is not supported on windows
+    "future",  # This is required by celery
     "celery[redis,auth]",
 ]
 
