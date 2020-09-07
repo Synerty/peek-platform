@@ -34,19 +34,10 @@ class PeekFileConfigHttpMixin:
             return c.httpServer[self._name].redirectFromHttpPort(None)
 
     @property
-    def sslCertFilePath(self) -> Optional[str]:
-        default = os.path.join(self._config._homePath, 'peek-ssl.crt')
+    def sslBundleFilePath(self) -> Optional[str]:
+        default = os.path.join(self._config._homePath, 'peek-ssl-bundle.pem')
         with self._config._cfg as c:
-            file = c.httpServer[self._name].sslCertFilePath(default, require_string)
-            if os.path.exists(file):
-                return file
-            return None
-
-    @property
-    def sslKeyFilePath(self) -> Optional[str]:
-        default = os.path.join(self._config._homePath, 'peek-ssl.key')
-        with self._config._cfg as c:
-            file = c.httpServer[self._name].sslKeyFilePath(default, require_string)
+            file = c.httpServer[self._name].sslBundleFilePath(default, require_string)
             if os.path.exists(file):
                 return file
             return None
