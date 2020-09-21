@@ -205,7 +205,7 @@ class FrontendBuilderABC(BuilderABC):
         if modOrService["locatedInAppDir"]:
             return "%s" % pluginDetail.pluginName
 
-        return "@peek/%s" % pluginDetail.pluginName
+        return "@_peek/%s" % pluginDetail.pluginName
 
     def _writePluginHomeLinks(self, feAppDir: str,
                               pluginDetails: [PluginDetail]) -> None:
@@ -235,7 +235,6 @@ class FrontendBuilderABC(BuilderABC):
         contents = "// This file is auto generated, the git version is blank and .gitignored\n"
         contents += "export const homeLinks = %s;\n" % json.dumps(
             links, sort_keys=True, indent=4, separators=(', ', ': '))
-
         self._writeFileIfRequired(feAppDir, 'plugin-home-links.ts', contents)
 
     def _writePluginConfigLinks(self, feAppDir: str,
@@ -309,7 +308,7 @@ class FrontendBuilderABC(BuilderABC):
         _appRoutesTemplate = dedent("""
             {
                 path: '%s',
-                loadChildren: "%s/%s"
+                loadChildren: "@peek/%s/%s"
             }""")
 
         routes = []
@@ -515,7 +514,7 @@ class FrontendBuilderABC(BuilderABC):
     def _updatePackageJson(self, targetJson: str,
                            pluginDetails: [PluginDetail]) -> None:
 
-        serviceName = "@peek"
+        serviceName = "@_peek"
 
         # Remove all the old symlinks
 

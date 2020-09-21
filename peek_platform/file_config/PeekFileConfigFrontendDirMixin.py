@@ -9,17 +9,6 @@ logger = logging.getLogger(__name__)
 class PeekFileConfigFrontendDirMixin:
     # --- Platform Logging
 
-
-    @property
-    def feNativescriptBuildPrepareEnabled(self) -> bool:
-        """ Nativescript Frontend Build Enabled
-
-        :return True If peek should prepare the build directory
-
-        """
-        with self._cfg as c:
-            return c.frontend.nativescriptBuildPrepareEnabled(False, require_bool)
-
     @property
     def feFrontendSrcOverlayDir(self) -> bool:
         """ Frontend Src Overlay Directory

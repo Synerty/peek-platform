@@ -57,8 +57,8 @@ class BuilderABC(metaclass=ABCMeta):
             s = os.path.sep
             excludePathContains = ('__pycache__', 'node_modules', 'platforms', 'dist')
 
-            # Always include the node_modules/@peek module dir
-            if path.endswith(s + "@peek") or (s + "@peek" + s) in path:
+            # Always include the node_modules/@_peek module dir
+            if path.endswith(s + "@_peek") or (s + "@_peek" + s) in path:
                 return True
 
             for exPath in excludePathContains:

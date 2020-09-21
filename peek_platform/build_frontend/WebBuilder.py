@@ -71,15 +71,16 @@ class WebBuilder(FrontendBuilderABC):
 
         self._dirSyncMap = list()
 
-        feBuildDir = os.path.join(self._frontendProjectDir, 'build-web')
-        feSrcAppDir = os.path.join(self._frontendProjectDir, 'src', 'app')
+        feBuildDir = self._frontendProjectDir
+        # feSrcAppDir = os.path.join(self._frontendProjectDir, 'src', 'app')
 
         feBuildSrcDir = os.path.join(feBuildDir, 'src')
         feBuildAssetsDir = os.path.join(feBuildDir, 'src', 'assets')
         feNodeModDir = os.path.join(feBuildDir, 'node_modules')
+        fePluginDir = os.path.join(feBuildSrcDir, '@peek')
 
         feModuleDirs = [
-            (os.path.join(feBuildSrcDir, '@peek'), "moduleDir"),
+            (os.path.join(feBuildSrcDir, '@_peek'), "moduleDir"),
         ]
 
         pluginDetails = self._loadPluginConfigs()
@@ -96,39 +97,39 @@ class WebBuilder(FrontendBuilderABC):
         # --------------------
         # Prepare the common frontend application
 
-        self.fileSync.addSyncMapping(feSrcAppDir, os.path.join(feBuildSrcDir, 'app'),
-                                     excludeFilesRegex=excludeRegexp)
+        # self.fileSync.addSyncMapping(feSrcAppDir, os.path.join(feBuildSrcDir, 'app'),
+        #                              excludeFilesRegex=excludeRegexp)
 
         # --------------------
         # Prepare the home and title bar configuration for the plugins
-        self._writePluginHomeLinks(feBuildSrcDir, pluginDetails)
-        self._writePluginTitleBarLinks(feBuildSrcDir, pluginDetails)
-        self._writePluginConfigLinks(feBuildSrcDir, pluginDetails)
+        self._writePluginHomeLinks(fePluginDir, pluginDetails)
+        self._writePluginTitleBarLinks(fePluginDir, pluginDetails)
+        self._writePluginConfigLinks(fePluginDir, pluginDetails)
 
         # --------------------
         # Prepare the plugin lazy loaded part of the application
-        self._writePluginAppRouteLazyLoads(feBuildSrcDir, pluginDetails)
-        self._syncPluginFiles(feBuildSrcDir, pluginDetails, "appDir",
+        self._writePluginAppRouteLazyLoads(fePluginDir, pluginDetails)
+        self._syncPluginFiles(fePluginDir, pluginDetails, "appDir",
                               excludeFilesRegex=excludeRegexp)
 
         # --------------------
         # Prepare the plugin lazy loaded part of the application
-        self._writePluginCfgRouteLazyLoads(feBuildSrcDir, pluginDetails)
-        self._syncPluginFiles(feBuildSrcDir, pluginDetails, "cfgDir",
+        self._writePluginCfgRouteLazyLoads(fePluginDir, pluginDetails)
+        self._syncPluginFiles(fePluginDir, pluginDetails, "cfgDir",
                               isCfgDir=True,
                               excludeFilesRegex=excludeRegexp)
 
         # --------------------
         # Prepare the plugin assets
-        self._syncPluginFiles(feBuildAssetsDir, pluginDetails, "assetDir",
+        self._syncPluginFiles(fePluginDir, pluginDetails, "assetDir",
                               excludeFilesRegex=excludeRegexp)
 
         # --------------------
         # Prepare the shared / global parts of the plugins
 
-        self._writePluginRootModules(feBuildSrcDir, pluginDetails)
-        self._writePluginRootServices(feBuildSrcDir, pluginDetails)
-        self._writePluginRootComponents(feBuildSrcDir, pluginDetails)
+        self._writePluginRootModules(fePluginDir, pluginDetails)
+        self._writePluginRootServices(fePluginDir, pluginDetails)
+        self._writePluginRootComponents(fePluginDir, pluginDetails)
 
         for feModDir, jsonAttr, in feModuleDirs:
             # Link the shared code, this allows plugins
@@ -140,7 +141,7 @@ class WebBuilder(FrontendBuilderABC):
         # Lastly, Allow the clients to override any frontend files they wish.
         # Src Directory
         self.fileSync.addSyncMapping(self._jsonCfg.feFrontendSrcOverlayDir,
-                                     feBuildSrcDir,
+                                     fePluginDir,
                                      parentMustExist=True,
                                      deleteExtraDstFiles=False,
                                      excludeFilesRegex=excludeRegexp)
