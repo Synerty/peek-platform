@@ -121,7 +121,7 @@ class WebBuilder(FrontendBuilderABC):
 
         # --------------------
         # Prepare the plugin assets
-        self._syncPluginFiles(fePluginDir, pluginDetails, "assetDir",
+        self._syncPluginFiles(feBuildAssetsDir, pluginDetails, "assetDir",
                               excludeFilesRegex=excludeRegexp)
 
         # --------------------

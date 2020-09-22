@@ -47,7 +47,6 @@ class BuildTypeEnum:
     WEB_DESKTOP = "WEB_DESKTOP"
     WEB_MOBILE = "WEB_MOBILE"
     WEB_ADMIN = "WEB_ADMIN"
-    NATIVE_SCRIPT = "NATIVE_SCRIPT"
 
 
 class FrontendBuilderABC(BuilderABC):
@@ -68,7 +67,6 @@ class FrontendBuilderABC(BuilderABC):
         BuildTypeEnum.ELECTRON: ["desktop-electron", "desktop"],
         BuildTypeEnum.WEB_DESKTOP: ["desktop-web", "desktop"],
         BuildTypeEnum.WEB_MOBILE: ["mobile-web", "mobile"],
-        BuildTypeEnum.NATIVE_SCRIPT: ["mobile-ns", "mobile"],
         BuildTypeEnum.WEB_ADMIN: ["admin"]
     }
 
@@ -331,7 +329,7 @@ class FrontendBuilderABC(BuilderABC):
         _cfgRoutesTemplate = dedent("""
             {
                 path: '%s_cfg',
-                loadChildren: "%s_cfg/%s"
+                loadChildren: "@peek/%s_cfg/%s"
             }""")
 
         routes = []
@@ -353,14 +351,17 @@ class FrontendBuilderABC(BuilderABC):
                                 pluginDetails: [PluginDetail]) -> None:
 
         # initialise the arrays, and put in the persisted service module
-        imports = ['''import {PluginRootServicePersistentLoadModule} 
-                        from "./plugin-root-services";''']
+        imports = ['''import { PluginRootServicePersistentLoadModule } from "./plugin-root-services"''']
         modules = ['PluginRootServicePersistentLoadModule']
 
         for pluginDetail in pluginDetails:
             for rootModule in pluginDetail.rootModules:
                 filePath = self._makeModuleOrServicePath(pluginDetail, rootModule)
-                imports.append('import {%s} from "%s/%s";'
+
+                if filePath.startswith("peek_"):
+                    filePath = "@peek/" + filePath
+
+                imports.append('import { %s } from "%s/%s"'
                                % (rootModule["class"],
                                   filePath,
                                   rootModule["file"]))
@@ -383,13 +384,17 @@ class FrontendBuilderABC(BuilderABC):
         for pluginDetail in pluginDetails:
             for rootService in pluginDetail.rootServices:
                 filePath = self._makeModuleOrServicePath(pluginDetail, rootService)
-                imports.append('import {%s} from "%s/%s";'
+
+                if filePath.startswith("peek_"):
+                    filePath = "@peek/" + filePath
+
+                imports.append('import { %s } from "%s/%s"'
                                % (rootService["class"],
                                   filePath,
                                   rootService["file"]))
 
                 if rootService["useClassFile"] and rootService["useClassClass"]:
-                    imports.append('import {%s} from "%s/%s";'
+                    imports.append('import { %s } from "%s/%s"'
                                    % (rootService["useClassClass"],
                                       filePath,
                                       rootService["useClassFile"]))
@@ -417,16 +422,13 @@ class FrontendBuilderABC(BuilderABC):
         routeData += "\n];\n"
 
         routeData += '''
-        import {NgModule} from "@angular/core";
+        import { NgModule } from "@angular/core"
 
         @NgModule({
         
         })
         export class PluginRootServicePersistentLoadModule {
-            constructor(%s){
-        
-            }
-        
+            constructor(%s) { }
         }
         ''' % ', '.join(['private _%s:%s' % (s, s) for s in persistentServices])
 
@@ -445,10 +447,7 @@ class FrontendBuilderABC(BuilderABC):
         html = "<div>\n%s\n</div>\n" % '\n'.join(selectors)
         nsXml = "<StackLayout>\n%s\n</StackLayout>\n" % '\n'.join(selectors)
 
-        if self._buildType == BuildTypeEnum.NATIVE_SCRIPT:
-            self._writeFileIfRequired(feAppDir, 'plugin-root.component.ns.html', nsXml)
-        else:
-            self._writeFileIfRequired(feAppDir, 'plugin-root.component.web.html', html)
+        self._writeFileIfRequired(feAppDir, 'plugin-root.component.web.html', html)
 
     def _syncPluginFiles(self, targetDir: str,
                          pluginDetails: [PluginDetail],
