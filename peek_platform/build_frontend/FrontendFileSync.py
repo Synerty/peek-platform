@@ -29,7 +29,7 @@ if platform.is_darwin():
     """
     Don't use fsevents as it only monitors a file once.
     This caused problems when syncing one directory to multiple targets,
-    such as from a peek plugin to build-web and build-ns
+    such as from a peek plugin to build-web
 
     # from watchdog.observers.fsevents import FSEventsObserver as WatchdogObserver
     """
