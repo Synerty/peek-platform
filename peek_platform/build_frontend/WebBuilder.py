@@ -41,10 +41,6 @@ class WebBuilder(FrontendBuilderABC):
             return
 
         excludeRegexp = (
-            r'.*[.]ns[.]ts$',
-            r'.*[.]ns[.]html$',
-            r'.*[.]ns[.]scss$',
-            r'.*[.]ns[.].*[.]scss$',
             r'.*__pycache__.*',
             r'.*[.]py$'
         )
@@ -72,16 +68,20 @@ class WebBuilder(FrontendBuilderABC):
         self._dirSyncMap = list()
 
         feBuildDir = self._frontendProjectDir
-        # feSrcAppDir = os.path.join(self._frontendProjectDir, 'src', 'app')
-
         feBuildSrcDir = os.path.join(feBuildDir, 'src')
         feBuildAssetsDir = os.path.join(feBuildDir, 'src', 'assets')
         feNodeModDir = os.path.join(feBuildDir, 'node_modules')
         fePluginDir = os.path.join(feBuildSrcDir, '@peek')
-
+        fePrivatePluginDir = os.path.join(feBuildSrcDir, '@_peek')
         feModuleDirs = [
-            (os.path.join(feBuildSrcDir, '@_peek'), "moduleDir"),
+            (fePrivatePluginDir, "moduleDir"),
         ]
+
+        if not os.path.exists(fePluginDir):
+            os.makedirs(fePluginDir)
+
+        if not os.path.exists(fePrivatePluginDir):
+            os.makedirs(fePrivatePluginDir)
 
         pluginDetails = self._loadPluginConfigs()
 
