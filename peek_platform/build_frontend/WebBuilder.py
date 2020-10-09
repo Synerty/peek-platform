@@ -71,8 +71,8 @@ class WebBuilder(FrontendBuilderABC):
         feBuildSrcDir = os.path.join(feBuildDir, 'src')
         feBuildAssetsDir = os.path.join(feBuildDir, 'src', 'assets')
         feNodeModDir = os.path.join(feBuildDir, 'node_modules')
-        fePluginDir = os.path.join(feBuildSrcDir, '@peek')
-        fePrivatePluginDir = os.path.join(feBuildSrcDir, '@_peek')
+        fePluginDir = os.path.join(feBuildSrcDir, '@_peek')
+        fePrivatePluginDir = os.path.join(feBuildSrcDir, '@peek')
         feModuleDirs = [
             (fePrivatePluginDir, "moduleDir"),
         ]

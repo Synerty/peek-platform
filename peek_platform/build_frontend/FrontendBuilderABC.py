@@ -203,7 +203,7 @@ class FrontendBuilderABC(BuilderABC):
         if modOrService["locatedInAppDir"]:
             return "%s" % pluginDetail.pluginName
 
-        return "@_peek/%s" % pluginDetail.pluginName
+        return "@peek/%s" % pluginDetail.pluginName
 
     def _writePluginHomeLinks(self, feAppDir: str,
                               pluginDetails: [PluginDetail]) -> None:
@@ -306,7 +306,7 @@ class FrontendBuilderABC(BuilderABC):
         _appRoutesTemplate = dedent("""
             {
                 path: '%s',
-                loadChildren: "@peek/%s/%s"
+                loadChildren: "@_peek/%s/%s"
             }""")
 
         routes = []
@@ -329,7 +329,7 @@ class FrontendBuilderABC(BuilderABC):
         _cfgRoutesTemplate = dedent("""
             {
                 path: '%s_cfg',
-                loadChildren: "@peek/%s_cfg/%s"
+                loadChildren: "@_peek/%s_cfg/%s"
             }""")
 
         routes = []
@@ -359,7 +359,7 @@ class FrontendBuilderABC(BuilderABC):
                 filePath = self._makeModuleOrServicePath(pluginDetail, rootModule)
 
                 if filePath.startswith("peek_"):
-                    filePath = "@peek/" + filePath
+                    filePath = "@_peek/" + filePath
 
                 imports.append('import { %s } from "%s/%s"'
                                % (rootModule["class"],
@@ -386,7 +386,7 @@ class FrontendBuilderABC(BuilderABC):
                 filePath = self._makeModuleOrServicePath(pluginDetail, rootService)
 
                 if filePath.startswith("peek_"):
-                    filePath = "@peek/" + filePath
+                    filePath = "@_peek/" + filePath
 
                 imports.append('import { %s } from "%s/%s"'
                                % (rootService["class"],
@@ -513,7 +513,7 @@ class FrontendBuilderABC(BuilderABC):
     def _updatePackageJson(self, targetJson: str,
                            pluginDetails: [PluginDetail]) -> None:
 
-        serviceName = "@_peek"
+        serviceName = "@peek"
 
         # Remove all the old symlinks
 
