@@ -295,8 +295,8 @@ class FrontendBuilderABC(BuilderABC):
                               badgeCount=None))
 
         contents = "// This file is auto generated, the git version is blank and .gitignored\n\n"
-        contents += "import { ITitleBarLink } from '@synerty/peek-plugin-base-js'\n\n"
-        contents += "export const titleBarLinks: ITitleBarLink[] = %s;\n" % json.dumps(
+        contents += "import { IHeaderLink } from '@synerty/peek-plugin-base-js'\n\n"
+        contents += "export const titleBarLinks: IHeaderLink[] = %s;\n" % json.dumps(
             links, sort_keys=True, indent=4, separators=(', ', ': '))
 
         self._writeFileIfRequired(feAppDir, 'plugin-title-bar-links.ts', contents)
