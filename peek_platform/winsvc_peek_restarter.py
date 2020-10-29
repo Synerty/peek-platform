@@ -42,7 +42,7 @@ class PeekSvc(win32serviceutil.ServiceFramework):
                 if retval != win32event.WAIT_TIMEOUT:
                     break
 
-                for service in ("peek-agent", "peek-worker", "peek-client"):
+                for service in ("peek-agent-service", "peek-worker-service", "peek-office-service"):
                     (_, status, _, errCode, _, _, _) = (
                         win32serviceutil.QueryServiceStatus(service)
                     )

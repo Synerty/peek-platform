@@ -133,7 +133,7 @@ class _DeferredTaskPatch(defer.Deferred):
         I'm not sure how it manages that.
 
         """
-        from peek_storage.plpython.RunWorkerTaskPyInPg import runPyWorkerTaskInPgBlocking
+        from peek_storage_service.plpython.RunWorkerTaskPyInPg import runPyWorkerTaskInPgBlocking
 
         return runPyWorkerTaskInPgBlocking(self.__dbSessionCreator,
                                            self.__sqlaUrl,

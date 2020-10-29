@@ -133,7 +133,7 @@ def configureCeleryApp(app, workerConfig: PeekFileConfigWorkerMixin,
                        forCaller: bool = False):
     # Optional configuration, see the application user guide.
     app.conf.update(
-        # On peek_server, the thread limit is set to 10, these should be configurable.
+        # On peek_logic_service, the thread limit is set to 10, these should be configurable.
         # broker_pool_limit=20,
 
         # Set the broker and backend URLs

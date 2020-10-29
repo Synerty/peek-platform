@@ -120,7 +120,7 @@ class PluginSwInstallManagerABC(metaclass=ABCMeta):
 
         from peek_platform import PeekPlatformConfig
 
-        url = ('http://%(ip)s:%(port)s/peek_server.sw_install.plugin.download?'
+        url = ('http://%(ip)s:%(port)s/peek_logic_service.sw_install.plugin.download?'
                ) % {"ip": PeekPlatformConfig.config.peekServerHost,
                     "port": PeekPlatformConfig.config.peekServerPort}
 

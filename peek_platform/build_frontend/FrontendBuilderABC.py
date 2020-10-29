@@ -73,7 +73,7 @@ class FrontendBuilderABC(BuilderABC):
     def __init__(self, frontendProjectDir: str, platformService: str,
                  buildType: BuildTypeEnum, jsonCfg,
                  loadedPlugins: List):
-        assert platformService in ("peek-mobile", "peek-admin", "peek-desktop"), (
+        assert platformService in ("peek-field-app", "peek-admin-app", "peek-office-app"), (
                 "Unexpected service %s" % platformService)
 
         self._platformService = platformService

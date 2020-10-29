@@ -109,7 +109,7 @@ class PeekSwInstallManagerABC(metaclass=ABCMeta):
 
         from peek_platform import PeekPlatformConfig
 
-        url = ('http://%(ip)s:%(port)s/peek_server.sw_install.platform.download?'
+        url = ('http://%(ip)s:%(port)s/peek_logic_service.sw_install.platform.download?'
                ) % {"ip": PeekPlatformConfig.config.peekServerHost,
                     "port": PeekPlatformConfig.config.peekServerPort}
 
@@ -285,6 +285,6 @@ class PeekSwInstallManagerABC(metaclass=ABCMeta):
                       if IS_WIN_SVC in sys.argv else
                       _restartProcessNormal)
 
-# run_peek_worker WILL NOT START if there are extra args
+# run_peek_worker_service WILL NOT START if there are extra args
 if IS_WIN_SVC in sys.argv:
     sys.argv.remove(IS_WIN_SVC)
