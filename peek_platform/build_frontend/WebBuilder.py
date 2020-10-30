@@ -21,14 +21,14 @@ class WebBuilder(FrontendBuilderABC):
                                     self._buildType(platformService),
                                     jsonCfg, loadedPlugins)
 
-        self.isMobile = "mobile" in platformService
-        self.isDesktop = "desktop" in platformService
+        self.isField = "field" in platformService
+        self.isOffice = "office" in platformService
         self.isAdmin = "admin" in platformService
 
     @staticmethod
     def _buildType(platformService: str):
-        if "mobile" in platformService: return BuildTypeEnum.WEB_MOBILE
-        if "desktop" in platformService: return BuildTypeEnum.WEB_DESKTOP
+        if "field" in platformService: return BuildTypeEnum.WEB_FIELD
+        if "office" in platformService: return BuildTypeEnum.WEB_OFFICE
         if "admin" in platformService: return BuildTypeEnum.WEB_ADMIN
 
         raise NotImplementedError("Unknown build type")
@@ -45,14 +45,14 @@ class WebBuilder(FrontendBuilderABC):
             r'.*[.]py$'
         )
 
-        if self.isMobile:
+        if self.isField:
             excludeRegexp += (
                 r'.*[.]dweb[.]ts$',
                 r'.*[.]dweb[.]html$',
                 r'.*[.]dweb[.]scss',
             )
 
-        elif self.isDesktop:
+        elif self.isOffice:
             excludeRegexp += (
                 r'.*[.]mweb[.]ts$',
                 r'.*[.]mweb[.]html$',
@@ -63,7 +63,7 @@ class WebBuilder(FrontendBuilderABC):
             pass
 
         else:
-            raise NotImplementedError("This is neither admin, mobile or desktop web")
+            raise NotImplementedError("This is neither admin, field or office web")
 
         self._dirSyncMap = list()
 
@@ -169,17 +169,17 @@ class WebBuilder(FrontendBuilderABC):
         # value
         # Otherwise just .web should be used if no replacing is required.
 
-        if self.isMobile:
+        if self.isField:
             contents = contents.replace(b'.dweb";', b'.mweb";')
 
-        elif self.isDesktop:
+        elif self.isOffice:
             contents = contents.replace(b'.mweb";', b'.dweb";')
 
         elif self.isAdmin:
             pass
 
         else:
-            raise NotImplementedError("This is neither mobile or desktop web")
+            raise NotImplementedError("This is neither field or office web")
 
         if b'@Component' in contents:
             return self._patchComponent(fileName, contents)
@@ -207,14 +207,14 @@ class WebBuilder(FrontendBuilderABC):
 
             elif inComponentHeader:
 
-                if self.isDesktop:
+                if self.isOffice:
                     line = (line
                         .replace(b'.mweb.html', b'.dweb.html')
                         .replace(b'.mweb.css', b'.dweb.css')
                         .replace(b'.mweb.scss', b'.dweb.scss')
                         )
 
-                if self.isMobile:
+                if self.isField:
                     line = (line
                         .replace(b'.dweb.html', b'.mweb.html')
                         .replace(b'.dweb.css', b'.mweb.css')

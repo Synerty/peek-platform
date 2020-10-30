@@ -44,8 +44,8 @@ PluginDetail = namedtuple("PluginDetail",
 
 class BuildTypeEnum:
     ELECTRON = "ELECTRON"
-    WEB_DESKTOP = "WEB_DESKTOP"
-    WEB_MOBILE = "WEB_MOBILE"
+    WEB_OFFICE = "WEB_OFFICE"
+    WEB_FIELD = "WEB_FIELD"
     WEB_ADMIN = "WEB_ADMIN"
 
 
@@ -64,9 +64,9 @@ class FrontendBuilderABC(BuilderABC):
     """
 
     _CFG_KEYS = {
-        BuildTypeEnum.ELECTRON: ["desktop-electron", "desktop"],
-        BuildTypeEnum.WEB_DESKTOP: ["desktop-web", "desktop"],
-        BuildTypeEnum.WEB_MOBILE: ["mobile-web", "mobile"],
+        BuildTypeEnum.ELECTRON: ["office-electron", "office"],
+        BuildTypeEnum.WEB_OFFICE: ["office-web", "office"],
+        BuildTypeEnum.WEB_FIELD: ["field-web", "field"],
         BuildTypeEnum.WEB_ADMIN: ["admin"]
     }
 
