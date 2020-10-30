@@ -33,7 +33,8 @@ corePlugins = [
     "peek_core_email",
     "peek_core_device",
     "peek_core_search",
-    "peek_core_user"
+    "peek_core_user",
+    "peek_core_docdb"
 ]
 
 
