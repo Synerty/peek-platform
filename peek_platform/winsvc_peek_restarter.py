@@ -1,6 +1,5 @@
 import platform
 
-
 try:
     import win32serviceutil
     import win32service
@@ -15,6 +14,7 @@ import time
 
 import peek_platform
 import logging
+
 logger = logging.getLogger(__name__)
 
 
@@ -42,7 +42,8 @@ class PeekSvc(win32serviceutil.ServiceFramework):
                 if retval != win32event.WAIT_TIMEOUT:
                     break
 
-                for service in ("peek-agent-service", "peek-worker-service", "peek-office-service"):
+                for service in ("peek-agent-service", "peek-worker-service", "peek-office-service",
+                                "peek-field-service"):
                     (_, status, _, errCode, _, _, _) = (
                         win32serviceutil.QueryServiceStatus(service)
                     )
