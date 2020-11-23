@@ -57,7 +57,7 @@ class PluginLoaderABC(metaclass=ABCMeta):
     def _entryHookFuncName(self) -> str:
         """ Entry Hook Func Name.
         Protected property
-        :return: EG  "peekServerEntryHook"
+        :return: EG  "peekLogicEntryHook"
 
         """
 
@@ -65,7 +65,7 @@ class PluginLoaderABC(metaclass=ABCMeta):
     def _entryHookClassType(self):
         """ Entry Hook Class Type
         Protected property
-        :return: EG  PluginServerEntryHookABC
+        :return: EG  PluginLogicEntryHookABC
 
         """
 
@@ -73,7 +73,7 @@ class PluginLoaderABC(metaclass=ABCMeta):
     def _platformServiceNames(self) -> [str]:
         """ Platform Service Name
         Protected property
-        :return: one or more of "server", "worker", "agent", "client", "storage"
+        :return: one or more of "logic", "worker", "agent", "client", "storage"
 
         """
 
