@@ -15,6 +15,7 @@
 
 import logging
 import os
+import shutil
 from abc import ABCMeta
 
 from jsoncfg.functions import save_config, ConfigWithWrapper
@@ -40,16 +41,50 @@ class PeekFileConfigABC(metaclass=ABCMeta):
         cls.__instance = self
         return self
 
+    def _migrateConfigDirv2tov3Move(self, oldServiceName):
+        oldHomePath = os.path.expanduser('~/peek-%s.home' % oldServiceName)
+        if not os.path.isdir(oldHomePath):
+            return
+
+        if not os.path.isdir(self._homePath):
+            shutil.move(oldHomePath, self._homePath)
+
+    def _migrateConfigDirv2tov3Copy(self, oldServiceName):
+        oldHomePath = os.path.expanduser('~/peek-%s.home' % oldServiceName)
+        if not os.path.isdir(oldHomePath):
+            return
+
+        if not os.path.isdir(self._homePath):
+            shutil.copytree(oldHomePath, self._homePath)
+
+    def _migrate(self):
+        from peek_platform import PeekPlatformConfig
+        copyServices = ('peek-office-service', 'peek-field-service')
+
+        if PeekPlatformConfig.componentName == 'peek-logic-service':
+            self._migrateConfigDirv2tov3Move('server')
+
+        elif PeekPlatformConfig.componentName == 'peek-worker-service':
+            self._migrateConfigDirv2tov3Move('worker')
+
+        elif PeekPlatformConfig.componentName == 'peek-agent-service':
+            self._migrateConfigDirv2tov3Move('agent')
+
+        elif PeekPlatformConfig.componentName in copyServices:
+            self._migrateConfigDirv2tov3Copy('client')
+
     def __init__(self):
-        '''
+        """
         Constructor
-        '''
+        """
         from peek_platform import PeekPlatformConfig
         assert PeekPlatformConfig.componentName is not None
 
         self._homePath = os.path.join(
             os.path.expanduser('~'),
             '%s.home' % PeekPlatformConfig.componentName)
+
+        self._migrate()
 
         if not os.path.isdir(self._homePath):
             assert (not os.path.exists(self._homePath))
