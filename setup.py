@@ -1,14 +1,28 @@
 import os
 import shutil
 
+from peek_platform.WindowsPatch import isWindows
 from setuptools import find_packages
 from setuptools import setup
 
-from peek_platform.WindowsPatch import isWindows
+###############################################################################
+# Define variables
+#
+# Modify these values to fork a new plugin
+#
 
-pip_package_name = "peek-platform"
+author = "Synerty"
+author_email = 'contact@synerty.com'
 py_package_name = "peek_platform"
+pip_package_name = py_package_name.replace('_', '-')
 package_version = '0.0.0'
+description = 'Peek Platform.'
+
+download_url = 'https://bitbucket.org/synerty/%s/get/%s.zip'
+download_url %= pip_package_name, package_version
+url = 'https://bitbucket.org/synerty/%s' % pip_package_name
+
+###############################################################################
 
 egg_info = "%s.egg-info" % pip_package_name
 if os.path.isdir(egg_info):
@@ -119,26 +133,39 @@ dev_requirements = [
 
 requirements.extend(dev_requirements)
 
+###############################################################################
+# Define the dependencies
+
+# Ensure the dependency is the same major number
+# and no older then this version
+
+# Force the dependencies to be the same branch
+reqVer = '.'.join(package_version.split('.')[0:2]) + ".*"
+
+# >=2.0.*,>=2.0.6
+requirements = ["%s==%s,>=%s" % (pkg, reqVer, package_version)
+                if pkg.startswith("peek") else pkg
+                for pkg in requirements]
+
+###############################################################################
+# Call the setuptools
+
 setup(
-    name=pip_package_name,
-    packages=find_packages(exclude=["*.tests", "*.tests.*", "tests.*", "tests"]),
-    install_requires=requirements,
     entry_points={
         'console_scripts': [
             'winsvc_peek_restarter = peek_platform.winsvc_peek_restarter:main',
         ],
     },
-    dependency_links=dependency_links,
-    process_dependency_links=True,
-    zip_safe=False, version=package_version,
-    description='Peek Platform Common Code',
-    author='Synerty',
-    author_email='contact@synerty.com',
-    url='https://github.com/Synerty/%s' % py_package_name,
-    download_url='https://github.com/Synerty/%s/tarball/%s' % (
-        pip_package_name, package_version),
+    name=pip_package_name,
+    packages=find_packages(exclude=["*.tests", "*.tests.*", "tests.*", "tests"]),
+    install_requires=requirements,
+    zip_safe=False,
+    version=package_version,
+    description=description,
+    author=author,
+    author_email=author_email,
+    url=url,
+    download_url=download_url,
     keywords=['Peek', 'Python', 'Platform', 'synerty'],
-    classifiers=[
-        "Programming Language :: Python :: 3.5",
-    ],
+    classifiers=[],
 )
