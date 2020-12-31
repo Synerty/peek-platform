@@ -19,7 +19,7 @@ PluginDocDetail = namedtuple("PluginDocDetail",
                               "docRst",
                               "hasApi"])
 
-_mainTocTemplate = ''' 
+_mainTocTemplate = '''
 
 .. toctree::
     :maxdepth: 3
@@ -28,19 +28,19 @@ _mainTocTemplate = '''
 
 '''
 
-_tocTemplate = ''' 
-   
+_tocTemplate = '''
+
 .. toctree::
     :maxdepth: 2
     :caption: Contents:
-    
+
 '''
 
 _confPluginsTemplate = '''
 
 def load(createApiDocsFunc):
     """ Load
-        
+
         Create APIs with the AutoAPI hack above
     """
 
@@ -49,7 +49,7 @@ def load(createApiDocsFunc):
 _confPluginsTemplatePart = '''
     import %s
     createApiDocsFunc(%s.__file__)
-    
+
 '''
 
 
@@ -59,8 +59,8 @@ class DocBuilderABC(BuilderABC):
     This class is used for the client and server.
 
     This class contains the logic for:
-        * Linking in the sphinx documentation into the peek-doc-user, peek-doc-admin
-            or peek-doc-dev projects
+        * Linking in the sphinx documentation into the peek-field-doc, peek-admin-doc
+            or peek-dev projects
         * Compiling the documentation
 
     """
@@ -69,7 +69,7 @@ class DocBuilderABC(BuilderABC):
                  platformService: str,
                  jsonCfg,
                  loadedPlugins: List):
-        assert platformService in ("peek-doc-user", "peek-doc-admin", "peek-doc-dev"), (
+        assert platformService in ("peek-field-doc", "peek-office-doc", "peek-admin-doc"), (
                 "Unexpected service %s" % platformService)
 
         self._platformService = platformService

@@ -88,7 +88,7 @@ class DocBuilder(DocBuilderABC):
                         self._platformService)
             return
 
-        logger.info("%s Rebuilding docs for ", self._platformService)
+        logger.info("Rebuilding docs for %s", self._platformService)
 
         try:
             runDocBuild(self._docProjectDir)
