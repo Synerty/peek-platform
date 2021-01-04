@@ -6,10 +6,9 @@ logger = logging.getLogger(__name__)
 
 
 class PeekFileConfigDocBuildMixin:
-
     @property
     def docBuildPrepareEnabled(self) -> bool:
-        """ Doc Prepare Enabled
+        """Doc Prepare Enabled
 
         :return True If peek should prepare the build directory
 
@@ -19,7 +18,7 @@ class PeekFileConfigDocBuildMixin:
 
     @property
     def docSyncFilesForDebugEnabled(self) -> bool:
-        """ Sync Files for Debug Enabled
+        """Sync Files for Debug Enabled
 
         :return True If peek should watch the build files and sync them as they change
 
@@ -29,7 +28,7 @@ class PeekFileConfigDocBuildMixin:
 
     @property
     def docBuildEnabled(self) -> bool:
-        """ Doc Build Enabled
+        """Doc Build Enabled
 
         :return True If peek should automatically try to build the docs.
 

@@ -12,12 +12,12 @@ from peek_plugin_base.PluginPackageFileConfig import PluginPackageFileConfig
 logger = logging.getLogger(__name__)
 
 PluginDocDetail = namedtuple("PluginDocDetail",
-                             ["pluginRootDir",
-                              "pluginName",
-                              "pluginTitle",
-                              "docDir",
-                              "docRst",
-                              "hasApi"])
+    ["pluginRootDir",
+     "pluginName",
+     "pluginTitle",
+     "docDir",
+     "docRst",
+     "hasApi"])
 
 _mainTocTemplate = '''
 
@@ -69,8 +69,9 @@ class DocBuilderABC(BuilderABC):
                  platformService: str,
                  jsonCfg,
                  loadedPlugins: List):
-        assert platformService in ("peek-field-doc", "peek-office-doc", "peek-admin-doc"), (
-                "Unexpected service %s" % platformService)
+        assert platformService in (
+            "peek-field-doc", "peek-office-doc", "peek-admin-doc"), (
+            "Unexpected service %s" % platformService)
 
         self._platformService = platformService
         self._docProjectDir = docProjectDir
@@ -98,7 +99,7 @@ class DocBuilderABC(BuilderABC):
             if not self._configKey in pluginPackageConfig:
                 logger.info("Skipping doc build for %s,"
                             "missing config section for %s",
-                            plugin.name, self._platformService)
+                    plugin.name, self._platformService)
                 continue
 
             jsonCfgNode = pluginPackageConfig[self._configKey]
@@ -109,17 +110,18 @@ class DocBuilderABC(BuilderABC):
 
             pluginDetails.append(
                 PluginDocDetail(pluginRootDir=plugin.rootDir,
-                                pluginName=plugin.name,
-                                pluginTitle=plugin.title,
-                                docDir=docDir,
-                                docRst=docRst,
-                                hasApi=hasApi)
+                    pluginName=plugin.name,
+                    pluginTitle=plugin.title,
+                    docDir=docDir,
+                    docRst=docRst,
+                    hasApi=hasApi)
             )
 
         pluginDetails.sort(key=lambda x: x.pluginName)
         return pluginDetails
 
-    def _writePluginsToc(self, docDir: str, pluginDetails: [PluginDocDetail]) -> None:
+    def _writePluginsToc(self, docDir: str,
+                         pluginDetails: [PluginDocDetail]) -> None:
 
         contents = _mainTocTemplate
 
@@ -134,7 +136,8 @@ class DocBuilderABC(BuilderABC):
 
         self._writeFileIfRequired(docDir, 'plugin_toc.rst', contents)
 
-    def _writePluginToc(self, docDir: str, pluginDetails: [PluginDocDetail]) -> None:
+    def _writePluginToc(self, docDir: str,
+                        pluginDetails: [PluginDocDetail]) -> None:
 
         for pluginDetail in pluginDetails:
             hasIndex = pluginDetail.docDir and pluginDetail.docRst
@@ -150,7 +153,8 @@ class DocBuilderABC(BuilderABC):
 
             if hasIndex:
                 contents += "    %s/%s\n" % (
-                    pluginDetail.pluginName, pluginDetail.docRst.replace(".rst", "")
+                    pluginDetail.pluginName,
+                    pluginDetail.docRst.replace(".rst", "")
                 )
 
             if hasApi:
@@ -160,10 +164,12 @@ class DocBuilderABC(BuilderABC):
 
             contents += "\n\n"
 
-            self._writeFileIfRequired(docDir, '%s_toc.rst' % pluginDetail.pluginName,
-                                      contents)
+            self._writeFileIfRequired(docDir,
+                '%s_toc.rst' % pluginDetail.pluginName,
+                contents)
 
-    def _writePluginsApiConf(self, docDir: str, pluginDetails: [PluginDocDetail]) -> None:
+    def _writePluginsApiConf(self, docDir: str,
+                             pluginDetails: [PluginDocDetail]) -> None:
 
         contents = _confPluginsTemplate
 
@@ -177,7 +183,8 @@ class DocBuilderABC(BuilderABC):
 
         self._writeFileIfRequired(docDir, 'plugin_api_conf.py', contents)
 
-    def _writePluginsApiList(self, docDir: str, pluginDetails: [PluginDocDetail]) -> None:
+    def _writePluginsApiList(self, docDir: str,
+                             pluginDetails: [PluginDocDetail]) -> None:
 
         contents = ""
 
@@ -210,17 +217,18 @@ class DocBuilderABC(BuilderABC):
             if not pluginDetail.docDir:
                 continue
 
-            srcDir = os.path.join(pluginDetail.pluginRootDir, pluginDetail.docDir)
+            srcDir = os.path.join(pluginDetail.pluginRootDir,
+                pluginDetail.docDir)
             if not os.path.exists(srcDir):
                 logger.warning("%s doc dir %s doesn't exist",
-                               pluginDetail.pluginName, pluginDetail.docDir)
+                    pluginDetail.pluginName, pluginDetail.docDir)
                 continue
 
             createdItems.add(pluginDetail.pluginName)
 
             linkPath = os.path.join(targetDir, pluginDetail.pluginName)
             self.fileSync.addSyncMapping(srcDir, linkPath,
-                                         excludeFilesRegex=excludeFilesRegex)
+                excludeFilesRegex=excludeFilesRegex)
 
         # Delete the items that we didn't create
         for item in currentItems - createdItems:

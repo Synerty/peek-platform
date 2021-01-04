@@ -16,8 +16,7 @@ class PeekFileConfigPeekServerClientMixin(metaclass=ABCMeta):
         with self._cfg as c:
             return c.peekServer.tcpVortexPort(8012, require_integer)
 
-
     @property
     def peekServerHost(self) -> str:
         with self._cfg as c:
-            return c.peekServer.host('127.0.0.1', require_string)
+            return c.peekServer.host("127.0.0.1", require_string)

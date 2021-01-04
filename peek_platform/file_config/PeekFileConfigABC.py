@@ -1,4 +1,4 @@
-'''
+"""
  *
  *  Copyright Synerty Pty Ltd 2013
  *
@@ -11,7 +11,7 @@
  * Website : http://www.synerty.com
  * Support : support@synerty.com
  *
-'''
+"""
 
 import logging
 import os
@@ -42,7 +42,7 @@ class PeekFileConfigABC(metaclass=ABCMeta):
         return self
 
     def _migrateConfigDirv2tov3Move(self, oldServiceName):
-        oldHomePath = os.path.expanduser('~/peek-%s.home' % oldServiceName)
+        oldHomePath = os.path.expanduser("~/peek-%s.home" % oldServiceName)
         if not os.path.isdir(oldHomePath):
             return
 
@@ -50,7 +50,7 @@ class PeekFileConfigABC(metaclass=ABCMeta):
             shutil.move(oldHomePath, self._homePath)
 
     def _migrateConfigDirv2tov3Copy(self, oldServiceName):
-        oldHomePath = os.path.expanduser('~/peek-%s.home' % oldServiceName)
+        oldHomePath = os.path.expanduser("~/peek-%s.home" % oldServiceName)
         if not os.path.isdir(oldHomePath):
             return
 
@@ -59,47 +59,49 @@ class PeekFileConfigABC(metaclass=ABCMeta):
 
     def _migrate(self):
         from peek_platform import PeekPlatformConfig
-        copyServices = ('peek-office-service', 'peek-field-service')
 
-        if PeekPlatformConfig.componentName == 'peek-logic-service':
-            self._migrateConfigDirv2tov3Move('server')
+        copyServices = ("peek-office-service", "peek-field-service")
 
-        elif PeekPlatformConfig.componentName == 'peek-worker-service':
-            self._migrateConfigDirv2tov3Move('worker')
+        if PeekPlatformConfig.componentName == "peek-logic-service":
+            self._migrateConfigDirv2tov3Move("server")
 
-        elif PeekPlatformConfig.componentName == 'peek-agent-service':
-            self._migrateConfigDirv2tov3Move('agent')
+        elif PeekPlatformConfig.componentName == "peek-worker-service":
+            self._migrateConfigDirv2tov3Move("worker")
+
+        elif PeekPlatformConfig.componentName == "peek-agent-service":
+            self._migrateConfigDirv2tov3Move("agent")
 
         elif PeekPlatformConfig.componentName in copyServices:
-            self._migrateConfigDirv2tov3Copy('client')
+            self._migrateConfigDirv2tov3Copy("client")
 
     def __init__(self):
         """
         Constructor
         """
         from peek_platform import PeekPlatformConfig
+
         assert PeekPlatformConfig.componentName is not None
 
         self._homePath = os.path.join(
-            os.path.expanduser('~'),
-            '%s.home' % PeekPlatformConfig.componentName)
+            os.path.expanduser("~"), "%s.home" % PeekPlatformConfig.componentName
+        )
 
         self._migrate()
 
         if not os.path.isdir(self._homePath):
-            assert (not os.path.exists(self._homePath))
+            assert not os.path.exists(self._homePath)
             os.makedirs(self._homePath, self.DEFAULT_DIR_CHMOD)
 
-        self._configFilePath = os.path.join(self._homePath, 'config.json')
+        self._configFilePath = os.path.join(self._homePath, "config.json")
 
         if not os.path.isfile(self._configFilePath):
-            assert (not os.path.exists(self._configFilePath))
-            with open(self._configFilePath, 'w') as fobj:
-                fobj.write('{}')
+            assert not os.path.exists(self._configFilePath)
+            with open(self._configFilePath, "w") as fobj:
+                fobj.write("{}")
 
         self._cfg = ConfigWithWrapper(self._configFilePath)
 
-        self._hp = '%(' + self._homePath + ')s'
+        self._hp = "%(" + self._homePath + ")s"
 
     def _save(self):
         save_config(self._configFilePath, self._cfg)

@@ -6,26 +6,28 @@ import unittest
 import peek_platform
 from jsoncfg.functions import config_to_json_str
 from peek_platform.file_config.PeekFileConfigABC import PeekFileConfigABC
-from peek_platform.file_config.PeekFileConfigPeekServerClientMixin import \
-    PeekFileConfigPeekServerClientMixin
-from peek_platform.file_config.PeekFileConfigPlatformMixin import \
-    PeekFileConfigPlatformMixin
+from peek_platform.file_config.PeekFileConfigPeekServerClientMixin import (
+    PeekFileConfigPeekServerClientMixin,
+)
+from peek_platform.file_config.PeekFileConfigPlatformMixin import (
+    PeekFileConfigPlatformMixin,
+)
 
 logging.basicConfig(level=logging.DEBUG)
 
 logger = logging.getLogger(__name__)
 
 
-class TestFileConfig(PeekFileConfigABC,
-                     PeekFileConfigPeekServerClientMixin,
-                     PeekFileConfigPlatformMixin):
+class TestFileConfig(
+    PeekFileConfigABC, PeekFileConfigPeekServerClientMixin, PeekFileConfigPlatformMixin
+):
     pass
 
 
 class PeekFileConfigTest(unittest.TestCase):
     COMPONENT_NAME = "unit_test"
-    HOME_DIR = os.path.expanduser('~/%s.home' % COMPONENT_NAME)
-    CONFIG_FILE_PATH = os.path.join(HOME_DIR, 'config.json')
+    HOME_DIR = os.path.expanduser("~/%s.home" % COMPONENT_NAME)
+    CONFIG_FILE_PATH = os.path.join(HOME_DIR, "config.json")
 
     def _rmHome(self):
         if os.path.exists(self.HOME_DIR):
@@ -37,7 +39,7 @@ class PeekFileConfigTest(unittest.TestCase):
         self._rmHome()
         os.makedirs(self.HOME_DIR, TestFileConfig.DEFAULT_DIR_CHMOD)
 
-        with open(self.CONFIG_FILE_PATH, 'w') as fobj:
+        with open(self.CONFIG_FILE_PATH, "w") as fobj:
             fobj.write('{"nothing":{"is_true":true}}')
 
     def tearDown(self):
@@ -46,19 +48,19 @@ class PeekFileConfigTest(unittest.TestCase):
     def testReadingConfig(self):
         bas = TestFileConfig()
 
-        logger.info('nothing.is_true = %s', bas._cfg.nothing.is_true)
+        logger.info("nothing.is_true = %s", bas._cfg.nothing.is_true)
         self.assertTrue(bas._cfg.nothing.is_true())
 
     def testPeekServerDetails(self):
         bas = TestFileConfig()
-        logger.info('peekServerPort = %s', bas.peekServerPort)
-        logger.info('peekServerHost = %s', bas.peekServerHost)
+        logger.info("peekServerPort = %s", bas.peekServerPort)
+        logger.info("peekServerHost = %s", bas.peekServerHost)
 
         logger.info(config_to_json_str(bas._cfg))
 
         bas._save()
 
-        with open(self.CONFIG_FILE_PATH, 'r') as fobj:
+        with open(self.CONFIG_FILE_PATH, "r") as fobj:
             logger.info(fobj.read())
 
     def testAsignment(self):
@@ -76,7 +78,7 @@ class PeekFileConfigTest(unittest.TestCase):
 
         bas._save()
 
-        with open(self.CONFIG_FILE_PATH, 'r') as fobj:
+        with open(self.CONFIG_FILE_PATH, "r") as fobj:
             logger.info(fobj.read())
 
         TestFileConfig._PeekFileConfigBase__instance = None
@@ -87,24 +89,24 @@ class PeekFileConfigTest(unittest.TestCase):
         self.assertEqual(bas._cfg.op1.thingy(), twoFiveSix)
 
     def testPlatformDetails(self):
-        pluginName = 'plugin_noop'
+        pluginName = "plugin_noop"
 
         bas = TestFileConfig()
 
         # Defaults
-        logger.info('plugin.plugin_noop.version = %s', bas.pluginVersion(pluginName))
-        logger.info('platformVersion = %s', bas.platformVersion)
+        logger.info("plugin.plugin_noop.version = %s", bas.pluginVersion(pluginName))
+        logger.info("platformVersion = %s", bas.platformVersion)
 
-        bas.platformVersion = '4.4.4'
-        bas.setPluginVersion(pluginName, '2.5.6')
+        bas.platformVersion = "4.4.4"
+        bas.setPluginVersion(pluginName, "2.5.6")
 
-        with open(self.CONFIG_FILE_PATH, 'r') as fobj:
+        with open(self.CONFIG_FILE_PATH, "r") as fobj:
             logger.info(fobj.read())
 
         TestFileConfig._PeekFileConfigBase__instance = None
 
-        logger.info('plugin.plugin_noop.version = %s', bas.pluginVersion(pluginName))
-        logger.info('platformVersion = %s', bas.platformVersion)
+        logger.info("plugin.plugin_noop.version = %s", bas.pluginVersion(pluginName))
+        logger.info("platformVersion = %s", bas.platformVersion)
 
-        self.assertEqual(bas.platformVersion, '4.4.4')
-        self.assertEqual(bas.pluginVersion(pluginName), '2.5.6')
+        self.assertEqual(bas.platformVersion, "4.4.4")
+        self.assertEqual(bas.pluginVersion(pluginName), "2.5.6")

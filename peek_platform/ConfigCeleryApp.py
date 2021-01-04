@@ -4,7 +4,9 @@ import typing
 import celery
 from celery import signals as celery_signals
 from kombu import serialization
-from peek_platform.file_config.PeekFileConfigWorkerMixin import PeekFileConfigWorkerMixin
+from peek_platform.file_config.PeekFileConfigWorkerMixin import (
+    PeekFileConfigWorkerMixin,
+)
 from vortex.DeferUtil import noMainThread
 from vortex.Payload import Payload
 
@@ -36,42 +38,44 @@ def vortexLoads(jsonStr: str) -> typing.Tuple:
 
 
 serialization.register(
-    'vortex', vortexDumps, vortexLoads,
-    content_type='application/x-vortex',
-    content_encoding='utf-8',
+    "vortex",
+    vortexDumps,
+    vortexLoads,
+    content_type="application/x-vortex",
+    content_encoding="utf-8",
 )
 
 
 # -----------------------------------------------------------------------------
 
-class BackendMixin:
 
+class BackendMixin:
     def exception_to_python(self, exc):
         """Convert serialized exception to Python exception."""
         import sys
         from kombu.utils.encoding import from_utf8
-        from celery.utils.serialization import (create_exception_cls,
-                                                get_pickled_exception)
+        from celery.utils.serialization import (
+            create_exception_cls,
+            get_pickled_exception,
+        )
 
-        EXCEPTION_ABLE_CODECS = frozenset({'pickle'})
+        EXCEPTION_ABLE_CODECS = frozenset({"pickle"})
 
         if not exc:
             return exc
 
         if not isinstance(exc, BaseException):
-            exc_module = exc.get('exc_module')
+            exc_module = exc.get("exc_module")
             if exc_module is None:
-                cls = create_exception_cls(
-                    from_utf8(exc['exc_type']), __name__)
+                cls = create_exception_cls(from_utf8(exc["exc_type"]), __name__)
             else:
                 exc_module = from_utf8(exc_module)
-                exc_type = from_utf8(exc['exc_type'])
+                exc_type = from_utf8(exc["exc_type"])
                 try:
                     cls = getattr(sys.modules[exc_module], exc_type)
                 except KeyError:
-                    cls = create_exception_cls(exc_type,
-                                               celery.exceptions.__name__)
-            exc_msg = exc['exc_message']
+                    cls = create_exception_cls(exc_type, celery.exceptions.__name__)
+            exc_msg = exc["exc_message"]
             args = exc_msg if isinstance(exc_msg, tuple) else [exc_msg]
 
             ### BEGIN CODE ADDED TO PATCH METHOD
@@ -95,8 +99,8 @@ Backend.exception_to_python = BackendMixin.exception_to_python
 
 # -----------------------------------------------------------------------------
 
-class ResultConsumerMixin:
 
+class ResultConsumerMixin:
     def cancel_for(self, task_id):
         import redis
 
@@ -129,38 +133,34 @@ ResultConsumer.cancel_for = ResultConsumerMixin.cancel_for
 
 # -----------------------------------------------------------------------------
 
-def configureCeleryApp(app, workerConfig: PeekFileConfigWorkerMixin,
-                       forCaller: bool = False):
+
+def configureCeleryApp(
+    app, workerConfig: PeekFileConfigWorkerMixin, forCaller: bool = False
+):
     # Optional configuration, see the application user guide.
     app.conf.update(
         # On peek_logic_service, the thread limit is set to 10, these should be configurable.
         # broker_pool_limit=20,
-
         # Set the broker and backend URLs
         broker_url=workerConfig.celeryBrokerUrl,
         result_backend=workerConfig.celeryResultUrl,
-
         # Leave the logging to us
         worker_hijack_root_logger=False,
-
         # The time results will stay in redis before expiring.
         # I believe they are cleared when the results are obtained
         # from txcelery._DeferredTask
         # I assume the timer only starts once the task has finished.
         result_expires=60,
-
-        task_serializer='vortex',
+        task_serializer="vortex",
         # accept_content=['vortex'],  # Ignore other content
-        accept_content=['pickle', 'json', 'msgpack', 'yaml', 'vortex'],
-        result_serializer='vortex',
+        accept_content=["pickle", "json", "msgpack", "yaml", "vortex"],
+        result_serializer="vortex",
         enable_utc=True,
-
         # Default time in seconds before a retry of the task should be executed.
         # 3 minutes by default.
         default_retry_delay=2,
-
         # The maximum number of times to retry a task
-        max_retries=5
+        max_retries=5,
     )
 
     # Configure these only for the worker, this keeps the servers json clean.
@@ -169,7 +169,6 @@ def configureCeleryApp(app, workerConfig: PeekFileConfigWorkerMixin,
         app.conf.update(
             # The number of tasks each worker will prefetch.
             worker_prefetch_multiplier=workerConfig.celeryTaskPrefetch,
-
             # The number of workers to have at one time
             worker_concurrency=workerConfig.celeryWorkerCount,
         )
@@ -189,12 +188,12 @@ def configureCeleryApp(app, workerConfig: PeekFileConfigWorkerMixin,
 
 
 from peek_platform.file_config.PeekFileConfigABC import PeekFileConfigABC
-from peek_platform.file_config.PeekFileConfigPlatformMixin import \
-    PeekFileConfigPlatformMixin
+from peek_platform.file_config.PeekFileConfigPlatformMixin import (
+    PeekFileConfigPlatformMixin,
+)
 
 
-class _WorkerTaskConfigMixin(PeekFileConfigABC,
-                             PeekFileConfigPlatformMixin):
+class _WorkerTaskConfigMixin(PeekFileConfigABC, PeekFileConfigPlatformMixin):
     pass
 
 
@@ -207,6 +206,7 @@ def configureCeleryLogging(*args, **kwargs):
     # setupPeekLogger(peekWorkerName)
 
     from peek_platform import PeekPlatformConfig
+
     PeekPlatformConfig.componentName = peekWorkerName
     config = _WorkerTaskConfigMixin()
 

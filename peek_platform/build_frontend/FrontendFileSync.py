@@ -6,8 +6,13 @@ from collections import namedtuple
 from typing import Callable, Optional, List, Dict, Set
 
 from twisted.internet import reactor
-from watchdog.events import FileSystemEventHandler, FileMovedEvent, FileModifiedEvent, \
-    FileDeletedEvent, FileCreatedEvent
+from watchdog.events import (
+    FileSystemEventHandler,
+    FileMovedEvent,
+    FileModifiedEvent,
+    FileDeletedEvent,
+    FileCreatedEvent,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -16,12 +21,19 @@ logging.getLogger("watchdog.observers.inotify_buffer").setLevel(logging.INFO)
 
 SyncFileHookCallable = Callable[[str, bytes], bytes]
 
-FileSyncCfg = namedtuple('FileSyncCfg',
-                         ['srcDir', 'dstDir', 'parentMustExist',
-                          'deleteExtraDstFiles',
-                          'keepCompiledFilePatterns',
-                          'preSyncCallback', 'postSyncCallback',
-                          'excludeFilesRegex'])
+FileSyncCfg = namedtuple(
+    "FileSyncCfg",
+    [
+        "srcDir",
+        "dstDir",
+        "parentMustExist",
+        "deleteExtraDstFiles",
+        "keepCompiledFilePatterns",
+        "preSyncCallback",
+        "postSyncCallback",
+        "excludeFilesRegex",
+    ],
+)
 
 from watchdog.utils import platform
 
@@ -49,7 +61,7 @@ else:
 
 
 class FrontendFileSync:
-    """ Peek App Frontend File Sync
+    """Peek App Frontend File Sync
 
     This class is used to syncronise the frontend files from the plugins into the
         frontend build dirs.
@@ -61,14 +73,18 @@ class FrontendFileSync:
         self._dirSyncMap = list()
         self._fileWatchdogObserver = None
 
-    def addSyncMapping(self, srcDir, dstDir,
-                       parentMustExist=False,
-                       deleteExtraDstFiles=True,
-                       preSyncCallback: Optional[Callable[[], None]] = None,
-                       postSyncCallback: Optional[Callable[[], None]] = None,
-                       keepCompiledFilePatterns: Optional[Dict[str, List[str]]] = None,
-                       excludeFilesRegex: List[str] = ()):
-        """ Add Sync Mapping
+    def addSyncMapping(
+        self,
+        srcDir,
+        dstDir,
+        parentMustExist=False,
+        deleteExtraDstFiles=True,
+        preSyncCallback: Optional[Callable[[], None]] = None,
+        postSyncCallback: Optional[Callable[[], None]] = None,
+        keepCompiledFilePatterns: Optional[Dict[str, List[str]]] = None,
+        excludeFilesRegex: List[str] = (),
+    ):
+        """Add Sync Mapping
 
         :param srcDir: The source dir to sync files from
 
@@ -111,11 +127,16 @@ class FrontendFileSync:
             keepCompiledFilePatterns = {}
 
         self._dirSyncMap.append(
-            FileSyncCfg(srcDir, dstDir, parentMustExist,
-                          deleteExtraDstFiles,
-                          keepCompiledFilePatterns,
-                          preSyncCallback, postSyncCallback,
-                          excludeFilesRegex)
+            FileSyncCfg(
+                srcDir,
+                dstDir,
+                parentMustExist,
+                deleteExtraDstFiles,
+                keepCompiledFilePatterns,
+                preSyncCallback,
+                postSyncCallback,
+                excludeFilesRegex,
+            )
         )
 
     def startFileSyncWatcher(self):
@@ -124,11 +145,13 @@ class FrontendFileSync:
         for cfg in self._dirSyncMap:
             self._fileWatchdogObserver.schedule(
                 _FileChangeHandler(self._syncFileHookCallable, cfg),
-                cfg.srcDir, recursive=True)
+                cfg.srcDir,
+                recursive=True,
+            )
 
         self._fileWatchdogObserver.start()
 
-        reactor.addSystemEventTrigger('before', 'shutdown', self.stopFileSyncWatcher)
+        reactor.addSystemEventTrigger("before", "shutdown", self.stopFileSyncWatcher)
         logger.debug("Started frontend file watchers")
 
     def stopFileSyncWatcher(self):
@@ -142,7 +165,9 @@ class FrontendFileSync:
         for cfg in self._dirSyncMap:
             parentDstDir = os.path.dirname(cfg.dstDir)
             if cfg.parentMustExist and not os.path.isdir(parentDstDir):
-                logger.debug("Skipping sink, parent doesn't exist. dstDir=%s", cfg.dstDir)
+                logger.debug(
+                    "Skipping sink, parent doesn't exist. dstDir=%s", cfg.dstDir
+                )
                 continue
 
             if cfg.preSyncCallback:
@@ -168,10 +193,10 @@ class FrontendFileSync:
                 # If this is a TS file and we want to keep dest .js and .js.map files
                 # then add them to our srcFiles list, this
 
-                if '.' in srcFile:
-                    srcFileNoExt, srcFileExt = srcFile.rsplit('.', 1)
+                if "." in srcFile:
+                    srcFileNoExt, srcFileExt = srcFile.rsplit(".", 1)
                 else:
-                    srcFileNoExt, srcFileExt = srcFile, ''
+                    srcFileNoExt, srcFileExt = srcFile, ""
 
                 if srcFileExt in cfg.keepCompiledFilePatterns:
                     for ext in cfg.keepCompiledFilePatterns[srcFileExt]:
@@ -199,17 +224,17 @@ class FrontendFileSync:
 
     def _loadFollowingOverlayFileSet(self, cfg: FileSyncCfg) -> Set[str]:
         results = set()
-        cfgs: List[FileSyncCfg] = self._dirSyncMap[self._dirSyncMap.index(cfg) + 1:]
+        cfgs: List[FileSyncCfg] = self._dirSyncMap[self._dirSyncMap.index(cfg) + 1 :]
         for cfgIter in cfgs:
             if cfg.dstDir == cfgIter.dstDir:
                 results.update(self._listFiles(cfg.srcDir))
 
             elif cfg.dstDir in cfgIter.dstDir:
-                pathPart = cfgIter.dstDir[len(cfg.dstDir):]
+                pathPart = cfgIter.dstDir[len(cfg.dstDir) :]
                 results.update(self._listFiles(cfgIter.srcDir + pathPart))
 
             elif cfgIter.dstDir in cfg.dstDir:
-                pathPart = cfg.dstDir[len(cfgIter.dstDir):]
+                pathPart = cfg.dstDir[len(cfgIter.dstDir) :]
                 results.update(self._listFiles(cfgIter.srcDir + pathPart))
 
             else:
@@ -223,40 +248,40 @@ class FrontendFileSync:
         # Since writing the file again changes the date/time,
         # this messes with the self._recompileRequiredCheck
         if os.path.isfile(fullFilePath):
-            with open(fullFilePath, 'r') as f:
+            with open(fullFilePath, "r") as f:
                 if contents == f.read():
                     logger.debug("%s is up to date", fileName)
                     return
 
         logger.debug("Writing new %s", fileName)
 
-        with open(fullFilePath, 'w') as f:
+        with open(fullFilePath, "w") as f:
             f.write(contents)
 
     def _fileCopier(self, src, dst):
-        with open(src, 'rb') as f:
+        with open(src, "rb") as f:
             contents = f.read()
 
         contents = self._syncFileHookCallable(dst, contents)
 
         # If the contents hasn't change, don't write it
         if os.path.isfile(dst):
-            with open(dst, 'rb') as f:
+            with open(dst, "rb") as f:
                 if f.read() == contents:
                     return
 
-        with open(dst, 'wb') as f:
+        with open(dst, "wb") as f:
             f.write(contents)
 
     def _listFiles(self, dir):
-        ignoreFiles = {'.lastHash', '.DS_Store'}
+        ignoreFiles = {".lastHash", ".DS_Store"}
         paths = []
         for (path, directories, filenames) in os.walk(dir):
 
             for filename in filenames:
                 if filename in ignoreFiles:
                     continue
-                paths.append(os.path.join(path[len(dir) + 1:], filename))
+                paths.append(os.path.join(path[len(dir) + 1 :], filename))
 
         return paths
 
@@ -271,7 +296,7 @@ class _FileChangeHandler(FileSystemEventHandler):
         self._rexp = [re.compile(r) for r in cfg.excludeFilesRegex]
 
     def _makeSrcFileRelPath(self, srcFilePath: str) -> str:
-        return srcFilePath[len(self._srcDir):]
+        return srcFilePath[len(self._srcDir) :]
 
     def _makeDestPath(self, srcFilePath: str) -> str:
         return self._dstDir + self._makeSrcFileRelPath(srcFilePath)
@@ -303,19 +328,20 @@ class _FileChangeHandler(FileSystemEventHandler):
         # This used to be done by copying the file,
         #   then _syncFileHook would modify it in place
 
-        with open(srcFilePath, 'rb') as f:
+        with open(srcFilePath, "rb") as f:
             contents = f.read()
 
         contents = self._syncFileHook(dstFilePath, contents)
 
         # If the contents hasn't change, don't write it
         if os.path.isfile(dstFilePath):
-            with open(dstFilePath, 'rb') as f:
+            with open(dstFilePath, "rb") as f:
                 if f.read() == contents:
                     return
 
-        logger.debug("Syncing %s -> %s", srcFilePath[len(self._srcDir) + 1:],
-                     self._dstDir)
+        logger.debug(
+            "Syncing %s -> %s", srcFilePath[len(self._srcDir) + 1 :], self._dstDir
+        )
 
         # if the dest dir doesn't exist, then create it
         dstDir = os.path.dirname(dstFilePath)
@@ -323,7 +349,7 @@ class _FileChangeHandler(FileSystemEventHandler):
             os.makedirs(dstDir, mode=0o755, exist_ok=True)
 
         # Write the contents
-        with open(dstFilePath, 'wb') as f:
+        with open(dstFilePath, "wb") as f:
             f.write(contents)
 
         if self._cfg.postSyncCallback:
@@ -359,8 +385,9 @@ class _FileChangeHandler(FileSystemEventHandler):
             if os.path.exists(jsMapFile):
                 os.remove(jsMapFile)
 
-        logger.debug("Removing %s -> %s", event.src_path[len(self._srcDir) + 1:],
-                     self._dstDir)
+        logger.debug(
+            "Removing %s -> %s", event.src_path[len(self._srcDir) + 1 :], self._dstDir
+        )
 
     def on_modified(self, event):
         if not isinstance(event, FileModifiedEvent) or event.src_path.endswith("__"):
@@ -369,9 +396,11 @@ class _FileChangeHandler(FileSystemEventHandler):
         self._updateFileContents(event.src_path)
 
     def on_moved(self, event):
-        if (not isinstance(event, FileMovedEvent)
+        if (
+            not isinstance(event, FileMovedEvent)
             or event.src_path.endswith("__")
-            or event.dest_path.endswith("__")):
+            or event.dest_path.endswith("__")
+        ):
             return
 
         self._updateFileContents(event.dest_path)

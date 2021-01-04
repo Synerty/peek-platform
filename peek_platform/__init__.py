@@ -1,9 +1,10 @@
 from . import WindowsPatch
 
-__version__ = '0.0.0'
+__version__ = "0.0.0"
+
 
 class PeekPlatformConfig:
-    """ Peek Platform Config
+    """Peek Platform Config
 
     This is really a GLOBAL pettern, It should be replaced at some stage.
     (Maybe named as a factory?)

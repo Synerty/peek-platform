@@ -27,20 +27,19 @@ from txhttputil.downloader.HttpFileDownloader import HttpFileDownloader
 from txhttputil.util.DeferUtil import deferToThreadWrap
 
 from peek_platform.WindowsPatch import isWindows
-from peek_platform.util.PtyUtil import spawnPty, \
-    logSpawnException
+from peek_platform.util.PtyUtil import spawnPty, logSpawnException
 from vortex.DeferUtil import deferToThreadWrapWithLogger
 
 logger = logging.getLogger(__name__)
 
-PEEK_PLATFORM_STAMP_FILE = 'stamp'
+PEEK_PLATFORM_STAMP_FILE = "stamp"
 """Peek Platform Stamp File, The file within the release that conatins the version"""
 
 IS_WIN_SVC = "isWinSvc"
 
 
 class PeekSwInstallManagerABC(metaclass=ABCMeta):
-    """ Peek Software Install Manager ABC
+    """Peek Software Install Manager ABC
 
     This class handles downloading the latest platform update from the server service
     installing it and then restarting this service.
@@ -52,7 +51,7 @@ class PeekSwInstallManagerABC(metaclass=ABCMeta):
 
     @classmethod
     def makeReleaseFileName(cls, version: str) -> str:
-        """ Make Release File Name
+        """Make Release File Name
 
         This method creates an absolute path/filename for a peek release given it's
         stamp/version
@@ -65,11 +64,12 @@ class PeekSwInstallManagerABC(metaclass=ABCMeta):
 
         return os.path.join(
             PeekPlatformConfig.config.platformSoftwarePath,
-            'peek-release-%s.tar.gz' % version)
+            "peek-release-%s.tar.gz" % version,
+        )
 
     @classmethod
     def makePipArgs(cls, directory: Directory) -> [str]:
-        """ Make PIP Args
+        """Make PIP Args
 
         This method creates the install arg list for pip, it's used both when testing
         when a new platform release is uploaded and the install on each service.
@@ -79,25 +79,29 @@ class PeekSwInstallManagerABC(metaclass=ABCMeta):
         """
         # Create an array of the package paths
 
-        absFilePaths = [f.realPath
-                        for f in directory.files
-                        if f.name.endswith(".tar.gz") or f.name.endswith(".whl")]
+        absFilePaths = [
+            f.realPath
+            for f in directory.files
+            if f.name.endswith(".tar.gz") or f.name.endswith(".whl")
+        ]
 
         # Create and return the pip args
-        return ['install',  # Install the packages
-                '--force-reinstall',  # Reinstall if they already exist
-                '--no-cache-dir',  # Don't use the local pip cache
-                '--no-index',  # Work offline, don't use pypi
-                '--find-links', directory.path,
-                # Look in the directory for dependencies
-                ] + absFilePaths
+        return [
+            "install",  # Install the packages
+            "--force-reinstall",  # Reinstall if they already exist
+            "--no-cache-dir",  # Don't use the local pip cache
+            "--no-index",  # Work offline, don't use pypi
+            "--find-links",
+            directory.path,
+            # Look in the directory for dependencies
+        ] + absFilePaths
 
     def notifyOfPlatformVersionUpdate(self, newVersion):
         self.installAndRestart(newVersion)
 
     @inlineCallbacks
     def update(self, targetVersion) -> Optional[str]:
-        """ Update
+        """Update
 
         This method is called when this service detects that the peek server has a newer
         version of software than this service.
@@ -109,9 +113,12 @@ class PeekSwInstallManagerABC(metaclass=ABCMeta):
 
         from peek_platform import PeekPlatformConfig
 
-        url = ('http://%(ip)s:%(port)s/peek_logic_service.sw_install.platform.download?'
-               ) % {"ip": PeekPlatformConfig.config.peekServerHost,
-                    "port": PeekPlatformConfig.config.peekServerPort}
+        url = (
+            "http://%(ip)s:%(port)s/peek_logic_service.sw_install.platform.download?"
+        ) % {
+            "ip": PeekPlatformConfig.config.peekServerHost,
+            "port": PeekPlatformConfig.config.peekServerPort,
+        }
 
         args = {"name": PeekPlatformConfig.componentName}
         if targetVersion:
@@ -123,8 +130,11 @@ class PeekSwInstallManagerABC(metaclass=ABCMeta):
             file = yield HttpFileDownloader(url).run()
 
             if os.path.getsize(file.name) == 0:
-                logger.warning("Peek server doesn't have any updates for %s, version %s",
-                               PeekPlatformConfig.componentName, targetVersion)
+                logger.warning(
+                    "Peek server doesn't have any updates for %s, version %s",
+                    PeekPlatformConfig.componentName,
+                    targetVersion,
+                )
                 return
 
             yield self._installUpdate(targetVersion, file.name)
@@ -143,7 +153,7 @@ class PeekSwInstallManagerABC(metaclass=ABCMeta):
 
     @deferToThreadWrapWithLogger(logger)
     def _installUpdate(self, targetVersion: str, fullTarPath: str) -> str:
-        """ Install Update (Blocking)
+        """Install Update (Blocking)
 
         This method installs the packages in the latest peek-release.
         It then calls self.restartProcess to restart the service
@@ -164,15 +174,19 @@ class PeekSwInstallManagerABC(metaclass=ABCMeta):
 
         stampFile = directory.getFile(name=PEEK_PLATFORM_STAMP_FILE)
         if not stampFile:
-            raise Exception("Peek release %s doesn't contain version stamp file %s"
-                            % (fullTarPath, PEEK_PLATFORM_STAMP_FILE))
+            raise Exception(
+                "Peek release %s doesn't contain version stamp file %s"
+                % (fullTarPath, PEEK_PLATFORM_STAMP_FILE)
+            )
 
         with stampFile.open() as f:
             stampVersion = f.read().strip()
 
         if stampVersion != targetVersion:
-            raise Exception("Stamp file version %s doesn't match target version %s"
-                            % (stampVersion, targetVersion))
+            raise Exception(
+                "Stamp file version %s doesn't match target version %s"
+                % (stampVersion, targetVersion)
+            )
 
         self._pipInstall(directory)
 
@@ -184,7 +198,7 @@ class PeekSwInstallManagerABC(metaclass=ABCMeta):
         return targetVersion
 
     def _pipInstall(self, directory: Directory) -> None:
-        """ Pip Install
+        """Pip Install
 
         Runs the PIP install for the packages provided in the directory
 
@@ -200,9 +214,9 @@ class PeekSwInstallManagerABC(metaclass=ABCMeta):
         # The platform update is tested for dependencies when it's first uploaded
         # PIP has a bug, when you have updated packages for several dependent files
         #   and try to install them all at once, some of the packages don't update.
-        pipArgs += ['--no-deps']
+        pipArgs += ["--no-deps"]
 
-        pipArgs = ' '.join(pipArgs)
+        pipArgs = " ".join(pipArgs)
 
         try:
             spawnPty(pipArgs)
@@ -281,9 +295,10 @@ class PeekSwInstallManagerABC(metaclass=ABCMeta):
         argv = map(addExe, argv)
         os.execl(python, python, *argv)
 
-    restartProcess = (_restartProcessWinSvc
-                      if IS_WIN_SVC in sys.argv else
-                      _restartProcessNormal)
+    restartProcess = (
+        _restartProcessWinSvc if IS_WIN_SVC in sys.argv else _restartProcessNormal
+    )
+
 
 # run_peek_worker_service WILL NOT START if there are extra args
 if IS_WIN_SVC in sys.argv:

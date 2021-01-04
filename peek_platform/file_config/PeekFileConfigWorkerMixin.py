@@ -11,14 +11,14 @@ class PeekFileConfigWorkerMixin:
     @property
     def celeryBrokerUrl(self) -> str:
         # for BROKER_URL
-        default = 'amqp://guest:guest@localhost:5672//'
+        default = "amqp://guest:guest@localhost:5672//"
         with self._cfg as c:
             return c.celery.brokerUrl(default, require_string)
 
     @property
     def celeryResultUrl(self) -> str:
         # for CELERYD_CONCURRENCY
-        default = 'redis://localhost:6379/0'
+        default = "redis://localhost:6379/0"
         with self._cfg as c:
             return c.celery.resultUrl(default, require_string)
 

@@ -35,6 +35,7 @@ class PeekSvc(win32serviceutil.ServiceFramework):
         self.ReportServiceStatus(win32service.SERVICE_RUNNING)
         try:
             from peek_platform.util.LogUtil import setupPeekLogger
+
             setupPeekLogger(self._svc_name_)
 
             while True:
@@ -42,11 +43,21 @@ class PeekSvc(win32serviceutil.ServiceFramework):
                 if retval != win32event.WAIT_TIMEOUT:
                     break
 
-                for service in ("peek-agent-service", "peek-worker-service", "peek-office-service",
-                                "peek-field-service"):
-                    (_, status, _, errCode, _, _, _) = (
-                        win32serviceutil.QueryServiceStatus(service)
-                    )
+                for service in (
+                    "peek-agent-service",
+                    "peek-worker-service",
+                    "peek-office-service",
+                    "peek-field-service",
+                ):
+                    (
+                        _,
+                        status,
+                        _,
+                        errCode,
+                        _,
+                        _,
+                        _,
+                    ) = win32serviceutil.QueryServiceStatus(service)
 
                     if status != win32service.SERVICE_STOPPED:
                         continue
@@ -54,9 +65,7 @@ class PeekSvc(win32serviceutil.ServiceFramework):
                     logger.info("Starting service %s", service)
                     win32serviceutil.StartService(service)
                     win32serviceutil.WaitForServiceStatus(
-                        service,
-                        win32service.SERVICE_RUNNING,
-                        waitSecs=600
+                        service, win32service.SERVICE_RUNNING, waitSecs=600
                     )
                     logger.info("Service %s started", service)
 
@@ -70,5 +79,5 @@ def main():
     win32serviceutil.HandleCommandLine(PeekSvc)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

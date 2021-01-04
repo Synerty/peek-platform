@@ -13,23 +13,23 @@ logger = logging.getLogger(__name__)
 
 
 class DocBuilder(DocBuilderABC):
-
-    def __init__(self, docProjectDir: str, platformService: str,
-                 jsonCfg, loadedPlugins: List):
-        DocBuilderABC.__init__(self, docProjectDir, platformService,
-                               jsonCfg, loadedPlugins)
+    def __init__(
+        self, docProjectDir: str, platformService: str, jsonCfg, loadedPlugins: List
+    ):
+        DocBuilderABC.__init__(
+            self, docProjectDir, platformService, jsonCfg, loadedPlugins
+        )
 
     @deferToThreadWrapWithLogger(logger, checkMainThread=False)
     def build(self) -> None:
         if not self._jsonCfg.docBuildPrepareEnabled:
-            logger.info("%s SKIPPING, Doc build prepare is disabled in config",
-                        self._platformService)
+            logger.info(
+                "%s SKIPPING, Doc build prepare is disabled in config",
+                self._platformService,
+            )
             return
 
-        excludeRegexp = (
-            r'.*__pycache__.*',
-            r'.*[.]py$'
-        )
+        excludeRegexp = (r".*__pycache__.*", r".*[.]py$")
 
         docLinkDir = os.path.join(self._docProjectDir, "doc_link")
         docConfDir = self._docProjectDir
@@ -56,15 +56,16 @@ class DocBuilder(DocBuilderABC):
 
         # --------------------
         # Now sync the plugins documentation directory
-        self._syncPluginFiles(docLinkDir,
-                              pluginDetails,
-                              excludeFilesRegex=excludeRegexp)
+        self._syncPluginFiles(
+            docLinkDir, pluginDetails, excludeFilesRegex=excludeRegexp
+        )
 
         self.fileSync.syncFiles()
 
         if self._jsonCfg.docSyncFilesForDebugEnabled:
-            logger.info("%s starting frontend development file sync",
-                        self._platformService)
+            logger.info(
+                "%s starting frontend development file sync", self._platformService
+            )
             self.fileSync.startFileSyncWatcher()
 
         if self._jsonCfg.docBuildEnabled:
@@ -75,7 +76,7 @@ class DocBuilder(DocBuilderABC):
         return contents
 
     def _compileDocs(self, docLinkDir: str) -> None:
-        """ Compile the docs
+        """Compile the docs
 
         this runs `build_html_docs.sh`, after checking if any files have changed.
 
@@ -84,8 +85,9 @@ class DocBuilder(DocBuilderABC):
         hashFileName = os.path.join(docLinkDir, ".lastHash")
 
         if not self._recompileRequiredCheck(docLinkDir, hashFileName):
-            logger.info("%s Doc has not changed, recompile not required.",
-                        self._platformService)
+            logger.info(
+                "%s Doc has not changed, recompile not required.", self._platformService
+            )
             return
 
         logger.info("Rebuilding docs for %s", self._platformService)
@@ -101,5 +103,8 @@ class DocBuilder(DocBuilderABC):
             e.message = "%s sphinx docs failed to build." % self._platformService
             raise
 
-        logger.info("%s sphinx doc rebuild completed in %s",
-                    self._platformService, datetime.now(pytz.utc) - startDate)
+        logger.info(
+            "%s sphinx doc rebuild completed in %s",
+            self._platformService,
+            datetime.now(pytz.utc) - startDate,
+        )

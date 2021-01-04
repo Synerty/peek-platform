@@ -9,16 +9,21 @@ logger = logging.getLogger(__name__)
 
 
 class SpawnOsCommandException(subprocess.CalledProcessError):
-    """ Spawn OS Command Exception
+    """Spawn OS Command Exception
 
     This exception is raised when an OS command fails or returns a non-zero exit code
 
     """
 
-    def __init__(self, returncode: int, cmd: str,
-                 stdout: Optional[str] = None, stderr: Optional[str] = None,
-                 message: Optional[str] = None):
-        """ Constructor
+    def __init__(
+        self,
+        returncode: int,
+        cmd: str,
+        stdout: Optional[str] = None,
+        stderr: Optional[str] = None,
+        message: Optional[str] = None,
+    ):
+        """Constructor
 
         :param returncode: The code returned by the process.
         :param cmd: A string representing the command and args executed by bash.
@@ -32,12 +37,15 @@ class SpawnOsCommandException(subprocess.CalledProcessError):
         self.message = message
 
     def __str__(self):
-        return ("%s\nCommand '%s' returned non-zero exit status %d"
-                % (self.message, self.cmd, self.returncode))
+        return "%s\nCommand '%s' returned non-zero exit status %d" % (
+            self.message,
+            self.cmd,
+            self.returncode,
+        )
 
 
 class PtyOutParser:
-    """ PTY Out Parser
+    """PTY Out Parser
 
     The node tools require a tty, so we run it with
 
@@ -52,26 +60,26 @@ class PtyOutParser:
     """
 
     def __init__(self, loggingStartMarker=None):
-        """ Constructor
+        """Constructor
 
         :param loggingStartMarker: If this is set, logging will not start until a line
         is starts with this marker.
 
         """
-        self.data = ''
+        self.data = ""
         self.startLogging = False  # Ignore all the stuff before the final summary
-        self.allData = ''
+        self.allData = ""
         self.loggingStartMarker = loggingStartMarker
 
     def read(self, fd, size: Optional[int] = 1024):
         data = os.read(fd, size)
-        self.data += data.decode(errors='ignore')
-        self.allData += data.decode(errors='ignore')
+        self.data += data.decode(errors="ignore")
+        self.allData += data.decode(errors="ignore")
         self.splitData()
 
         # Silence all the output
         if len(data):
-            return b'.'
+            return b"."
 
         # If there is no output, return the EOF data
         return data
@@ -87,9 +95,9 @@ class PtyOutParser:
             self.logData(line.strip(os.linesep))
 
     def logData(self, line):
-        self.startLogging = (self.startLogging
-                             or (self.loggingStartMarker
-                                 and line.startswith(self.loggingStartMarker)))
+        self.startLogging = self.startLogging or (
+            self.loggingStartMarker and line.startswith(self.loggingStartMarker)
+        )
 
         if not (line and self.startLogging):
             return
@@ -97,9 +105,8 @@ class PtyOutParser:
         logger.debug(line)
 
 
-def spawnPty(cmdAndArgs: str,
-             parser: PtyOutParser = PtyOutParser()) -> None:
-    """ Spawn PTY
+def spawnPty(cmdAndArgs: str, parser: PtyOutParser = PtyOutParser()) -> None:
+    """Spawn PTY
 
     This function spawns a PTY in Linux and falls back to using subprocess on windows.
 
@@ -124,28 +131,28 @@ def spawnPty(cmdAndArgs: str,
     spawnSubprocess(cmdAndArgs)
 
 
-def __reallySpawnSubprocess(cmdAndArgs: str,
-                            parser: PtyOutParser = PtyOutParser()) -> None:
+def __reallySpawnSubprocess(
+    cmdAndArgs: str, parser: PtyOutParser = PtyOutParser()
+) -> None:
     from peek_platform import PeekPlatformConfig
+
     bashExec = PeekPlatformConfig.config.bashLocation
 
     logger.debug("Using interpreter : %s", bashExec)
     logger.debug("Running command via subprocess : %s", cmdAndArgs)
 
     import pty
+
     exitCode = pty.spawn([bashExec, "-l", "-c", cmdAndArgs], parser.read, parser.read)
 
     if exitCode:
         raise SpawnOsCommandException(
-            exitCode,
-            cmdAndArgs,
-            stdout="",
-            stderr=parser.allData)
+            exitCode, cmdAndArgs, stdout="", stderr=parser.allData
+        )
 
 
-def spawnSubprocess(cmdAndArgs: str,
-                    parser: Optional[PtyOutParser] = None) -> None:
-    """ Spawn Subprocess
+def spawnSubprocess(cmdAndArgs: str, parser: Optional[PtyOutParser] = None) -> None:
+    """Spawn Subprocess
 
     This method calls an OS command using the subprocess package and bash as the
     interpreter.
@@ -159,15 +166,19 @@ def spawnSubprocess(cmdAndArgs: str,
 
     """
     from peek_platform import PeekPlatformConfig
+
     bashExec = PeekPlatformConfig.config.bashLocation
 
     logger.debug("Using interpreter : %s", bashExec)
     logger.debug("Running command via subprocess : %s", cmdAndArgs)
 
-    commandComplete = subprocess.run([cmdAndArgs],
-                                     executable=bashExec,
-                                     stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                     shell=True)
+    commandComplete = subprocess.run(
+        [cmdAndArgs],
+        executable=bashExec,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        shell=True,
+    )
 
     if parser:
         parser.read(commandComplete.stdout, size=None)
@@ -178,13 +189,14 @@ def spawnSubprocess(cmdAndArgs: str,
             commandComplete.returncode,
             cmdAndArgs,
             stdout=commandComplete.stdout.decode(),
-            stderr=commandComplete.stderr.decode())
+            stderr=commandComplete.stderr.decode(),
+        )
 
     return commandComplete
 
 
 def logSpawnException(exception: Exception) -> None:
-    """ Log Exception
+    """Log Exception
 
     This method logs the stderr / stdout data from an exception to the logger.
 

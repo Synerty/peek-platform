@@ -7,7 +7,6 @@ logger = logging.getLogger(__name__)
 
 
 class BuilderABC(metaclass=ABCMeta):
-
     def _writeFileIfRequired(self, dir, fileName, contents):
         fullFilePath = os.path.join(dir, fileName)
 
@@ -17,20 +16,19 @@ class BuilderABC(metaclass=ABCMeta):
         # Since writing the file again changes the date/time,
         # this messes with the self._recompileRequiredCheck
         if os.path.isfile(fullFilePath):
-            with open(fullFilePath, 'r') as f:
+            with open(fullFilePath, "r") as f:
                 if contents == f.read():
                     logger.debug("%s is up to date", fileName)
                     return
 
         logger.debug("Writing new %s", fileName)
 
-        with open(fullFilePath, 'w') as f:
+        with open(fullFilePath, "w") as f:
             f.write(contents)
-
 
     @abstractmethod
     def _syncFileHook(self, fileName: str, contents: bytes) -> bytes:
-        """ Sync File Hook
+        """Sync File Hook
 
         see FrontendFileSync._syncFileHook
 
@@ -38,7 +36,7 @@ class BuilderABC(metaclass=ABCMeta):
         pass
 
     def _recompileRequiredCheck(self, feBuildDir: str, hashFileName: str) -> bool:
-        """ Recompile Check
+        """Recompile Check
 
         This command lists the details of the source dir to see if a recompile is needed
 
@@ -50,12 +48,12 @@ class BuilderABC(metaclass=ABCMeta):
 
         """
 
-        excludeFilesEndWith = (".git", ".idea", '.lastHash')
+        excludeFilesEndWith = (".git", ".idea", ".lastHash")
         excludeFilesStartWith = ()
 
         def dirCheck(path):
             s = os.path.sep
-            excludePathContains = ('__pycache__', 'node_modules', 'platforms', 'dist')
+            excludePathContains = ("__pycache__", "node_modules", "platforms", "dist")
 
             # Always include the node_modules/@peek module dir
             if path.endswith(s + "@peek") or (s + "@peek" + s) in path:
@@ -86,15 +84,15 @@ class BuilderABC(metaclass=ABCMeta):
                     continue
 
                 fullPath = os.path.join(path, filename)
-                relPath = fullPath[len(feBuildDir) + 1:]
+                relPath = fullPath[len(feBuildDir) + 1 :]
                 stat = os.stat(fullPath)
-                fileList.append('%s %s %s' % (relPath, stat.st_size, stat.st_mtime))
+                fileList.append("%s %s %s" % (relPath, stat.st_size, stat.st_mtime))
 
-        newHash = '\n'.join(fileList)
+        newHash = "\n".join(fileList)
         fileHash = ""
 
         if os.path.isfile(hashFileName):
-            with open(hashFileName, 'r') as f:
+            with open(hashFileName, "r") as f:
                 fileHash = f.read()
 
         fileHashLines = set(fileHash.splitlines())
@@ -110,7 +108,7 @@ class BuilderABC(metaclass=ABCMeta):
             logger.debug("Added %s" % line)
 
         if changes:
-            with open(hashFileName, 'w') as f:
+            with open(hashFileName, "w") as f:
                 f.write(newHash)
 
         return changes

@@ -37,10 +37,10 @@ class _DeferredTaskPatch(defer.Deferred):
     __deferredSemaphore: DeferredSemaphore = None
 
     @classmethod
-    def setupPostGreSQLConnection(cls, dbSessionCreator,
-                                  sqlaUrl: str,
-                                  parallelism: int):
-        """ Start Celery Threads
+    def setupPostGreSQLConnection(
+        cls, dbSessionCreator, sqlaUrl: str, parallelism: int
+    ):
+        """Start Celery Threads
 
         Configure the Celery connection settings.
         :param dbSessionCreator: A callable that will fiv.
@@ -55,11 +55,10 @@ class _DeferredTaskPatch(defer.Deferred):
         _DeferredTaskPatch.__deferredSemaphore = DeferredSemaphore(parallelism)
 
         from txcelery import defer
+
         defer._DeferredTask = _DeferredTaskPatch
 
-        reactor.addSystemEventTrigger(
-            "before", "shutdown", cls.setReactorShuttingDown
-        )
+        reactor.addSystemEventTrigger("before", "shutdown", cls.setReactorShuttingDown)
 
     @classmethod
     def setReactorShuttingDown(cls):
@@ -89,8 +88,9 @@ class _DeferredTaskPatch(defer.Deferred):
         while self.__retries and not self.called and not self.__reactorShuttingDown:
             self.__retries -= 1
             try:
-                result = yield self.__deferredSemaphore \
-                    .run(deferToThread, self._run, func, *args, **kwargs)
+                result = yield self.__deferredSemaphore.run(
+                    deferToThread, self._run, func, *args, **kwargs
+                )
                 return result
 
             except Exception as e:
@@ -125,7 +125,7 @@ class _DeferredTaskPatch(defer.Deferred):
         return failure
 
     def _run(self, func, *args, **kwargs):
-        """ Monitor Task In Thread
+        """Monitor Task In Thread
 
         The Celery task state must be checked in a thread, otherwise it blocks.
 
@@ -133,10 +133,10 @@ class _DeferredTaskPatch(defer.Deferred):
         I'm not sure how it manages that.
 
         """
-        from peek_storage_service.plpython.RunWorkerTaskPyInPg import runPyWorkerTaskInPgBlocking
+        from peek_storage_service.plpython.RunWorkerTaskPyInPg import (
+            runPyWorkerTaskInPgBlocking,
+        )
 
-        return runPyWorkerTaskInPgBlocking(self.__dbSessionCreator,
-                                           self.__sqlaUrl,
-                                           func,
-                                           *args,
-                                           **kwargs)
+        return runPyWorkerTaskInPgBlocking(
+            self.__dbSessionCreator, self.__sqlaUrl, func, *args, **kwargs
+        )

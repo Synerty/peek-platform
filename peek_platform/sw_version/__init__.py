@@ -1,4 +1,4 @@
-__author__ = 'peek'
+__author__ = "peek"
 
 from txhttputil.util.ModuleUtil import filterModules
 
