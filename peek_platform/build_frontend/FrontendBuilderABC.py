@@ -38,7 +38,7 @@ PluginDetail = namedtuple("PluginDetail",
      "homeLinkText",
      "showHomeLink",
      "showInTitleBar",
-     "titleBarLeft",
+     "antIcon",
      "titleBarText",
      "configLinkPath"])
 
@@ -135,7 +135,7 @@ class FrontendBuilderABC(BuilderABC):
             showHomeLink = jsonCfgNode.showHomeLink(True)
             homeLinkText = jsonCfgNode.homeLinkText(plugin.title)
             showInTitleBar = jsonCfgNode.showInTitleBar(False)
-            titleBarLeft = jsonCfgNode.titleBarLeft(False)
+            antIcon = jsonCfgNode.antIcon(None)
             titleBarText = jsonCfgNode.titleBarText(None)
             configLinkPath = jsonCfgNode.configLinkPath(None)
 
@@ -193,7 +193,7 @@ class FrontendBuilderABC(BuilderABC):
                     homeLinkText=homeLinkText,
                     showHomeLink=showHomeLink,
                     showInTitleBar=showInTitleBar,
-                    titleBarLeft=titleBarLeft,
+                    antIcon=antIcon,
                     titleBarText=titleBarText,
                     configLinkPath=configLinkPath)
             )
@@ -278,7 +278,7 @@ class FrontendBuilderABC(BuilderABC):
             {
                 plugin : "peek_plugin_noop",
                 text: "Noop",
-                left: false,
+                antIcon: "smile",
                 resourcePath: "/peek_plugin_noop/home_icon.png",
                 badgeCount : null
             }
@@ -292,7 +292,7 @@ class FrontendBuilderABC(BuilderABC):
 
             links.append(dict(plugin=pluginDetail.pluginName,
                 text=pluginDetail.titleBarText,
-                left=pluginDetail.titleBarLeft,
+                antIcon=pluginDetail.antIcon,
                 resourcePath="/%s" % pluginDetail.pluginName,
                 badgeCount=None))
 
