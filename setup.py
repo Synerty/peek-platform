@@ -1,9 +1,10 @@
 import os
 import shutil
 
-from peek_platform.WindowsPatch import isWindows
 from setuptools import find_packages
 from setuptools import setup
+
+from peek_platform.WindowsPatch import isWindows
 
 ###############################################################################
 # Define variables
@@ -81,7 +82,7 @@ lin_dependencies = [
     "pymssql",
     # Celery 4 is not supported on windows
     "future",  # This is required by celery
-    "celery[redis,auth]",
+    "celery[redis,auth]<5.0.0",
 ]
 
 win_dependencies = [
@@ -130,7 +131,8 @@ reqVer = ".".join(package_version.split(".")[0:2]) + ".*"
 
 # >=2.0.*,>=2.0.6
 requirements = [
-    "%s==%s,>=%s" % (pkg, reqVer, package_version) if pkg.startswith("peek") else pkg
+    "%s==%s,>=%s" % (pkg, reqVer, package_version) if pkg.startswith(
+        "peek") else pkg
     for pkg in requirements
 ]
 
@@ -144,7 +146,8 @@ setup(
         ],
     },
     name=pip_package_name,
-    packages=find_packages(exclude=["*.tests", "*.tests.*", "tests.*", "tests"]),
+    packages=find_packages(
+        exclude=["*.tests", "*.tests.*", "tests.*", "tests"]),
     install_requires=requirements,
     zip_safe=False,
     version=package_version,
