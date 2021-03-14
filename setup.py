@@ -49,7 +49,7 @@ requirements = [
     "pyasn1-modules >= 0.0.8",
     # Database
     "psycopg2-binary >= 2.7.6",  # PostGreSQL for Linux
-    "SQLAlchemy >= 1.0.14",  # Database abstraction layer
+    "SQLAlchemy < 1.4.0",  # Database abstraction layer
     "SQLAlchemy-Utils >= 0.32.9",
     "alembic >= 0.8.7",  # Database migration utility
     # installed and configured first
