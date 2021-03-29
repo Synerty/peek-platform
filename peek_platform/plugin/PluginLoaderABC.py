@@ -1,27 +1,33 @@
 import gc
 import logging
-import sys
-from typing import Type, Tuple, Optional
-
 import os
-from abc import ABCMeta, abstractmethod, abstractproperty
+import sys
+from abc import ABCMeta
+from abc import abstractmethod
+from abc import abstractproperty
 from collections import defaultdict
 from importlib.util import find_spec
-from jsoncfg.value_mappers import require_string, require_array
+from typing import Optional
+from typing import Tuple
+from typing import Type
+
+from jsoncfg.value_mappers import require_array
+from jsoncfg.value_mappers import require_string
+from peek_platform import PeekPlatformConfig
 from twisted.internet.defer import inlineCallbacks
 
-from peek_platform import PeekPlatformConfig
 from peek_plugin_base.PluginCommonEntryHookABC import PluginCommonEntryHookABC
 from peek_plugin_base.PluginPackageFileConfig import PluginPackageFileConfig
 from vortex.PayloadIO import PayloadIO
-from vortex.Tuple import (
-    removeTuplesForTupleNames,
-    registeredTupleNames,
-    tupleForTupleName,
-)
-from vortex.TupleAction import TupleGenericAction, TupleUpdateAction
+from vortex.Tuple import registeredTupleNames
+from vortex.Tuple import removeTuplesForTupleNames
+from vortex.Tuple import tupleForTupleName
+from vortex.TupleAction import TupleGenericAction
+from vortex.TupleAction import TupleUpdateAction
 from vortex.TupleSelector import TupleSelector
-from vortex.rpc.RPC import _VortexRPCResultTuple, _VortexRPCArgTuple
+from vortex.VortexUtil import _DebounceArgsTuple
+from vortex.rpc.RPC import _VortexRPCArgTuple
+from vortex.rpc.RPC import _VortexRPCResultTuple
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +37,7 @@ TupleUpdateAction()
 TupleGenericAction()
 _VortexRPCResultTuple()
 _VortexRPCArgTuple()
+_DebounceArgsTuple()
 
 corePlugins = [
     "peek_core_email",
@@ -123,7 +130,8 @@ class PluginLoaderABC(metaclass=ABCMeta):
 
             # Load up the plugin package info
             pluginPackageJson = PluginPackageFileConfig(pluginRootDir)
-            pluginVersion = pluginPackageJson.config.plugin.version(require_string)
+            pluginVersion = pluginPackageJson.config.plugin.version(
+                require_string)
             pluginRequiresService = pluginPackageJson.config.requiresServices(
                 require_array
             )
@@ -139,7 +147,8 @@ class PluginLoaderABC(metaclass=ABCMeta):
                 return
 
             # Get the entry hook class from the package
-            entryHookGetter = getattr(PluginPackage, str(self._entryHookFuncName))
+            entryHookGetter = getattr(PluginPackage,
+                str(self._entryHookFuncName))
             EntryHookClass = entryHookGetter() if entryHookGetter else None
 
             if not EntryHookClass:
@@ -159,7 +168,8 @@ class PluginLoaderABC(metaclass=ABCMeta):
 
             ### Perform the loading of the plugin
             yield self._loadPluginThrows(
-                pluginName, EntryHookClass, pluginRootDir, tuple(pluginRequiresService)
+                pluginName, EntryHookClass, pluginRootDir,
+                tuple(pluginRequiresService)
             )
 
             # Make sure the version we have recorded is correct
@@ -214,7 +224,8 @@ class PluginLoaderABC(metaclass=ABCMeta):
         del self._vortexEndpointInstancesByPluginName[pluginName]
 
         # Remove the registered tuples
-        removeTuplesForTupleNames(self._vortexTupleNamesByPluginName[pluginName])
+        removeTuplesForTupleNames(
+            self._vortexTupleNamesByPluginName[pluginName])
         del self._vortexTupleNamesByPluginName[pluginName]
 
         self._unloadPluginPackage(pluginName)
@@ -385,7 +396,7 @@ class PluginLoaderABC(metaclass=ABCMeta):
             filt = endpoint.filt
             if "plugin" not in filt and filt["plugin"] != pluginName:
                 raise Exception(
-                    "Payload endpoint does not contan 'plugin':'%s'\n%s"
+                    "Payload endpoint does not contain 'plugin':'%s'\n%s"
                     % (pluginName, filt)
                 )
 
@@ -400,6 +411,7 @@ class PluginLoaderABC(metaclass=ABCMeta):
 
     def notifyOfPluginVersionUpdate(self, pluginName, pluginVersion):
         logger.info(
-            "Received PLUGIN update for %s version %s", pluginName, pluginVersion
+            "Received PLUGIN update for %s version %s", pluginName,
+            pluginVersion
         )
         return self.loadPlugin(pluginName)
