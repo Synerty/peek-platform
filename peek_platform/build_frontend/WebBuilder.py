@@ -200,11 +200,13 @@ class WebBuilder(FrontendBuilderABC):
         # value
         # Otherwise just .web should be used if no replacing is required.
 
+        lineEnd = os.linesep.encode()
+
         if self.isField:
-            contents = contents.replace(b'.dweb";', b'.mweb";')
+            contents = contents.replace(b'.dweb"'+lineEnd, b'.mweb"'+lineEnd)
 
         elif self.isOffice:
-            contents = contents.replace(b'.mweb";', b'.dweb";')
+            contents = contents.replace(b'.mweb"'+lineEnd, b'.dweb"'+lineEnd)
 
         elif self.isAdmin:
             pass
