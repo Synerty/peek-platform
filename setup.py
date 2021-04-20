@@ -37,14 +37,13 @@ if os.path.isfile("MANIFEST"):
 
 requirements = [
     # packages used for the platform to test and upgrade it's self
-    "pip >= 9.0.0",
-    "setuptools >= 18.0.0",
+    "pip >= 21.0",
     "virtualenv >= 15.1.0",
     "twine",
     # networking and async framework. Peek is based on Twisted.
     "Cython >= 0.21.1",
     "Twisted[tls,conch]",
-    "pyOpenSSL >= 16.2.0",
+    "pyOpenSSL <= 19.1.0", # PEEK-1136
     "pyasn1 >= 0.1.9",
     "pyasn1-modules >= 0.0.8",
     # Database
@@ -89,7 +88,7 @@ win_dependencies = [
     # "pymssql >= 2.1.3",  # DB-API interface to Microsoft SQL Server, requires FreeTDS
     "pycparser >= 2.17",
     "cffi >= 1.9.1",
-    "cryptography >= 1.7.1",
+    "cryptography <= 3.1.1",  # PEEK-1136
     "pytest >= 3.0.5",
     "wheel >= 0.30.0.0",
     "virtualenv >= 15.1.0",
