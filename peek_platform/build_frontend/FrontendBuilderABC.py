@@ -355,7 +355,7 @@ class FrontendBuilderABC(BuilderABC):
 
         # initialise the arrays, and put in the persisted service module
         imports = [
-            '''import { PluginRootServicePersistentLoadModule } from "./plugin-root-services"''']
+            '''import { PluginRootServicePersistentLoadModule } from "@_peek/plugin-root-services"''']
         modules = ['PluginRootServicePersistentLoadModule']
 
         for pluginDetail in pluginDetails:
