@@ -19,7 +19,7 @@ import urllib.request
 from abc import ABCMeta
 from typing import Optional
 
-from pytmpdir.Directory import Directory
+from pytmpdir.directory_ import Directory
 from twisted.internet import defer
 from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks
@@ -296,7 +296,9 @@ class PeekSwInstallManagerABC(metaclass=ABCMeta):
         os.execl(python, python, *argv)
 
     restartProcess = (
-        _restartProcessWinSvc if IS_WIN_SVC in sys.argv else _restartProcessNormal
+        _restartProcessWinSvc
+        if IS_WIN_SVC in sys.argv
+        else _restartProcessNormal
     )
 
 

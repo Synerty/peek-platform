@@ -21,11 +21,11 @@ from abc import ABCMeta, abstractmethod
 from tempfile import NamedTemporaryFile
 from typing import Optional
 
-from pytmpdir.Directory import Directory
+from pytmpdir.directory_ import Directory
 from twisted.internet import reactor, defer
 from twisted.internet.defer import inlineCallbacks
 from txhttputil.downloader.HttpFileDownloader import HttpFileDownloader
-from txhttputil.site.SpooledNamedTemporaryFile import SpooledNamedTemporaryFile
+from pytmpdir.spooled_named_temporary_file import SpooledNamedTemporaryFile
 
 from peek_platform import PeekPlatformConfig
 from peek_platform.file_config.PeekFileConfigPlatformMixin import (
@@ -179,10 +179,14 @@ class PluginSwInstallManagerABC(metaclass=ABCMeta):
         self, pluginName: str, targetVersion: str, fullTarPath: str
     ) -> None:
 
-        assert isinstance(PeekPlatformConfig.config, PeekFileConfigPlatformMixin)
+        assert isinstance(
+            PeekPlatformConfig.config, PeekFileConfigPlatformMixin
+        )
 
         if not tarfile.is_tarfile(fullTarPath):
-            raise Exception("Plugin update %s download is not a tar file" % pluginName)
+            raise Exception(
+                "Plugin update %s download is not a tar file" % pluginName
+            )
 
         directory = Directory()
         tarfile.open(fullTarPath).extractall(directory.path)
@@ -245,7 +249,9 @@ class PluginSwInstallManagerABC(metaclass=ABCMeta):
             raise
 
     @abstractmethod
-    def notifyOfPluginVersionUpdate(self, pluginName: str, targetVersion: str) -> None:
+    def notifyOfPluginVersionUpdate(
+        self, pluginName: str, targetVersion: str
+    ) -> None:
         """Notify of Plugin Version Update
 
         This method is called when a package update has comleted, it notifies the
