@@ -1,17 +1,14 @@
 import logging
-from datetime import datetime
-
 import os
+from datetime import datetime
 from typing import List
 
 import pytz
-
-from peek_platform.build_frontend.FrontendBuilderABC import (
-    FrontendBuilderABC,
-    BuildTypeEnum,
-)
-from peek_platform.build_common.BuilderOsCmd import runNgBuild
 from vortex.DeferUtil import deferToThreadWrapWithLogger
+
+from peek_platform.build_common.BuilderOsCmd import runNgBuild
+from peek_platform.build_frontend.FrontendBuilderABC import BuildTypeEnum
+from peek_platform.build_frontend.FrontendBuilderABC import FrontendBuilderABC
 
 logger = logging.getLogger(__name__)
 
@@ -200,7 +197,7 @@ class WebBuilder(FrontendBuilderABC):
         # value
         # Otherwise just .web should be used if no replacing is required.
 
-        lineEnd = os.linesep.encode()
+        lineEnd = ";"
 
         if self.isField:
             contents = contents.replace(b'.dweb"'+lineEnd, b'.mweb"'+lineEnd)
