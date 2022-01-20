@@ -197,7 +197,7 @@ class WebBuilder(FrontendBuilderABC):
         # value
         # Otherwise just .web should be used if no replacing is required.
 
-        lineEnd = ";"
+        lineEnd = b";"
 
         if self.isField:
             contents = contents.replace(b'.dweb"'+lineEnd, b'.mweb"'+lineEnd)
