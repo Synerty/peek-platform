@@ -43,11 +43,11 @@ requirements = [
     # networking and async framework. Peek is based on Twisted.
     "Cython >= 0.21.1",
     "Twisted[tls,conch]",
-    "pyOpenSSL <= 19.1.0", # PEEK-1136
+    "pyOpenSSL <= 19.1.0",  # PEEK-1136
     "pyasn1 >= 0.1.9",
     "pyasn1-modules >= 0.0.8",
     # Database
-    "psycopg2-binary >= 2.7.6",  # PostGreSQL for Linux
+    "psycopg2-binary >= 2.7.6, < 2.9",  # PostGreSQL for Linux
     "SQLAlchemy < 1.4.0",  # Database abstraction layer
     "SQLAlchemy-Utils >= 0.32.9",
     "alembic >= 0.8.7",  # Database migration utility
@@ -130,8 +130,9 @@ reqVer = ".".join(package_version.split(".")[0:2]) + ".*"
 
 # >=2.0.*,>=2.0.6
 requirements = [
-    "%s==%s,>=%s" % (pkg, reqVer, package_version.split("+")[0]) if pkg.startswith(
-        "peek") else pkg
+    "%s==%s,>=%s" % (pkg, reqVer, package_version.split("+")[0])
+    if pkg.startswith("peek")
+    else pkg
     for pkg in requirements
 ]
 
@@ -146,7 +147,8 @@ setup(
     },
     name=pip_package_name,
     packages=find_packages(
-        exclude=["*.tests", "*.tests.*", "tests.*", "tests"]),
+        exclude=["*.tests", "*.tests.*", "tests.*", "tests"]
+    ),
     install_requires=requirements,
     zip_safe=False,
     version=package_version,

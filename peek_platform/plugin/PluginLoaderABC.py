@@ -46,7 +46,6 @@ corePlugins = [
     "peek_core_user",
     "peek_core_docdb",
     "peek_core_screen",
-    "peek_core_api",
 ]
 
 
