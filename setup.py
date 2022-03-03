@@ -60,7 +60,7 @@ requirements = [
     # Licensing
     "pycryptodome",
     # Celery packages
-    "flower",
+    "flower<1.0.0",
     # "amqp >= 1.4.9",  # DEPENDENCY LINK BELOW
     # Potentially useful packages
     # "GitPython >= 2.0.8",
