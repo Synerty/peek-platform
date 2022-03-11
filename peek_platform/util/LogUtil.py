@@ -1,6 +1,9 @@
 import logging
+import os
 import sys
+import zlib
 from logging.handlers import RotatingFileHandler, SysLogHandler
+from logging.handlers import TimedRotatingFileHandler
 
 from pathlib import Path
 from typing import Optional
@@ -13,42 +16,61 @@ logger = logging.getLogger(__name__)
 
 def setupPeekLogger(serviceName: Optional[str] = None):
     logging.basicConfig(
-        stream=sys.stdout, format=LOG_FORMAT, datefmt=DATE_FORMAT, level=logging.DEBUG
+        stream=sys.stdout,
+        format=LOG_FORMAT,
+        datefmt=DATE_FORMAT,
+        level=logging.DEBUG,
     )
 
     if serviceName:
         updatePeekLoggerHandlers(serviceName)
 
 
+def _namer(name):
+    return name + ".gz"
+
+
+def _rotator(source, dest):
+    with open(source, "rb") as sf:
+        data = sf.read()
+        compressed = zlib.compress(data, 9)
+        with open(dest, "wb") as df:
+            df.write(compressed)
+    os.remove(source)
+
+
 def updatePeekLoggerHandlers(
     serviceName: Optional[str] = None,
-    rotateSizeMb=1024 * 1024,
-    rotationsToKeep=2,
+    daysToKeep=28,
     logToStdout=True,
 ):
     rootLogger = logging.getLogger()
     logFormatter = logging.Formatter(LOG_FORMAT, DATE_FORMAT)
 
     for handler in list(rootLogger.handlers):
-        if isinstance(handler, RotatingFileHandler):
+        if isinstance(handler, TimedRotatingFileHandler):
             # Setup the file logging output
             rootLogger.removeHandler(handler)
 
         elif not sys.stdout.isatty() and not logToStdout:
             # Remove the stdout handler
-            logger.info("Logging to stdout disabled, see 'logToStdout' in config.json")
+            logger.info(
+                "Logging to stdout disabled, see 'logToStdout' in config.json"
+            )
             rootLogger.removeHandler(handler)
 
     fileName = str(Path.home() / ("%s.log" % serviceName))
 
-    fh = RotatingFileHandler(
-        fileName, maxBytes=(1024 * 1024 * rotateSizeMb), backupCount=rotationsToKeep
+    fh = TimedRotatingFileHandler(
+        fileName, when="midnight", backupCount=daysToKeep
     )
     fh.setFormatter(logFormatter)
+    fh.rotator = _rotator
+    fh.namer = _namer
     rootLogger.addHandler(fh)
 
 
-def setupLoggingToSysloyServer(host: str, port: int, facility: str):
+def setupLoggingToSyslogServer(host: str, port: int, facility: str):
     rootLogger = logging.getLogger()
     logFormatter = logging.Formatter(LOG_FORMAT, DATE_FORMAT)
 

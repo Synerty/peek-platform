@@ -29,7 +29,9 @@ class PeekFileConfigPlatformMixin(metaclass=ABCMeta):
             if lvl in logging._nameToLevel:
                 return lvl
 
-            logger.warning("Logging level %s is not valid, defauling to INFO", lvl)
+            logger.warning(
+                "Logging level %s is not valid, defauling to INFO", lvl
+            )
             return "INFO"
 
     @property
@@ -38,14 +40,19 @@ class PeekFileConfigPlatformMixin(metaclass=ABCMeta):
             return c.logging.logToStdout(False, require_bool)
 
     @property
-    def loggingRotateSizeMb(self) -> int:
+    def daysToKeep(self) -> int:
         with self._cfg as c:
-            return c.logging.rotateSizeMb(20, require_integer)
+            val = c.logging.daysToKeep(14, require_integer)
 
-    @property
-    def loggingRotationsToKeep(self) -> int:
-        with self._cfg as c:
-            return c.logging.rotationsToKeep(2, require_integer)
+            # As of v3.1+ cleanup the old log file properties
+            for prop in ("rotateSizeMb", "rotationsToKeep"):
+                if prop in c.logging:
+                    logging = {}
+                    logging.update(iter(c.logging))
+                    del logging[prop]
+                    c.logging = logging
+
+            return val
 
     @property
     def loggingLogToSyslogHost(self) -> Optional[str]:
@@ -93,7 +100,9 @@ class PeekFileConfigPlatformMixin(metaclass=ABCMeta):
     def platformSoftwarePath(self):
         default = os.path.join(self._homePath, "platform_software")
         with self._cfg as c:
-            return self._chkDir(c.platform.softwarePath(default, require_string))
+            return self._chkDir(
+                c.platform.softwarePath(default, require_string)
+            )
 
     # --- Platform Version
     @property
@@ -129,7 +138,9 @@ class PeekFileConfigPlatformMixin(metaclass=ABCMeta):
         The last version that we know about
         """
         with self._cfg as c:
-            return c.plugin[pluginName].version(None, RequireType(type(None), str))
+            return c.plugin[pluginName].version(
+                None, RequireType(type(None), str)
+            )
 
     def setPluginVersion(self, pluginName, version):
         with self._cfg as c:
