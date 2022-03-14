@@ -64,7 +64,7 @@ def updatePeekLoggerHandlers(
 
     fileName = str(Path.home() / ("%s.log" % serviceName))
 
-    fh = TimedRotatingFileHandler(fileName, when="S", backupCount=daysToKeep)
+    fh = TimedRotatingFileHandler(fileName, when="midnight", backupCount=daysToKeep)
     fh.setFormatter(logFormatter)
     fh.rotator = _rotator
     fh.namer = _namer
