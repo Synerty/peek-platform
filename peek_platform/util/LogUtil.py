@@ -1,3 +1,4 @@
+import gzip
 import logging
 import os
 import sys
@@ -31,11 +32,13 @@ def _namer(name):
 
 
 def _rotator(source, dest):
+    READ_CHUNK = 512 * 1024
     with open(source, "rb") as sf:
-        data = sf.read()
-        compressed = zlib.compress(data, 9)
-        with open(dest, "wb") as df:
-            df.write(compressed)
+        with gzip.open(dest, "wb") as f:
+            data = sf.read(READ_CHUNK)
+            while data:
+                f.write(data)
+                data = sf.read(READ_CHUNK)
     os.remove(source)
 
 
@@ -61,9 +64,7 @@ def updatePeekLoggerHandlers(
 
     fileName = str(Path.home() / ("%s.log" % serviceName))
 
-    fh = TimedRotatingFileHandler(
-        fileName, when="midnight", backupCount=daysToKeep
-    )
+    fh = TimedRotatingFileHandler(fileName, when="S", backupCount=daysToKeep)
     fh.setFormatter(logFormatter)
     fh.rotator = _rotator
     fh.namer = _namer
