@@ -39,6 +39,7 @@ PluginDetail = namedtuple("PluginDetail",
      "showHomeLink",
      "showInTitleBar",
      "antIcon",
+     "titleSvgIcon",
      "titleBarText",
      "configLinkPath"])
 
@@ -136,6 +137,7 @@ class FrontendBuilderABC(BuilderABC):
             homeLinkText = jsonCfgNode.homeLinkText(plugin.title)
             showInTitleBar = jsonCfgNode.showInTitleBar(False)
             antIcon = jsonCfgNode.antIcon(None)
+            titleSvgIcon = jsonCfgNode.titleSvgIcon(None)
             titleBarText = jsonCfgNode.titleBarText(None)
             configLinkPath = jsonCfgNode.configLinkPath(None)
 
@@ -194,6 +196,7 @@ class FrontendBuilderABC(BuilderABC):
                     showHomeLink=showHomeLink,
                     showInTitleBar=showInTitleBar,
                     antIcon=antIcon,
+                    titleSvgIcon=titleSvgIcon,
                     titleBarText=titleBarText,
                     configLinkPath=configLinkPath)
             )
@@ -293,6 +296,7 @@ class FrontendBuilderABC(BuilderABC):
             links.append(dict(plugin=pluginDetail.pluginName,
                 text=pluginDetail.titleBarText,
                 antIcon=pluginDetail.antIcon,
+                svgIcon=pluginDetail.titleSvgIcon,
                 resourcePath="/%s" % pluginDetail.pluginName,
                 badgeCount=None))
 
