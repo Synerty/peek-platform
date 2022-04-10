@@ -1,5 +1,10 @@
 import platform
 
+from peek_platform.file_config.PeekFileConfigABC import PEEK_AGENT_SERVICE
+from peek_platform.file_config.PeekFileConfigABC import PEEK_FIELD_SERVICE
+from peek_platform.file_config.PeekFileConfigABC import PEEK_OFFICE_SERVICE
+from peek_platform.file_config.PeekFileConfigABC import PEEK_WORKER_SERVICE
+
 try:
     import win32serviceutil
     import win32service
@@ -44,10 +49,10 @@ class PeekSvc(win32serviceutil.ServiceFramework):
                     break
 
                 for service in (
-                    "peek-agent-service",
-                    "peek-worker-service",
-                    "peek-office-service",
-                    "peek-field-service",
+                    PEEK_AGENT_SERVICE,
+                    PEEK_WORKER_SERVICE,
+                    PEEK_OFFICE_SERVICE,
+                    PEEK_FIELD_SERVICE,
                 ):
                     (
                         _,

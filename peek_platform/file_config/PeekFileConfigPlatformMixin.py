@@ -1,6 +1,8 @@
 import logging
 import os
+import time
 from abc import ABCMeta
+import random
 from typing import Optional
 
 from jsoncfg.value_mappers import (
@@ -10,6 +12,12 @@ from jsoncfg.value_mappers import (
     require_bool,
     require_integer,
 )
+
+from peek_platform.file_config.PeekFileConfigABC import PEEK_AGENT_SERVICE
+from peek_platform.file_config.PeekFileConfigABC import PEEK_FIELD_SERVICE
+from peek_platform.file_config.PeekFileConfigABC import PEEK_LOGIC_SERVICE
+from peek_platform.file_config.PeekFileConfigABC import PEEK_OFFICE_SERVICE
+from peek_platform.file_config.PeekFileConfigABC import PEEK_WORKER_SERVICE
 
 logger = logging.getLogger(__name__)
 
@@ -156,3 +164,96 @@ class PeekFileConfigPlatformMixin(metaclass=ABCMeta):
     def pluginsEnabled(self, value):
         with self._cfg as c:
             c.plugin.enabled = value
+
+    # --- Manhole
+    @property
+    def manholeEnabled(self) -> str:
+        with self._cfg as c:
+            return c.logging.manhole.enabled(True, require_bool)
+
+    @property
+    def manholePort(self) -> int:
+        from peek_platform import PeekPlatformConfig
+
+        port = {
+            PEEK_LOGIC_SERVICE: 2201,
+            PEEK_WORKER_SERVICE: 2202,
+            PEEK_AGENT_SERVICE: 2203,
+            PEEK_FIELD_SERVICE: 2204,
+            PEEK_OFFICE_SERVICE: 2205,
+        }[PeekPlatformConfig.componentName]
+        with self._cfg as c:
+            return c.logging.manhole.port(port, require_integer)
+
+    @property
+    def manholePassword(self) -> str:
+        default = str(random.getrandbits(int(time.time() * 10**6 % 100000)))[
+            :32
+        ]
+        with self._cfg as c:
+            return c.logging.manhole.password(default, require_string)
+
+    @property
+    def manholePublicKeyFile(self) -> str:
+        return self._ensureMaholeKeysExist()[0]
+
+    @property
+    def manholePrivateKeyFile(self) -> str:
+        return self._ensureMaholeKeysExist()[1]
+
+    def _ensureMaholeKeysExist(self) -> (str, str):
+        with self._cfg as c:
+            privateDefault = os.path.join(self._homePath, "manhole-key")
+            priFile = c.logging.manhole.privateKeyFile(
+                privateDefault, require_string
+            )
+
+            publicDefault = os.path.join(self._homePath, "manhole-key.pub")
+            pubFile = c.logging.manhole.publicKeyFile(
+                publicDefault, require_string
+            )
+
+            if not os.path.exists(priFile) or not os.path.exists(pubFile):
+                self._manholeCreateKeys(priFile, pubFile)
+
+            return pubFile, priFile
+
+    def _manholeCreateKeys(self, priFile, pubFile):
+        logger.info("(Re)Creating Manhole SSH Server Keys")
+
+        from cryptography.hazmat.primitives import (
+            serialization as crypto_serialization,
+        )
+        from cryptography.hazmat.primitives.asymmetric import rsa
+        from cryptography.hazmat.backends import (
+            default_backend as crypto_default_backend,
+        )
+
+        key = rsa.generate_private_key(
+            backend=crypto_default_backend(),
+            public_exponent=65537,
+            key_size=2048,
+        )
+        privateKey = key.private_bytes(
+            crypto_serialization.Encoding.PEM,
+            crypto_serialization.PrivateFormat.TraditionalOpenSSL,
+            crypto_serialization.NoEncryption(),
+        ).decode()
+        publicKey = (
+            key.public_key()
+            .public_bytes(
+                crypto_serialization.Encoding.OpenSSH,
+                crypto_serialization.PublicFormat.OpenSSH,
+            )
+            .decode()
+        )
+
+        from peek_platform import PeekPlatformConfig
+
+        publicKey += " Peek %s Manhole" % PeekPlatformConfig.componentName
+
+        with open(pubFile, "w") as f:
+            f.write(publicKey)
+
+        with open(priFile, "w") as f:
+            f.write(privateKey)

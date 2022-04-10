@@ -22,6 +22,19 @@ from jsoncfg.functions import save_config, ConfigWithWrapper
 
 logger = logging.getLogger(__name__)
 
+PEEK_LOGIC_SERVICE = "peek-logic-service"
+PEEK_WORKER_SERVICE = "peek-worker-service"
+PEEK_AGENT_SERVICE = "peek-agent-service"
+PEEK_OFFICE_SERVICE = "peek-office-service"
+PEEK_FIELD_SERVICE = "peek-field-service"
+PEEK_SERVICES = (
+    PEEK_LOGIC_SERVICE,
+    PEEK_WORKER_SERVICE,
+    PEEK_AGENT_SERVICE,
+    PEEK_OFFICE_SERVICE,
+    PEEK_FIELD_SERVICE,
+)
+
 
 class PeekFileConfigABC(metaclass=ABCMeta):
     """
@@ -60,15 +73,15 @@ class PeekFileConfigABC(metaclass=ABCMeta):
     def _migrate(self):
         from peek_platform import PeekPlatformConfig
 
-        copyServices = ("peek-office-service", "peek-field-service")
+        copyServices = (PEEK_OFFICE_SERVICE, PEEK_FIELD_SERVICE)
 
-        if PeekPlatformConfig.componentName == "peek-logic-service":
+        if PeekPlatformConfig.componentName == PEEK_LOGIC_SERVICE:
             self._migrateConfigDirv2tov3Move("server")
 
-        elif PeekPlatformConfig.componentName == "peek-worker-service":
+        elif PeekPlatformConfig.componentName == PEEK_WORKER_SERVICE:
             self._migrateConfigDirv2tov3Move("worker")
 
-        elif PeekPlatformConfig.componentName == "peek-agent-service":
+        elif PeekPlatformConfig.componentName == PEEK_AGENT_SERVICE:
             self._migrateConfigDirv2tov3Move("agent")
 
         elif PeekPlatformConfig.componentName in copyServices:
@@ -83,7 +96,8 @@ class PeekFileConfigABC(metaclass=ABCMeta):
         assert PeekPlatformConfig.componentName is not None
 
         self._homePath = os.path.join(
-            os.path.expanduser("~"), "%s.home" % PeekPlatformConfig.componentName
+            os.path.expanduser("~"),
+            "%s.home" % PeekPlatformConfig.componentName,
         )
 
         self._migrate()
