@@ -4,7 +4,10 @@ import os
 import shutil
 from collections import namedtuple
 from textwrap import dedent
-from typing import List, Callable, Optional, Dict
+from typing import Callable
+from typing import Dict
+from typing import List
+from typing import Optional
 
 from jsoncfg.value_mappers import require_bool
 
@@ -313,16 +316,20 @@ class FrontendBuilderABC(BuilderABC):
         _appRoutesTemplate = dedent("""
             {
                 path: '%s',
-                loadChildren: "@_peek/%s/%s"
+                loadChildren: () => import("@_peek/%s").then(mod => mod.%s)
             }""")
 
         routes = []
         for pluginDetail in pluginDetails:
             if pluginDetail.appModule:
+                appModuleFileName, _, appModuleName = \
+                    pluginDetail.appModule.partition("#")
+                appModuleFilePath = f"{pluginDetail.pluginName}/{appModuleFileName}"
+
                 routes.append(_appRoutesTemplate
                               % (pluginDetail.pluginName,
-                                 pluginDetail.pluginName,
-                                 pluginDetail.appModule))
+                                 appModuleFilePath,
+                                 appModuleName))
 
         routeData = "// This file is auto generated, the git version is blank and .gitignored\n"
         routeData += "export const pluginAppRoutes = ["
@@ -336,16 +343,19 @@ class FrontendBuilderABC(BuilderABC):
         _cfgRoutesTemplate = dedent("""
             {
                 path: '%s_cfg',
-                loadChildren: "@_peek/%s_cfg/%s"
+                loadChildren: () => import("@_peek/%s_cfg/%s").then(mod => mod.%s)
             }""")
 
         routes = []
         for pluginDetail in pluginDetails:
             if pluginDetail.cfgModule:
+                cfgModuleFileName, _, cfgModuleName = \
+                    pluginDetail.cfgModule.partition("#")
                 routes.append(_cfgRoutesTemplate
                               % (pluginDetail.pluginName,
                                  pluginDetail.pluginName,
-                                 pluginDetail.cfgModule))
+                                 cfgModuleFileName,
+                                 cfgModuleName))
 
         routeData = "// This file is auto generated, the git version is blank and .gitignored\n"
         routeData += "export const pluginCfgRoutes = ["
