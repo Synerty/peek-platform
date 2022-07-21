@@ -7,7 +7,9 @@ from peek_platform.util.PtyUtil import PtyOutParser, spawnPty, logSpawnException
 
 logger = logging.getLogger(__name__)
 
-NG_BUILD_ARGS = "ng build --prod --optimization  --common-chunk --vendor-chunk".split()
+NG_BUILD_ARGS = (
+    "ng build --prod --optimization  --common-chunk --vendor-chunk".split()
+)
 
 
 def runDocBuild(feBuildDir: str):
@@ -16,10 +18,18 @@ def runDocBuild(feBuildDir: str):
     return __runNodeCmdLin(feBuildDir, ["bash", "./build_html_docs.sh"])
 
 
-def runNgBuild(feBuildDir: str):
+def runNgBuild(feBuildDir: str, ngBuildArgs=None):
+    if not ngBuildArgs:
+        ngBuildArgs = NG_BUILD_ARGS
     if isWindows:
-        return __runNodeCmdWin(feBuildDir, NG_BUILD_ARGS)
-    return __runNodeCmdLin(feBuildDir, NG_BUILD_ARGS)
+        return __runNodeCmdWin(feBuildDir, ngBuildArgs)
+    return __runNodeCmdLin(feBuildDir, ngBuildArgs)
+
+
+def runCommand(dir: str, command: List[str]):
+    if isWindows:
+        return __runNodeCmdLin(dir, command)
+    return __runNodeCmdLin(dir, command)
 
 
 def runTsc(feDir: str):
@@ -30,7 +40,11 @@ def runTsc(feDir: str):
 
 def __runNodeCmdWin(feBuildDir: str, cmds: List[str]):
     proc = subprocess.Popen(
-        cmds, cwd=feBuildDir, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
+        cmds,
+        cwd=feBuildDir,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        shell=True,
     )
 
     logger.info("Wating up to 5m for command to finish")
