@@ -1,7 +1,11 @@
 import logging
 import os
 import subprocess
+import sys
+
 from typing import Optional
+
+from vortex.DeferUtil import deferToThreadWrapWithLogger
 
 from peek_platform.WindowsPatch import isWindows
 
@@ -33,7 +37,9 @@ class SpawnOsCommandException(subprocess.CalledProcessError):
         method of standard exceptions
         """
 
-        subprocess.CalledProcessError.__init__(self, returncode, cmd, stdout, stderr)
+        subprocess.CalledProcessError.__init__(
+            self, returncode, cmd, stdout, stderr
+        )
         self.message = message
 
     def __str__(self):
@@ -67,7 +73,9 @@ class PtyOutParser:
 
         """
         self.data = ""
-        self.startLogging = False  # Ignore all the stuff before the final summary
+        self.startLogging = (
+            False  # Ignore all the stuff before the final summary
+        )
         self.allData = ""
         self.loggingStartMarker = loggingStartMarker
 
@@ -139,19 +147,57 @@ def __reallySpawnSubprocess(
     bashExec = PeekPlatformConfig.config.bashLocation
 
     logger.debug("Using interpreter : %s", bashExec)
-    logger.debug("Running command via subprocess : %s", cmdAndArgs)
 
-    import pty
+    path, _, command = cmdAndArgs.partition("&&")
+    path = path.strip("cd").strip()
+    command = command.strip()
 
-    exitCode = pty.spawn([bashExec, "-l", "-c", cmdAndArgs], parser.read, parser.read)
+    import pexpect
 
-    if exitCode:
+    bashArgs = ["-l", "-c", command]
+
+    logger.debug(
+        f"Running command via pexpect : '{bashExec} {' '.join(bashArgs)}' in"
+        f" folder '{path}'"
+    )
+
+    child = pexpect.spawnu(
+        bashExec,
+        bashArgs,
+        cwd=path,
+        maxread=10000,  # a bigger value prints fewer dots
+        use_poll=True,  # set to True when your `ulimit` is high
+    )
+
+    class DotMaskedPtyLogFileWriter:
+        def write(self, data):
+            print(".", end="")
+
+        def flush(self):
+            sys.stdout.flush()
+
+        def close(self):
+            print("", flush=True)
+
+    logfile = DotMaskedPtyLogFileWriter()
+    child.logfile = logfile
+    # alternate to show pty outputs
+    # child.logfile = sys.stdout
+
+    child.expect(pexpect.EOF)
+    child.wait()
+    logfile.close()
+    child.close()
+
+    if child.exitstatus:
         raise SpawnOsCommandException(
-            exitCode, cmdAndArgs, stdout="", stderr=parser.allData
+            child.exitstatus, cmdAndArgs, stdout="", stderr=parser.allData
         )
 
 
-def spawnSubprocess(cmdAndArgs: str, parser: Optional[PtyOutParser] = None) -> None:
+def spawnSubprocess(
+    cmdAndArgs: str, parser: Optional[PtyOutParser] = None
+) -> None:
     """Spawn Subprocess
 
     This method calls an OS command using the subprocess package and bash as the
