@@ -161,12 +161,13 @@ def __reallySpawnSubprocess(
         f" folder '{path}'"
     )
 
-    child = pexpect.spawnu(
+    child = pexpect.spawn(
         bashExec,
         bashArgs,
         cwd=path,
         maxread=10000,  # a bigger value prints fewer dots
         use_poll=True,  # set to True when your `ulimit` is high
+        encoding="utf-8",
     )
 
     class DotMaskedPtyLogFileWriter:
@@ -184,11 +185,12 @@ def __reallySpawnSubprocess(
     # alternate to show pty outputs
     # child.logfile = sys.stdout
 
-    child.expect(pexpect.EOF)
+    child.expect(pexpect.EOF, timeout=None)
     child.wait()
     logfile.close()
     child.close()
 
+    logger.debug(f"subprocess returned status code {child.exitstatus}")
     if child.exitstatus:
         raise SpawnOsCommandException(
             child.exitstatus, cmdAndArgs, stdout="", stderr=parser.allData
