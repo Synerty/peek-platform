@@ -72,6 +72,8 @@ requirements = [
     "peek-core-email",  ##==%s" % py_package_name,
     # Memory logging
     "psutil",
+    # pty utility
+    "pexpect>=4.8.0,<5.0",
 ]
 
 lin_dependencies = [
