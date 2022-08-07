@@ -22,7 +22,9 @@ class PeekFileConfigHttpMixin:
     @property
     def sitePort(self) -> int:
         with self._config._cfg as c:
-            return c.httpServer[self._name].sitePort(self._defaultPort, require_integer)
+            return c.httpServer[self._name].sitePort(
+                self._defaultPort, require_integer
+            )
 
     @property
     def enableHttps(self) -> int:
@@ -38,7 +40,24 @@ class PeekFileConfigHttpMixin:
     def sslBundleFilePath(self) -> Optional[str]:
         default = os.path.join(self._config._homePath, "peek-ssl-bundle.pem")
         with self._config._cfg as c:
-            file = c.httpServer[self._name].sslBundleFilePath(default, require_string)
+            file = c.httpServer[self._name].sslBundleFilePath(
+                default, require_string
+            )
+            if os.path.exists(file):
+                return file
+            return None
+
+    @property
+    def sslTrustedPeerCertificateAuthorityBundleFilePath(self) -> Optional[str]:
+        default = os.path.join(
+            self._config._homePath, "peek-ssl-trusted-peer-bundle.pem"
+        )
+        with self._config._cfg as c:
+            file = c.httpServer[
+                self._name
+            ].sslTrustedPeerCertificateAuthorityBundleFilePath(
+                default, require_string
+            )
             if os.path.exists(file):
                 return file
             return None
