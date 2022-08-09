@@ -1,5 +1,7 @@
 from abc import ABCMeta
+from typing import Optional
 
+from jsoncfg.value_mappers import require_bool
 from jsoncfg.value_mappers import require_string, require_integer
 
 
@@ -20,3 +22,37 @@ class PeekFileConfigPeekServerClientMixin(metaclass=ABCMeta):
     def peekServerHost(self) -> str:
         with self._cfg as c:
             return c.peekServer.host("127.0.0.1", require_string)
+
+    @property
+    def ssl(self) -> int:
+        with self._cfg as c:
+            return c.peekServer.ssl(False, require_bool)
+
+    @property
+    def sslEnableMutualTLS(self) -> int:
+        with self._cfg as c:
+            return c.peekServer.sslEnableMutualTLS(False, require_bool)
+
+    @property
+    def sslBundleFilePath(self) -> Optional[str]:
+        default = os.path.join(
+            self._cfg._homePath, "peek-platform-ssl-client-bundle.pem"
+        )
+        with self._cfg as c:
+            file = c.peekServer.sslBundleFilePath(default, require_string)
+            if os.path.exists(file):
+                return file
+            return None
+
+    @property
+    def sslMutualTLSCertificateAuthorityBundleFilePath(self) -> Optional[str]:
+        default = os.path.join(
+            self._cfg._homePath, "peek-platform-ssl-client-mtls-bundle.pem"
+        )
+        with self._cfg as c:
+            file = c.peekServer.sslMutualTLSCertificateAuthorityBundleFilePath(
+                default, require_string
+            )
+            if os.path.exists(file):
+                return file
+            return None
