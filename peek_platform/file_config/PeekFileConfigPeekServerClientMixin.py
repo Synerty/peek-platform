@@ -1,3 +1,4 @@
+import os
 from abc import ABCMeta
 from typing import Optional
 
@@ -24,33 +25,35 @@ class PeekFileConfigPeekServerClientMixin(metaclass=ABCMeta):
             return c.peekServer.host("127.0.0.1", require_string)
 
     @property
-    def ssl(self) -> int:
+    def peekServerSSL(self) -> int:
         with self._cfg as c:
             return c.peekServer.ssl(False, require_bool)
 
     @property
-    def sslEnableMutualTLS(self) -> int:
+    def peekServerSSLEnableMutualTLS(self) -> int:
         with self._cfg as c:
             return c.peekServer.sslEnableMutualTLS(False, require_bool)
 
     @property
-    def sslBundleFilePath(self) -> Optional[str]:
+    def peekServerSSLClientBundleFilePath(self) -> Optional[str]:
         default = os.path.join(
-            self._cfg._homePath, "peek-platform-ssl-client-bundle.pem"
+            self._homePath, "peek-platform-ssl-client-bundle.pem"
         )
         with self._cfg as c:
-            file = c.peekServer.sslBundleFilePath(default, require_string)
+            file = c.peekServer.sslClientBundleFilePath(default, require_string)
             if os.path.exists(file):
                 return file
             return None
 
     @property
-    def sslMutualTLSCertificateAuthorityBundleFilePath(self) -> Optional[str]:
+    def peekServerSSLClientMutualTLSCertificateAuthorityBundleFilePath(
+        self,
+    ) -> Optional[str]:
         default = os.path.join(
-            self._cfg._homePath, "peek-platform-ssl-client-mtls-bundle.pem"
+            self._homePath, "peek-platform-ssl-client-mtls-bundle.pem"
         )
         with self._cfg as c:
-            file = c.peekServer.sslMutualTLSCertificateAuthorityBundleFilePath(
+            file = c.peekServer.sslClientMutualTLSCertificateAuthorityBundleFilePath(
                 default, require_string
             )
             if os.path.exists(file):
