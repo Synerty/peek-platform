@@ -22,12 +22,9 @@ class PeekFileConfigHttpMixin:
     @property
     def sitePort(self) -> int:
         with self._config._cfg as c:
-            return c.httpServer[self._name].sitePort(self._defaultPort, require_integer)
-
-    @property
-    def enableHttps(self) -> int:
-        with self._config._cfg as c:
-            return c.httpServer[self._name].enableHttps(False, require_bool)
+            return c.httpServer[self._name].sitePort(
+                self._defaultPort, require_integer
+            )
 
     @property
     def redirectFromHttpPort(self) -> int:
@@ -35,10 +32,42 @@ class PeekFileConfigHttpMixin:
             return c.httpServer[self._name].redirectFromHttpPort(None)
 
     @property
-    def sslBundleFilePath(self) -> Optional[str]:
-        default = os.path.join(self._config._homePath, "peek-ssl-bundle.pem")
+    def ssl(self) -> int:
         with self._config._cfg as c:
-            file = c.httpServer[self._name].sslBundleFilePath(default, require_string)
+            return c.httpServer[self._name].ssl(False, require_bool)
+
+    @property
+    def sslEnableMutualTLS(self) -> int:
+        with self._config._cfg as c:
+            return c.httpServer[self._name].sslEnableMutualTLS(
+                False, require_bool
+            )
+
+    @property
+    def sslBundleFilePath(self) -> Optional[str]:
+        default = os.path.join(
+            self._config._homePath, f"peek-{self._name}-ssl-bundle.pem"
+        )
+        with self._config._cfg as c:
+            file = c.httpServer[self._name].sslBundleFilePath(
+                default, require_string
+            )
+            if os.path.exists(file):
+                return file
+            return None
+
+    @property
+    def sslMutualTLSCertificateAuthorityBundleFilePath(self) -> Optional[str]:
+        default = os.path.join(
+            self._config._homePath,
+            f"peek-{self._name}-ssl-mtls-ca-bundle.pem",
+        )
+        with self._config._cfg as c:
+            file = c.httpServer[
+                self._name
+            ].sslMutualTLSCertificateAuthorityBundleFilePath(
+                default, require_string
+            )
             if os.path.exists(file):
                 return file
             return None
