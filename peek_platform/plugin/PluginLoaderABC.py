@@ -29,6 +29,16 @@ from vortex.VortexUtil import _DebounceArgsTuple
 from vortex.rpc.RPC import _VortexRPCArgTuple
 from vortex.rpc.RPC import _VortexRPCResultTuple
 
+from peek_plugin_base.simple_subproc.simple_subproc_task_call_tuple import (
+    SimpleSubprocTaskCallTuple,
+)
+from peek_plugin_base.simple_subproc.simple_subproc_task_constructor_tuple import (
+    SimpleSubprocTaskConstructorTuple,
+)
+from peek_plugin_base.simple_subproc.simple_subproc_task_result_tuple import (
+    SimpleSubprocTaskResultTuple,
+)
+
 logger = logging.getLogger(__name__)
 
 # This doesn't do anything, but it makes sure it's imported before any plugins import it.
@@ -38,6 +48,9 @@ TupleGenericAction()
 _VortexRPCResultTuple()
 _VortexRPCArgTuple()
 _DebounceArgsTuple()
+SimpleSubprocTaskResultTuple()
+SimpleSubprocTaskCallTuple()
+SimpleSubprocTaskConstructorTuple()
 
 corePlugins = [
     "peek_core_email",
@@ -131,7 +144,8 @@ class PluginLoaderABC(metaclass=ABCMeta):
             # Load up the plugin package info
             pluginPackageJson = PluginPackageFileConfig(pluginRootDir)
             pluginVersion = pluginPackageJson.config.plugin.version(
-                require_string)
+                require_string
+            )
             pluginRequiresService = pluginPackageJson.config.requiresServices(
                 require_array
             )
@@ -147,8 +161,9 @@ class PluginLoaderABC(metaclass=ABCMeta):
                 return
 
             # Get the entry hook class from the package
-            entryHookGetter = getattr(PluginPackage,
-                str(self._entryHookFuncName))
+            entryHookGetter = getattr(
+                PluginPackage, str(self._entryHookFuncName)
+            )
             EntryHookClass = entryHookGetter() if entryHookGetter else None
 
             if not EntryHookClass:
@@ -168,8 +183,10 @@ class PluginLoaderABC(metaclass=ABCMeta):
 
             ### Perform the loading of the plugin
             yield self._loadPluginThrows(
-                pluginName, EntryHookClass, pluginRootDir,
-                tuple(pluginRequiresService)
+                pluginName,
+                EntryHookClass,
+                pluginRootDir,
+                tuple(pluginRequiresService),
             )
 
             # Make sure the version we have recorded is correct
@@ -225,7 +242,8 @@ class PluginLoaderABC(metaclass=ABCMeta):
 
         # Remove the registered tuples
         removeTuplesForTupleNames(
-            self._vortexTupleNamesByPluginName[pluginName])
+            self._vortexTupleNamesByPluginName[pluginName]
+        )
         del self._vortexTupleNamesByPluginName[pluginName]
 
         self._unloadPluginPackage(pluginName)
@@ -411,7 +429,8 @@ class PluginLoaderABC(metaclass=ABCMeta):
 
     def notifyOfPluginVersionUpdate(self, pluginName, pluginVersion):
         logger.info(
-            "Received PLUGIN update for %s version %s", pluginName,
-            pluginVersion
+            "Received PLUGIN update for %s version %s",
+            pluginName,
+            pluginVersion,
         )
         return self.loadPlugin(pluginName)
