@@ -6,8 +6,8 @@ import unittest
 import peek_platform
 from jsoncfg.functions import config_to_json_str
 from peek_platform.file_config.PeekFileConfigABC import PeekFileConfigABC
-from peek_platform.file_config.PeekFileConfigPeekServerClientMixin import (
-    PeekFileConfigPeekServerClientMixin,
+from peek_platform.file_config.PeekFileConfigDataExchangeClientMixin import (
+    PeekFileConfigDataExchangeClientMixin,
 )
 from peek_platform.file_config.PeekFileConfigPlatformMixin import (
     PeekFileConfigPlatformMixin,
@@ -19,7 +19,9 @@ logger = logging.getLogger(__name__)
 
 
 class TestFileConfig(
-    PeekFileConfigABC, PeekFileConfigPeekServerClientMixin, PeekFileConfigPlatformMixin
+    PeekFileConfigABC,
+    PeekFileConfigDataExchangeClientMixin,
+    PeekFileConfigPlatformMixin,
 ):
     pass
 
@@ -94,7 +96,9 @@ class PeekFileConfigTest(unittest.TestCase):
         bas = TestFileConfig()
 
         # Defaults
-        logger.info("plugin.plugin_noop.version = %s", bas.pluginVersion(pluginName))
+        logger.info(
+            "plugin.plugin_noop.version = %s", bas.pluginVersion(pluginName)
+        )
         logger.info("platformVersion = %s", bas.platformVersion)
 
         bas.platformVersion = "4.4.4"
@@ -105,7 +109,9 @@ class PeekFileConfigTest(unittest.TestCase):
 
         TestFileConfig._PeekFileConfigBase__instance = None
 
-        logger.info("plugin.plugin_noop.version = %s", bas.pluginVersion(pluginName))
+        logger.info(
+            "plugin.plugin_noop.version = %s", bas.pluginVersion(pluginName)
+        )
         logger.info("platformVersion = %s", bas.platformVersion)
 
         self.assertEqual(bas.platformVersion, "4.4.4")

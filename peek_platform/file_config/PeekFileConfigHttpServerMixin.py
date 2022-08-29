@@ -32,40 +32,15 @@ class PeekFileConfigHttpMixin:
             return c.httpServer[self._name].redirectFromHttpPort(None)
 
     @property
-    def ssl(self) -> int:
+    def useSsl(self) -> int:
         with self._config._cfg as c:
-            return c.httpServer[self._name].ssl(False, require_bool)
-
-    @property
-    def sslEnableMutualTLS(self) -> int:
-        with self._config._cfg as c:
-            return c.httpServer[self._name].sslEnableMutualTLS(
-                False, require_bool
-            )
+            return c.httpServer[self._name].useSsl(False, require_bool)
 
     @property
     def sslBundleFilePath(self) -> Optional[str]:
-        default = os.path.join(
-            self._config._homePath, f"peek-{self._name}-ssl-bundle.pem"
-        )
+        default = os.path.join(self._config._homePath, "key-cert-cachain.pem")
         with self._config._cfg as c:
             file = c.httpServer[self._name].sslBundleFilePath(
-                default, require_string
-            )
-            if os.path.exists(file):
-                return file
-            return None
-
-    @property
-    def sslMutualTLSCertificateAuthorityBundleFilePath(self) -> Optional[str]:
-        default = os.path.join(
-            self._config._homePath,
-            f"peek-{self._name}-ssl-mtls-ca-bundle.pem",
-        )
-        with self._config._cfg as c:
-            file = c.httpServer[
-                self._name
-            ].sslMutualTLSCertificateAuthorityBundleFilePath(
                 default, require_string
             )
             if os.path.exists(file):
