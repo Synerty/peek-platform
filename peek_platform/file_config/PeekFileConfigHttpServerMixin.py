@@ -32,7 +32,7 @@ class PeekFileConfigHttpMixin:
             return c.httpServer[self._name].redirectFromHttpPort(None)
 
     @property
-    def useSsl(self) -> int:
+    def useSsl(self) -> bool:
         with self._config._cfg as c:
             return c.httpServer[self._name].useSsl(False, require_bool)
 
