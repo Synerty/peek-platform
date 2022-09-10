@@ -30,3 +30,6 @@ class PeekPlatformConfig:
 
     # The instance of the PluginLoaderABC
     pluginLoader = None
+
+    # Is this a subprocess instance of a service.
+    isPluginSubprocess = False

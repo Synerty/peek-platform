@@ -16,6 +16,15 @@ from jsoncfg.value_mappers import require_string
 from peek_platform import PeekPlatformConfig
 from twisted.internet.defer import inlineCallbacks
 
+from peek_platform.subproc_plugin_init.plugin_subproc.plugin_subproc_platform_config_tuple import (
+    PluginSubprocPlatformConfigTuple,
+)
+from peek_platform.subproc_plugin_init.plugin_subproc.plugin_subproc_vortex_msg_tuple import (
+    PluginSubprocVortexMsgTuple,
+)
+from peek_platform.subproc_plugin_init.plugin_subproc.plugin_subproc_vortex_payload_envelope_tuple import (
+    PluginSubprocVortexPayloadEnvelopeTuple,
+)
 from peek_plugin_base.PluginCommonEntryHookABC import PluginCommonEntryHookABC
 from peek_plugin_base.PluginPackageFileConfig import PluginPackageFileConfig
 from vortex.PayloadIO import PayloadIO
@@ -51,6 +60,9 @@ _DebounceArgsTuple()
 SimpleSubprocTaskResultTuple()
 SimpleSubprocTaskCallTuple()
 SimpleSubprocTaskConstructorTuple()
+PluginSubprocPlatformConfigTuple()
+PluginSubprocVortexMsgTuple()
+PluginSubprocVortexPayloadEnvelopeTuple()
 
 corePlugins = [
     "peek_core_email",
@@ -119,6 +131,9 @@ class PluginLoaderABC(metaclass=ABCMeta):
         # Until we implement dynamic loading and unloading of plugins
         # make sure we don't load them twice, because we don't yet
         # support it.
+
+        from peek_platform import PeekPlatformConfig
+
         if pluginName in self._loadedPlugins:
             raise Exception(
                 "Plugin %s is already loaded, check config.json" % pluginName
@@ -139,6 +154,7 @@ class PluginLoaderABC(metaclass=ABCMeta):
                 )
 
             PluginPackage = modSpec.loader.load_module()
+
             pluginRootDir = os.path.dirname(PluginPackage.__file__)
 
             # Load up the plugin package info
@@ -160,20 +176,35 @@ class PluginLoaderABC(metaclass=ABCMeta):
                 )
                 return
 
-            # Get the entry hook class from the package
-            entryHookGetter = getattr(
-                PluginPackage, str(self._entryHookFuncName)
+            configForService = pluginPackageJson.configForService(
+                PeekPlatformConfig.componentName
             )
-            EntryHookClass = entryHookGetter() if entryHookGetter else None
 
-            if not EntryHookClass:
-                logger.warning(
-                    "Skipping load for %s, %s.%s is missing or returned None",
-                    pluginName,
-                    pluginName,
-                    self._entryHookFuncName,
+            if (
+                configForService.standalone(False)
+                and not PeekPlatformConfig.isPluginSubprocess
+            ):
+                from peek_platform.subproc_plugin_init.plugin_subproc_parent_main import (
+                    PluginSubprocParentMain,
                 )
-                return
+
+                EntryHookClass = PluginSubprocParentMain
+
+            else:
+                # Get the entry hook class from the package
+                entryHookGetter = getattr(
+                    PluginPackage, str(self._entryHookFuncName)
+                )
+                EntryHookClass = entryHookGetter() if entryHookGetter else None
+
+                if not EntryHookClass:
+                    logger.warning(
+                        "Skipping load for %s, %s.%s is missing or returned None",
+                        pluginName,
+                        pluginName,
+                        self._entryHookFuncName,
+                    )
+                    return
 
             if not issubclass(EntryHookClass, self._entryHookClassType):
                 raise Exception(
@@ -227,6 +258,7 @@ class PluginLoaderABC(metaclass=ABCMeta):
 
         """
 
+    @inlineCallbacks
     def unloadPlugin(self, pluginName: str):
         oldLoadedPlugin = self._loadedPlugins.get(pluginName)
 
@@ -246,7 +278,7 @@ class PluginLoaderABC(metaclass=ABCMeta):
         )
         del self._vortexTupleNamesByPluginName[pluginName]
 
-        self._unloadPluginPackage(pluginName)
+        yield self._unloadPluginPackage(pluginName)
 
     def listPlugins(self):
         def pluginTest(name):
@@ -331,12 +363,32 @@ class PluginLoaderABC(metaclass=ABCMeta):
             raise Exception("Some plugins are still loaded")
 
     # ---------------
+    # Standalone Plugins
+
+    @inlineCallbacks
+    def loadStandalonePlugin(self, pluginName: str):
+        yield self.loadPlugin(pluginName)
+
+    @inlineCallbacks
+    def startStandalonePlugin(self, pluginName: str):
+        yield self._tryStart(pluginName)
+
+    @inlineCallbacks
+    def stopStandalonePlugin(self, pluginName: str):
+        yield self._tryStop(pluginName)
+
+    @inlineCallbacks
+    def unloadStandalonePlugin(self, pluginName: str):
+        yield self.unloadPlugin(pluginName)
+
+    # ---------------
     # Util methods Plugins
 
+    @inlineCallbacks
     def _tryStart(self, pluginName):
         plugin = self._loadedPlugins[pluginName]
         try:
-            return plugin.start()
+            yield plugin.start()
 
         except Exception as e:
             logger.error(
@@ -345,10 +397,11 @@ class PluginLoaderABC(metaclass=ABCMeta):
             )
             logger.exception(e)
 
+    @inlineCallbacks
     def _tryStop(self, pluginName):
         plugin = self._loadedPlugins[pluginName]
         try:
-            return plugin.stop()
+            yield plugin.stop()
 
         except Exception as e:
             logger.error(
@@ -357,6 +410,7 @@ class PluginLoaderABC(metaclass=ABCMeta):
             )
             logger.exception(e)
 
+    @inlineCallbacks
     def _unloadPluginPackage(self, pluginName):
 
         oldLoadedPlugin = self._loadedPlugins.get(pluginName)
@@ -365,7 +419,7 @@ class PluginLoaderABC(metaclass=ABCMeta):
         del self._loadedPlugins[pluginName]
 
         try:
-            oldLoadedPlugin.unload()
+            yield oldLoadedPlugin.unload()
 
         except Exception as e:
             logger.error(

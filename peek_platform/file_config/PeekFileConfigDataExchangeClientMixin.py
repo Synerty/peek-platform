@@ -23,9 +23,7 @@ class PeekFileConfigDataExchangeClientMixin(metaclass=ABCMeta):
     @property
     def peekServerHost(self) -> str:
         with self._config._cfg as c:
-            return c.dataExchange.host(
-                "fqdn.that-matches-peek-logics-cert.domain", require_string
-            )
+            return c.dataExchange.host("localhost", require_string)
 
     @property
     def peekServerUseSSL(self) -> int:
@@ -65,10 +63,7 @@ class PeekFileConfigDataExchangeClientMixin(metaclass=ABCMeta):
     def peekServerSSLMutualTLSTrustedPeerCertificateBundleFilePath(
         self,
     ) -> Optional[str]:
-        default = os.path.join(
-            self._config._homePath,
-            "certs-of-peers.pem",
-        )
+        default = os.path.join(self._config._homePath, "certs-of-peers.pem")
         with self._config._cfg as c:
             file = (
                 c.dataExchange.sslMutualTLSTrustedPeerCertificateBundleFilePath(
