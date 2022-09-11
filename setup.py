@@ -59,6 +59,7 @@ requirements = [
     # Used to detect file changes and re-copy them for frontend builds
     # Licensing
     "pycryptodome",
+    "cryptography <= 38.0.0",
     # Celery packages
     "flower<1.0.0",
     # "amqp >= 1.4.9",  # DEPENDENCY LINK BELOW
@@ -113,11 +114,7 @@ dependency_links = [
     # "git+https://github.com/celery/py-amqp#egg=amqp",
 ]
 
-dev_requirements = [
-    "coverage >= 4.2",
-    "mock >= 2.0.0",
-    "selenium >= 2.53.6",
-]
+dev_requirements = ["coverage >= 4.2", "mock >= 2.0.0", "selenium >= 2.53.6"]
 
 requirements.extend(dev_requirements)
 
@@ -144,8 +141,8 @@ requirements = [
 setup(
     entry_points={
         "console_scripts": [
-            "winsvc_peek_restarter = peek_platform.winsvc_peek_restarter:main",
-        ],
+            "winsvc_peek_restarter = peek_platform.winsvc_peek_restarter:main"
+        ]
     },
     name=pip_package_name,
     packages=find_packages(
