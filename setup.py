@@ -59,7 +59,7 @@ requirements = [
     # Used to detect file changes and re-copy them for frontend builds
     # Licensing
     "pycryptodome",
-    "cryptography <= 38.0.0",
+    "cryptography < 38.0.0",
     # Celery packages
     "flower<1.0.0",
     # "amqp >= 1.4.9",  # DEPENDENCY LINK BELOW
