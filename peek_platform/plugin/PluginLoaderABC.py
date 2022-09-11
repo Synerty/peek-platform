@@ -206,11 +206,11 @@ class PluginLoaderABC(metaclass=ABCMeta):
                     )
                     return
 
-            if not issubclass(EntryHookClass, self._entryHookClassType):
-                raise Exception(
-                    "%s load error, Excpected %s, received %s"
-                    % (pluginName, self._entryHookClassType, EntryHookClass)
-                )
+                if not issubclass(EntryHookClass, self._entryHookClassType):
+                    raise Exception(
+                        "%s load error, Excpected %s, received %s"
+                        % (pluginName, self._entryHookClassType, EntryHookClass)
+                    )
 
             ### Perform the loading of the plugin
             yield self._loadPluginThrows(

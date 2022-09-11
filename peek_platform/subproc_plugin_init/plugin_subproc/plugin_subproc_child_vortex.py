@@ -5,6 +5,7 @@ from typing import Optional
 from typing import Union
 
 from twisted.internet._posixstdio import StandardIO
+from twisted.internet.defer import inlineCallbacks
 from vortex.PayloadEnvelope import VortexMsgList
 from vortex.VortexABC import VortexABC
 from vortex.VortexABC import VortexInfo
@@ -35,6 +36,7 @@ class PluginSubprocChildVortex(VortexABC):
     def requiresBase64Encoding(self) -> bool:
         return False
 
+    @inlineCallbacks
     def sendVortexMsg(
         self,
         vortexMsgs: Union[VortexMsgList, bytes],
@@ -49,7 +51,7 @@ class PluginSubprocChildVortex(VortexABC):
         if not isinstance(vortexMsgs, list):
             vortexMsgs = [vortexMsgs]
 
-        self._sendVortexToParentProtocol.sendVortexMsg(
+        yield self._sendVortexToParentProtocol.sendVortexMsg(
             vortexMsgs=vortexMsgs, vortexUuid=vortexUuid
         )
 

@@ -78,12 +78,14 @@ class PluginSubprocChildVortexProtocol(protocol.Protocol):
         )
         return vortexPayloadTuple
 
+    @inlineCallbacks
     def sendVortexMsg(
         self,
         vortexMsgs: Union[VortexMsgList, bytes],
         vortexUuid: str,
         priority: int = DEFAULT_PRIORITY,
     ):
+        yield None
         tuple_ = PluginSubprocVortexMsgTuple(
             vortexUuid=vortexUuid, vortexMsgs=vortexMsgs, priority=priority
         )
