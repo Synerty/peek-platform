@@ -180,10 +180,34 @@ class PluginLoaderABC(metaclass=ABCMeta):
                 PeekPlatformConfig.componentName
             )
 
-            if (
+            # Get the entry hook class from the package
+            entryHookGetter = getattr(
+                PluginPackage, str(self._entryHookFuncName)
+            )
+
+            runInSubprocess = (
                 configForService.standalone(False)
                 and not PeekPlatformConfig.isPluginSubprocess
-            ):
+            )
+
+            RealEntryHookClass = entryHookGetter() if entryHookGetter else None
+
+            if not RealEntryHookClass:
+                logger.warning(
+                    "Skipping load for %s, %s.%s is missing or returned None",
+                    pluginName,
+                    pluginName,
+                    self._entryHookFuncName,
+                )
+                return
+
+            if not issubclass(RealEntryHookClass, self._entryHookClassType):
+                raise Exception(
+                    "%s load error, Excpected %s, received %s"
+                    % (pluginName, self._entryHookClassType, RealEntryHookClass)
+                )
+
+            if runInSubprocess:
                 from peek_platform.subproc_plugin_init.plugin_subproc_parent_main import (
                     PluginSubprocParentMain,
                 )
@@ -191,26 +215,7 @@ class PluginLoaderABC(metaclass=ABCMeta):
                 EntryHookClass = PluginSubprocParentMain
 
             else:
-                # Get the entry hook class from the package
-                entryHookGetter = getattr(
-                    PluginPackage, str(self._entryHookFuncName)
-                )
-                EntryHookClass = entryHookGetter() if entryHookGetter else None
-
-                if not EntryHookClass:
-                    logger.warning(
-                        "Skipping load for %s, %s.%s is missing or returned None",
-                        pluginName,
-                        pluginName,
-                        self._entryHookFuncName,
-                    )
-                    return
-
-                if not issubclass(EntryHookClass, self._entryHookClassType):
-                    raise Exception(
-                        "%s load error, Excpected %s, received %s"
-                        % (pluginName, self._entryHookClassType, EntryHookClass)
-                    )
+                EntryHookClass = RealEntryHookClass
 
             ### Perform the loading of the plugin
             yield self._loadPluginThrows(
@@ -218,6 +223,10 @@ class PluginLoaderABC(metaclass=ABCMeta):
                 EntryHookClass,
                 pluginRootDir,
                 tuple(pluginRequiresService),
+            )
+
+            yield self._setupStaticWebResourcesForPlugin(
+                RealEntryHookClass, pluginName
             )
 
             # Make sure the version we have recorded is correct
@@ -257,6 +266,19 @@ class PluginLoaderABC(metaclass=ABCMeta):
          EG dirname(plugin_noop.__file__)
 
         """
+
+    @inlineCallbacks
+    def _setupStaticWebResourcesForPlugin(
+        self, RealEntryHookClass, pluginName: str
+    ):
+        """Setup Static Web Resources For Plugin
+
+        If this is running in a subprocess, we need to call this method on the
+        actual plugin, not PluginSubprocParentMain
+        """
+        loadedPlugin = self._loadedPlugins[pluginName]
+
+        yield RealEntryHookClass.setupStaticWebResources(loadedPlugin._platform)
 
     @inlineCallbacks
     def unloadPlugin(self, pluginName: str):

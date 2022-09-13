@@ -5,7 +5,6 @@ import sys
 
 from sqlalchemy.util import b64encode
 from twisted.internet import reactor
-from twisted.internet.defer import Deferred
 from twisted.internet.defer import inlineCallbacks
 from vortex.DeferUtil import deferToThreadWrapWithLogger
 from vortex.PayloadEndpoint import PayloadEndpoint
