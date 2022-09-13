@@ -7,6 +7,8 @@ from typing import Optional
 from twisted.internet import reactor
 from twisted.internet.threads import deferToThread
 
+from peek_plugin_base.util.PeekPsUtil import PeekPsUtil
+
 logger = logging.getLogger(__name__)
 
 
@@ -215,7 +217,6 @@ def dumpMemObjectToFile(
 def _dumpMemObjectToFile(debugMask, serviceName):
     import os
     import pytz
-    import psutil
 
     TRACEMALLOC_STACK_SIZE = 6
 
@@ -248,10 +249,9 @@ def _dumpMemObjectToFile(debugMask, serviceName):
 
         # Write the total process memory
         f.write("-" * 80 + "\n")
-        process = psutil.Process(os.getpid())
         f.write(
             "Total python processes memory usage: "
-            + rpad(_format_size(process.memory_info().rss, False), 10)
+            + rpad(_format_size(PeekPsUtil().memory_info.rss, False), 10)
             + "\n"
         )
 
