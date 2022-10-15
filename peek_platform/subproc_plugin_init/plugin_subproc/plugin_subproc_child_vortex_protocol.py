@@ -69,6 +69,21 @@ class PluginSubprocChildVortexProtocol(protocol.Protocol):
                 sendResponse=sendResponse,
             )
 
+    @inlineCallbacks
+    def sendVortexMsg(
+        self,
+        vortexMsgs: Union[VortexMsgList, bytes],
+        vortexUuid: str,
+        priority: int = DEFAULT_PRIORITY,
+    ):
+
+        tuple_ = PluginSubprocVortexMsgTuple(
+            vortexUuid=vortexUuid, vortexMsgs=vortexMsgs, priority=priority
+        )
+        vortexMsgTuple = yield self._encodeVortexMsgTuple(tuple_)
+        self.transport.write(vortexMsgTuple)
+        self.transport.write(b".")
+
     @deferToThreadWrapWithLogger(logger)
     def _decodeVortexPayloadTuple(self, message):
         vortexPayloadTuple = (
@@ -78,18 +93,6 @@ class PluginSubprocChildVortexProtocol(protocol.Protocol):
         )
         return vortexPayloadTuple
 
-    @inlineCallbacks
-    def sendVortexMsg(
-        self,
-        vortexMsgs: Union[VortexMsgList, bytes],
-        vortexUuid: str,
-        priority: int = DEFAULT_PRIORITY,
-    ):
-        yield None
-        tuple_ = PluginSubprocVortexMsgTuple(
-            vortexUuid=vortexUuid, vortexMsgs=vortexMsgs, priority=priority
-        )
-        self.transport.write(
-            b64encode(json.dumps(tuple_.toJsonDict()).encode())
-        )
-        self.transport.write(b".")
+    @deferToThreadWrapWithLogger(logger)
+    def _encodeVortexMsgTuple(self, tuple_):
+        return b64encode(json.dumps(tuple_.toJsonDict()).encode())
