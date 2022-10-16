@@ -60,7 +60,7 @@ class PluginSubprocChildVortex(VortexABC):
             return
 
         self._remoteVortexInfos.append(
-            VortexInfo(name=vortexUuid, uuid=vortexName)
+            VortexInfo(name=vortexName, uuid=vortexUuid)
         )
         self._remoteVortexUuidsSet.add(vortexUuid)
 

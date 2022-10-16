@@ -3,6 +3,7 @@ import logging
 import os
 import sys
 
+from peek_plugin_base.PeekVortexUtil import peekBackendNames
 from sqlalchemy.util import b64encode
 from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks
@@ -117,12 +118,14 @@ class PluginSubprocParentMain(PluginCommonEntryHookABC):
 
     @inlineCallbacks
     def start(self) -> None:
+        from peek_platform import PeekPlatformConfig
+
         yield self._processProtocol.sendPluginStart()
 
         self._pluginEndpoint = _NoKeycheckPayloadEndpoint(
             dict(plugin=self._pluginName),
             self._sendPayloadEnvelopeToChild,
-            ignoreFromVortex=peekServerName,
+            ignoreFromVortex=(peekServerName, PeekPlatformConfig.componentName),
         )
 
         logger.debug("Started Standalone Plugin %s", self._pluginName)
