@@ -59,7 +59,7 @@ if __name__ == "__main__":
     )
     logger = logging.getLogger(
         "subproc plugin main %s %s"
-        % (platformConfigTuple.serviceName, platformConfigTuple.pluginName)
+        % (platformConfigTuple.serviceName, platformConfigTuple.subprocessGroup)
     )
 
     from peek_platform.subproc_plugin_init.plugin_subproc.plugin_subproc_child_vortex import (
@@ -91,7 +91,8 @@ if __name__ == "__main__":
         # This is the plugin load, start, stop, unload protocol
         StandardIO(
             PluginSubprocChildStateProtocol(
-                platformConfigTuple.serviceName, platformConfigTuple.pluginName
+                platformConfigTuple.serviceName,
+                platformConfigTuple.subprocessGroup,
             ),
             stdin=PLUGIN_STATE_TO_CHILD_FD,
             stdout=PLUGIN_STATE_FROM_CHILD_FD,

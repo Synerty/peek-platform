@@ -9,4 +9,4 @@ class PluginSubprocPlatformConfigTuple(Tuple):
     __tupleType__ = "peek_platform." + __tablename__
 
     serviceName: str = TupleField()
-    pluginName: str = TupleField()
+    subprocessGroup: str = TupleField()

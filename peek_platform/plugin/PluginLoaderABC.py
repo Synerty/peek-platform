@@ -7,6 +7,7 @@ from abc import abstractmethod
 from abc import abstractproperty
 from collections import defaultdict
 from importlib.util import find_spec
+from typing import Any
 from typing import Optional
 from typing import Tuple
 from typing import Type
@@ -86,6 +87,7 @@ class PluginLoaderABC(metaclass=ABCMeta):
 
     def __init__(self):
         self._loadedPlugins = {}
+        self._loadedSubprocessGroups = {}
 
         self._vortexEndpointInstancesByPluginName = defaultdict(list)
         self._vortexTupleNamesByPluginName = defaultdict(list)
@@ -185,9 +187,9 @@ class PluginLoaderABC(metaclass=ABCMeta):
                 PluginPackage, str(self._entryHookFuncName)
             )
 
+            subprocessGroup = configForService.subprocessGroup(None)
             runInSubprocess = (
-                configForService.standalone(False)
-                and not PeekPlatformConfig.isPluginSubprocess
+                subprocessGroup and not PeekPlatformConfig.isPluginSubprocess
             )
 
             RealEntryHookClass = entryHookGetter() if entryHookGetter else None
@@ -207,12 +209,28 @@ class PluginLoaderABC(metaclass=ABCMeta):
                     % (pluginName, self._entryHookClassType, RealEntryHookClass)
                 )
 
+            # Are we going to run this plugin in a subprocess?
             if runInSubprocess:
                 from peek_platform.subproc_plugin_init.plugin_subproc_parent_main import (
                     PluginSubprocParentMain,
                 )
 
-                EntryHookClass = PluginSubprocParentMain
+                # We can run multiple plugins in one group
+                # Have we already created this group?
+                if subprocessGroup in self._loadedSubprocessGroups:
+                    subprocParentMain = self._loadedSubprocessGroups[
+                        subprocessGroup
+                    ]
+                else:
+                    # Else, create it.
+                    subprocParentMain = PluginSubprocParentMain(subprocessGroup)
+                    self._loadedSubprocessGroups[
+                        subprocessGroup
+                    ] = subprocParentMain
+
+                # Return the subprocParentMain, it has a __call__ method
+                # to simulate the plugin class constructor
+                EntryHookClass = subprocParentMain
 
             else:
                 EntryHookClass = RealEntryHookClass

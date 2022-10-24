@@ -40,7 +40,7 @@ logger = logging.getLogger(__name__)
 class PluginSubprocParentProtocol(protocol.ProcessProtocol):
     VORTEX_UUID_UPDATE_PERIOD = 30
 
-    def __init__(self, pluginName):
+    def __init__(self, subprocessGroupName):
         self._data = b""
         self._logData = b""
         self._pluginStateData = b""
@@ -51,7 +51,9 @@ class PluginSubprocParentProtocol(protocol.ProcessProtocol):
 
         self._lastPluginStateCommandDeferred = None
 
-        self._loggerForChild = logging.getLogger(f"subproc:{pluginName}")
+        self._loggerForChild = logging.getLogger(
+            f"subproc:{subprocessGroupName}"
+        )
 
     @inlineCallbacks
     def childDataReceived(self, childFD: int, data: bytes):
@@ -155,34 +157,36 @@ class PluginSubprocParentProtocol(protocol.ProcessProtocol):
     # ---------------------------------
     # Handle the plugin state changes
 
-    def sendPluginLoad(self) -> Deferred:
+    def sendPluginLoad(self, pluginName: str) -> Deferred:
         return self._sendPluginStateCommand(
-            PluginSubprocChildStateProtocol.COMMAND_LOAD
+            pluginName, PluginSubprocChildStateProtocol.COMMAND_LOAD
         )
 
-    def sendPluginStart(self) -> Deferred:
+    def sendPluginStart(self, pluginName: str) -> Deferred:
         return self._sendPluginStateCommand(
-            PluginSubprocChildStateProtocol.COMMAND_START
+            pluginName, PluginSubprocChildStateProtocol.COMMAND_START
         )
 
-    def sendPluginStop(self) -> Deferred:
+    def sendPluginStop(self, pluginName: str) -> Deferred:
         return self._sendPluginStateCommand(
-            PluginSubprocChildStateProtocol.COMMAND_STOP
+            pluginName, PluginSubprocChildStateProtocol.COMMAND_STOP
         )
 
-    def sendPluginUnload(self) -> Deferred:
+    def sendPluginUnload(self, pluginName: str) -> Deferred:
         return self._sendPluginStateCommand(
-            PluginSubprocChildStateProtocol.COMMAND_UNLOAD
+            pluginName, PluginSubprocChildStateProtocol.COMMAND_UNLOAD
         )
 
     @inlineCallbacks
-    def _sendPluginStateCommand(self, command: bytes):
+    def _sendPluginStateCommand(self, pluginName: str, command: bytes):
         assert not self._lastPluginStateCommandDeferred, (
             "There is already a pending " "command"
         )
         self._lastPluginStateCommandDeferred = Deferred()
 
-        self.transport.writeToChild(PLUGIN_STATE_TO_CHILD_FD, command)
+        self.transport.writeToChild(
+            PLUGIN_STATE_TO_CHILD_FD, f"{pluginName}:{command}".encode()
+        )
         self.transport.writeToChild(PLUGIN_STATE_TO_CHILD_FD, b"\n")
 
         yield self._lastPluginStateCommandDeferred
@@ -192,24 +196,26 @@ class PluginSubprocParentProtocol(protocol.ProcessProtocol):
         self._pluginStateData += data
 
         while b"\n" in self._pluginStateData:
-            result, self._pluginStateData = self._pluginStateData.split(
+            message, self._pluginStateData = self._pluginStateData.split(
                 b"\n", 1
             )
-            if not result:
+            if not message:
                 continue
 
             if not self._lastPluginStateCommandDeferred:
-                message = (
+                error = (
                     f"We got a result when we have no deferred to "
-                    f"call, result={result}"
+                    f"call, result={message}"
                 )
-                logger.error(message)
-                raise Exception(message)
+                logger.error(error)
+                raise Exception(error)
+
+            pluginName, result = message.decode().split(":", 1)
 
             if result == PluginSubprocChildStateProtocol.COMMAND_SUCCESS:
                 self._lastPluginStateCommandDeferred.callback(result)
 
             else:
-                self._lastPluginStateCommandDeferred.errbach(result)
+                self._lastPluginStateCommandDeferred.errback(result)
 
             self._lastPluginStateCommandDeferred = None

@@ -3,9 +3,9 @@ import logging
 import os
 import sys
 
-from peek_plugin_base.PeekVortexUtil import peekBackendNames
 from sqlalchemy.util import b64encode
 from twisted.internet import reactor
+from twisted.internet.defer import Deferred
 from twisted.internet.defer import inlineCallbacks
 from vortex.DeferUtil import deferToThreadWrapWithLogger
 from vortex.PayloadEndpoint import PayloadEndpoint
@@ -46,8 +46,6 @@ from peek_platform.subproc_plugin_init.plugin_subproc.plugin_subproc_vortex_payl
     PluginSubprocVortexPayloadEnvelopeTuple,
 )
 from peek_plugin_base.PeekPlatformCommonHookABC import PeekPlatformCommonHookABC
-from peek_plugin_base.PeekVortexUtil import peekServerName
-from peek_plugin_base.PluginCommonEntryHookABC import PluginCommonEntryHookABC
 
 
 logger = logging.getLogger(__name__)
@@ -58,35 +56,23 @@ class _NoKeycheckPayloadEndpoint(PayloadEndpoint):
         pass
 
 
-class PluginSubprocParentMain(PluginCommonEntryHookABC):
-    def __init__(
-        self,
-        pluginName: str,
-        pluginRootDir: str,
-        platform: PeekPlatformCommonHookABC,
-    ):
-        super().__init__(pluginName, pluginRootDir)
-
-        assert "-" not in pluginName, "Plugin name must not have hyphens"
-        self._pluginName = pluginName
-        self._platform = platform
+class PluginSubprocParentMain:
+    def __init__(self, subprocessGroup: str):
 
         from peek_platform import PeekPlatformConfig
 
         self._serviceName = PeekPlatformConfig.componentName
+        self._subprocessGroup = subprocessGroup
 
-        self._pluginEndpoint = None
-        self._processTransport = None
-        self._processProtocol = None
-
-    @inlineCallbacks
-    def load(self) -> None:
-        self._processProtocol = PluginSubprocParentProtocol(self._pluginName)
+        self._processProtocol = PluginSubprocParentProtocol(
+            self._subprocessGroup
+        )
 
         platformConfigTupleEncoded = b64encode(
             json.dumps(
                 PluginSubprocPlatformConfigTuple(
-                    serviceName=self._serviceName, pluginName=self._pluginName
+                    serviceName=self._serviceName,
+                    subprocessGroup=self._subprocessGroup,
                 ).toJsonDict()
             ).encode()
         )
@@ -112,44 +98,31 @@ class PluginSubprocParentMain(PluginCommonEntryHookABC):
                 PLUGIN_STATE_FROM_CHILD_FD: "r",
             },
         )
+        logger.debug("Spawned subprocess group %s", self._subprocessGroup)
 
-        yield self._processProtocol.sendPluginLoad()
-        logger.debug("Loaded Standalone Plugin %s", self._pluginName)
+    def __call__(
+        self,
+        pluginName: str,
+        pluginRootDir: str,
+        platform: PeekPlatformCommonHookABC,
+    ):
+        """This method simulates the call to the plugins constructor.
 
-    @inlineCallbacks
-    def start(self) -> None:
-        from peek_platform import PeekPlatformConfig
-
-        yield self._processProtocol.sendPluginStart()
-
-        self._pluginEndpoint = _NoKeycheckPayloadEndpoint(
-            dict(plugin=self._pluginName),
-            self._sendPayloadEnvelopeToChild,
-            ignoreFromVortex=(peekServerName, PeekPlatformConfig.componentName),
+        :param pluginName:
+        :param pluginRootDir:
+        :param platform:
+        :return:  PluginSubprocParentMainDelegate
+        """
+        from peek_platform.subproc_plugin_init.plugin_subproc_parent_main_delegate import (
+            PluginSubprocParentMainDelegate,
         )
 
-        logger.debug("Started Standalone Plugin %s", self._pluginName)
-
-    @inlineCallbacks
-    def stop(self) -> None:
-        yield None
-        # yield self._processProtocol.sendPluginStop()
-        # logger.debug("Stopped Standalone Plugin %s", self._pluginName)
-        logger.debug(
-            "Standalone Plugin %s doesn't support stopping", self._pluginName
+        return PluginSubprocParentMainDelegate(
+            pluginName, pluginRootDir, platform, self
         )
 
     @inlineCallbacks
-    def unload(self) -> None:
-        yield None
-        # yield self._processProtocol.sendPluginUnload()
-        # logger.debug("Unloaded Standalone Plugin %s", self._pluginName)
-        logger.debug(
-            "Standalone Plugin %s doesn't support unloading", self._pluginName
-        )
-
-    @inlineCallbacks
-    def _sendPayloadEnvelopeToChild(
+    def sendPayloadEnvelopeToChild(
         self,
         payloadEnvelope: PayloadEnvelope,
         vortexUuid: str,
@@ -168,3 +141,15 @@ class PluginSubprocParentMain(PluginCommonEntryHookABC):
     @deferToThreadWrapWithLogger(logger)
     def _encodeTuple(self, tuple_: Tuple) -> bytes:
         return b64encode(json.dumps(tuple_.toJsonDict()).encode()).encode()
+
+    def sendPluginLoad(self, pluginName: str) -> Deferred:
+        return self._processProtocol.sendPluginLoad(pluginName)
+
+    def sendPluginStart(self, pluginName: str) -> Deferred:
+        return self._processProtocol.sendPluginStart(pluginName)
+
+    def sendPluginStop(self, pluginName: str) -> Deferred:
+        return self._processProtocol.sendPluginStop(pluginName)
+
+    def sendPluginUnload(self, pluginName: str) -> Deferred:
+        return self._processProtocol.sendPluginUnload(pluginName)
