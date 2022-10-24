@@ -3,6 +3,7 @@ import logging
 import sys
 from base64 import b64decode
 
+from setproctitle import setproctitle
 from twisted.internet import reactor
 from twisted.internet._posixstdio import StandardIO
 from vortex.VortexFactory import VortexFactory
@@ -59,6 +60,11 @@ if __name__ == "__main__":
     )
     logger = logging.getLogger(
         "subproc plugin main %s %s"
+        % (platformConfigTuple.serviceName, platformConfigTuple.subprocessGroup)
+    )
+
+    setproctitle(
+        "%s %s"
         % (platformConfigTuple.serviceName, platformConfigTuple.subprocessGroup)
     )
 

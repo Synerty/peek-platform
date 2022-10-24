@@ -1,5 +1,6 @@
 import logging
 
+from setproctitle import setproctitle
 from twisted.internet import defer
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred
@@ -20,8 +21,11 @@ class InitPlatform:
 
         from peek_platform import PeekPlatformConfig
 
-        PeekPlatformConfig.componentName = self._serviceName
         PeekPlatformConfig.isPluginSubprocess = isPluginSubprocess
+
+        PeekPlatformConfig.componentName = self._serviceName
+        if not isPluginSubprocess:
+            setproctitle(PeekPlatformConfig.componentName)
 
     def setupPlatform(self):
 
