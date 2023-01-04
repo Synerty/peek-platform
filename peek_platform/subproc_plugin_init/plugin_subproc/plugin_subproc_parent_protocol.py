@@ -41,7 +41,7 @@ class PluginSubprocParentProtocol(protocol.ProcessProtocol):
     VORTEX_UUID_UPDATE_PERIOD = 30
 
     def __init__(self, subprocessGroupName):
-        self._data = b""
+        self._dataBytesArray = bytearray()
         self._logData = b""
         self._pluginStateData = b""
 
@@ -130,14 +130,24 @@ class PluginSubprocParentProtocol(protocol.ProcessProtocol):
 
     @inlineCallbacks
     def outReceived(self, data):
-        self._data += data
+        self._dataBytesArray.append(data)
 
-        while b"." in self._data:
-            message, self._data = self._data.split(b".", 1)
+        if b"." not in data:
+            return
+
+        # Avoid accidentally referencing this
+        del data
+
+        joinedData = bytes(self._dataBytesArray)
+
+        while b"." in joinedData:
+            message, joinedData = joinedData.split(b".", 1)
             if not message:
                 continue
 
             yield self._sendVortexMsgFromChild(message)
+
+        self._dataArray = bytearray(joinedData)
 
     @inlineCallbacks
     def _sendVortexMsgFromChild(self, message: bytes):
