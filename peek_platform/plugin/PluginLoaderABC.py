@@ -210,7 +210,9 @@ class PluginLoaderABC(metaclass=ABCMeta):
                 )
 
             # Are we going to run this plugin in a subprocess?
-            if runInSubprocess:
+            if False:  # runInSubprocess:
+                pass
+                """
                 from peek_platform.subproc_plugin_init.plugin_subproc_parent_main import (
                     PluginSubprocParentMain,
                 )
@@ -231,6 +233,7 @@ class PluginLoaderABC(metaclass=ABCMeta):
                 # Return the subprocParentMain, it has a __call__ method
                 # to simulate the plugin class constructor
                 EntryHookClass = subprocParentMain
+                """
 
             else:
                 EntryHookClass = RealEntryHookClass
