@@ -43,9 +43,7 @@ def _rotator(source, dest):
 
 
 def updatePeekLoggerHandlers(
-    serviceName: Optional[str] = None,
-    daysToKeep=28,
-    logToStdout=True,
+    serviceName: Optional[str] = None, daysToKeep=28, logToStdout=True
 ):
     rootLogger = logging.getLogger()
     logFormatter = logging.Formatter(LOG_FORMAT, DATE_FORMAT)
@@ -64,7 +62,9 @@ def updatePeekLoggerHandlers(
 
     fileName = str(Path.home() / ("%s.log" % serviceName))
 
-    fh = TimedRotatingFileHandler(fileName, when="midnight", backupCount=daysToKeep)
+    fh = TimedRotatingFileHandler(
+        fileName, when="midnight", backupCount=daysToKeep
+    )
     fh.setFormatter(logFormatter)
     fh.rotator = _rotator
     fh.namer = _namer
