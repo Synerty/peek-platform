@@ -37,6 +37,13 @@ class PeekFileConfigHttpMixin:
             return c.httpServer[self._name].useSsl(False, require_bool)
 
     @property
+    def concurrentPeerIpConnectionLimit(self) -> int:
+        with self._config._cfg as c:
+            return c.httpServer[self._name].concurrentPeerIpConnectionLimit(
+                5, require_integer
+            )
+
+    @property
     def sslBundleFilePath(self) -> Optional[str]:
         default = os.path.join(self._config._homePath, "key-cert-cachain.pem")
         with self._config._cfg as c:
