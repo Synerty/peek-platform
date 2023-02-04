@@ -32,4 +32,8 @@ class PeekFileConfigSqlAlchemyMixin:
                 val["executemany_mode"] = "batch"
                 c.sqlalchemy.engineArgs = val
 
+            if "client_encoding" not in val:
+                val["client_encoding"] = "utf8"
+                c.sqlalchemy.engineArgs = val
+
             return val
