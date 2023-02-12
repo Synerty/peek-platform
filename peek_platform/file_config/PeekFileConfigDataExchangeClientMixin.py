@@ -8,9 +8,12 @@ from jsoncfg.value_mappers import require_string, require_integer
 from peek_platform.file_config.PeekFileConfigPlatformMixin import (
     PeekFileConfigPlatformMixin,
 )
+from peek_plugin_base.PeekPlatformServerInfoHookABC import (
+    PeekPlatformServerInfoHookABC,
+)
 
 
-class PeekFileConfigDataExchangeClientMixin(metaclass=ABCMeta):
+class PeekFileConfigDataExchangeClientMixin(PeekPlatformServerInfoHookABC):
     def __init__(self, config: PeekFileConfigPlatformMixin):
         self._config = config
 
@@ -26,7 +29,11 @@ class PeekFileConfigDataExchangeClientMixin(metaclass=ABCMeta):
             return c.dataExchange.host("localhost", require_string)
 
     @property
-    def peekServerUseSSL(self) -> int:
+    def peekServerSSL(self) -> bool:
+        return self.peekServerUseSSL
+
+    @property
+    def peekServerUseSSL(self) -> bool:
         with self._config._cfg as c:
             return c.dataExchange.useSsl(False, require_bool)
 
