@@ -13,6 +13,7 @@ from typing import Type
 
 from jsoncfg.value_mappers import require_array
 from jsoncfg.value_mappers import require_string
+from twisted.internet.defer import maybeDeferred
 from vortex.DeferUtil import vortexLogFailure
 
 from peek_platform import PeekPlatformConfig
@@ -433,8 +434,9 @@ class PluginLoaderABC(metaclass=ABCMeta):
         plugin = self._loadedPlugins[pluginName]
         try:
             d = plugin.start()
-            d.addErrback(vortexLogFailure, logger)
-            yield d
+            if d:
+                d.addErrback(vortexLogFailure, logger)
+                yield d
 
         except Exception as e:
             logger.error(
@@ -447,8 +449,9 @@ class PluginLoaderABC(metaclass=ABCMeta):
         plugin = self._loadedPlugins[pluginName]
         try:
             d = plugin.stop()
-            d.addErrback(vortexLogFailure, logger)
-            yield d
+            if d:
+                d.addErrback(vortexLogFailure, logger)
+                yield d
 
         except Exception as e:
             logger.error(
@@ -466,8 +469,9 @@ class PluginLoaderABC(metaclass=ABCMeta):
 
         try:
             d = oldLoadedPlugin.unload()
-            d.addErrback(vortexLogFailure, logger)
-            yield d
+            if d:
+                d.addErrback(vortexLogFailure, logger)
+                yield d
 
         except Exception as e:
             logger.error(
