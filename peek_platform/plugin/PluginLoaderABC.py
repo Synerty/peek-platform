@@ -7,13 +7,14 @@ from abc import abstractmethod
 from abc import abstractproperty
 from collections import defaultdict
 from importlib.util import find_spec
-from typing import Any
 from typing import Optional
 from typing import Tuple
 from typing import Type
 
 from jsoncfg.value_mappers import require_array
 from jsoncfg.value_mappers import require_string
+from vortex.DeferUtil import vortexLogFailure
+
 from peek_platform import PeekPlatformConfig
 from twisted.internet.defer import inlineCallbacks
 
@@ -431,27 +432,29 @@ class PluginLoaderABC(metaclass=ABCMeta):
     def _tryStart(self, pluginName):
         plugin = self._loadedPlugins[pluginName]
         try:
-            yield plugin.start()
+            d = plugin.start()
+            d.addErrback(vortexLogFailure, logger)
+            yield d
 
         except Exception as e:
             logger.error(
-                "An exception occured while starting plugin %s,"
+                "An exception occurred while starting plugin %s,"
                 " starting continues" % pluginName
             )
-            logger.exception(e)
 
     @inlineCallbacks
     def _tryStop(self, pluginName):
         plugin = self._loadedPlugins[pluginName]
         try:
-            yield plugin.stop()
+            d = plugin.stop()
+            d.addErrback(vortexLogFailure, logger)
+            yield d
 
         except Exception as e:
             logger.error(
-                "An exception occured while stopping plugin %s,"
+                "An exception occurred while stopping plugin %s,"
                 " stopping continues" % pluginName
             )
-            logger.exception(e)
 
     @inlineCallbacks
     def _unloadPluginPackage(self, pluginName):
@@ -462,7 +465,9 @@ class PluginLoaderABC(metaclass=ABCMeta):
         del self._loadedPlugins[pluginName]
 
         try:
-            yield oldLoadedPlugin.unload()
+            d = oldLoadedPlugin.unload()
+            d.addErrback(vortexLogFailure, logger)
+            yield d
 
         except Exception as e:
             logger.error(
